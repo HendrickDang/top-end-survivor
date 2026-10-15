@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top End Survivor Booth</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap');
+    :root { --teal:#0f3b3a; --ochre:#e0892e; --sand:#f6e7c8; --ink:#1d1a16; --white:#fffaf0; --red:#c8412f; --leaf:#4f8a3c; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif; background: var(--teal); color: var(--ink); overflow: hidden; }
+    .wrap { height: 100vh; display: grid; grid-template-columns: 1fr 1.1fr 1.3fr; gap: 2vw; padding: 2.5vw; }
+    .card { background: var(--sand); border: 5px solid var(--ink); border-radius: 26px; box-shadow: 0 10px 0 var(--ink); padding: 1.8vw; display: flex; flex-direction: column; min-height: 0; }
+    h1 { margin: 0; font-size: 4.2vw; line-height: .9; color: var(--white); text-shadow: 0 5px 0 var(--ink); }
+    h1 span { color: #ffe9a8; }
+    h2 { margin: 0 0 1vw; font-size: 2.2vw; line-height: 1; }
+    .left { background: linear-gradient(#f7b267, #f4845f 55%, #c8412f); align-items: center; text-align: center; justify-content: space-between; }
+    .qr { width: 80%; aspect-ratio: 1; background: var(--white); border: 5px solid var(--ink); border-radius: 18px; padding: 3%; }
+    .qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    .scan { font-size: 2.4vw; font-weight: 800; color: var(--white); text-shadow: 0 3px 0 var(--ink); margin: 0; }
+    .url { font-size: 1.1vw; color: var(--white); word-break: break-all; margin: 0; }
+    .board { list-style: none; margin: 0; padding: 0; counter-reset: r; overflow: hidden; }
+    .board li { counter-increment: r; display: flex; align-items: center; gap: 1vw; font-size: 1.9vw; padding: .45vw .6vw; border-bottom: 3px dashed #ecd6a8; }
+    .board li::before { content: counter(r); width: 2.6vw; text-align: center; font-weight: 800; }
+    .board li:nth-child(1) { background: #ffe9a8; border-radius: 12px; font-size: 2.3vw; }
+    .board li:nth-child(1)::before { content: '🥇'; } .board li:nth-child(2)::before { content: '🥈'; } .board li:nth-child(3)::before { content: '🥉'; }
+    .board .n { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .board .s { font-weight: 800; }
+    .board li.new { animation: flash 1.2s ease-out 3; }
+    @keyframes flash { 50% { background: var(--ochre); color: var(--white); } }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; margin-bottom: 1.2vw; }
+    .kpi { background: var(--white); border: 3px solid var(--ink); border-radius: 14px; padding: .6vw; text-align: center; }
+    .kpi b { display: block; font-size: 2.6vw; line-height: 1; }
+    .kpi span { font-size: 1vw; }
+    .bars { display: flex; flex-direction: column; gap: .7vw; overflow: hidden; }
+    .bar { display: grid; grid-template-columns: 1fr 4.5vw; gap: .8vw; align-items: center; }
+    .bar .lab { font-size: 1.2vw; font-weight: 700; line-height: 1.1; margin-bottom: .2vw; }
+    .bar .track { height: 1.4vw; background: var(--white); border: 3px solid var(--ink); border-radius: 99px; overflow: hidden; }
+    .bar .fill { height: 100%; background: var(--red); transition: width .8s ease; }
+    .bar .pct { font-size: 1.5vw; font-weight: 800; text-align: right; }
+    .note { margin-top: auto; font-size: 1vw; opacity: .7; }
+    .empty { font-size: 1.6vw; opacity: .7; }
+    .status { position: fixed; bottom: .6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card left">
+      <h1>Top End<br><span>Survivor</span></h1>
+      <div class="qr"><img id="qr" alt="QR code to play the game"></div>
+      <p class="scan">Scan to play on your phone</p>
+      <p class="url" id="url"></p>
+    </section>
+
+    <section class="card">
+      <h2>Today's top survivors</h2>
+      <ol class="board" id="board"></ol>
+      <p class="empty" id="board-empty">No scores yet. Who's first?</p>
+    </section>
+
+    <section class="card">
+      <h2>What's catching people out today</h2>
+      <div class="kpis">
+        <div class="kpi"><b id="k-players">0</b><span>players</span></div>
+        <div class="kpi"><b id="k-rounds">0</b><span>rounds played</span></div>
+        <div class="kpi"><b id="k-top">0</b><span>top score</span></div>
+      </div>
+      <div class="bars" id="bars"></div>
+      <p class="note">% of attempts failed, live from every game played today. Each mistake teaches an official NT safety rule.</p>
+    </section>
+  </div>
+  <div class="status" id="status"></div>
+
+  <script type="module">
+    import { GAME_LABELS } from './js/lessons.js';
+    const $ = (s) => document.querySelector(s);
+    const params = new URLSearchParams(location.search);
+    const api = params.get('api') || '';
+    const playUrl = params.get('play') || (location.origin + '/');
+    $('#url').textContent = playUrl.replace(/^https?:\/\//, '');
+    $('#qr').src = `${api}/api/qr.svg?url=${encodeURIComponent(playUrl)}`;
+
+    const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let lastTop = null;
+
+    async function refresh() {
+      try {
+        const [lb, st] = await Promise.all([
+          fetch(`${api}/api/leaderboard?period=today&limit=10`).then(r => r.json()),
+          fetch(`${api}/api/stats?period=today`).then(r => r.json())
+        ]);
+        const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
+        $('#board').innerHTML = lb.entries.map((e, i) =>
+          `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${e.score}</span></li>`).join('');
+        lastTop = top;
+        $('#board-empty').style.display = lb.entries.length ? 'none' : '';
+        $('#k-players').textContent = st.players;
+        $('#k-rounds').textContent = st.rounds;
+        $('#k-top').textContent = st.topScore;
+        const games = st.games.filter(g => g.plays > 0).slice(0, 7);
+        $('#bars').innerHTML = games.length ? games.map(g => {
+          const pct = Math.round(g.failRate * 100);
+          return `<div class="bar"><div><div class="lab">${esc(GAME_LABELS[g.id] || g.id)}</div>
+            <div class="track"><div class="fill" style="width:${pct}%"></div></div></div><div class="pct">${pct}%</div></div>`;
+        }).join('') : '<p class="empty">Waiting for the first game...</p>';
+        $('#status').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch {
+        $('#status').textContent = 'Reconnecting...';
+      }
+    }
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

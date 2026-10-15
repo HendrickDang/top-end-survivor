@@ -1,0 +1,11 @@
+{
+  "appId": "au.edu.cdu.topendsurvivor",
+  "appName": "Top End Survivor",
+  "webDir": "web",
+  "android": {
+    "backgroundColor": "#0f3b3a"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

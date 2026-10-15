@@ -1,0 +1,22 @@
+{
+  "name": "top-end-survivor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Top End Survivor - an NT safety micro-game for web and Android (CDU IT Code Fair 2026, CAP003)",
+  "license": "MIT",
+  "scripts": {
+    "start": "npm --prefix server start",
+    "dev": "npm --prefix server run dev",
+    "test": "npm --prefix server test",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:build": "cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

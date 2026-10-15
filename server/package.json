@@ -1,0 +1,18 @@
+{
+  "name": "top-end-survivor-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Leaderboard + learning analytics API for Top End Survivor",
+  "type": "module",
+  "main": "index.js",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4"
+  }
+}

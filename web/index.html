@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0f3b3a">
+  <meta name="description" content="Top End Survivor - a fast, funny micro-game that teaches real Northern Territory safety: crocs, stingers, cyclones, floods, heat, snakes and bushfire.">
+  <title>Top End Survivor</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+
+    <!-- MENU -->
+    <section class="screen active" id="screen-menu" aria-label="Main menu">
+      <div class="menu-sky"></div>
+      <div class="menu-content">
+        <div class="mascot" id="menu-mascot" aria-hidden="true"></div>
+        <h1 class="logo">Top End<br><span>Survivor</span></h1>
+        <p class="tagline">Ten seconds of panic. A lifetime of croc sense.</p>
+        <button class="btn btn-primary btn-big" id="btn-play">Play</button>
+        <div class="menu-row">
+          <button class="btn" id="btn-board">Leaderboard</button>
+          <button class="btn" id="btn-learn">Safety tips</button>
+        </div>
+        <p class="menu-foot"><span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen" id="screen-game" aria-label="Game">
+      <header class="hud">
+        <div class="lives" id="hud-lives" aria-label="Lives"></div>
+        <div class="round">Round <b id="hud-round">1</b></div>
+        <div class="score"><b id="hud-score">0</b></div>
+      </header>
+      <div class="timer"><div class="timer-bar" id="timer-bar"></div></div>
+      <div class="stage" id="stage"></div>
+      <div class="banner" id="banner" aria-live="assertive"></div>
+    </section>
+
+    <!-- BETWEEN ROUNDS -->
+    <section class="screen" id="screen-result" aria-label="Round result">
+      <div class="result-card" id="result-card">
+        <div class="result-face" id="result-face"></div>
+        <h2 id="result-title"></h2>
+        <p class="result-tip" id="result-tip"></p>
+      </div>
+    </section>
+
+    <!-- GAME OVER -->
+    <section class="screen" id="screen-over" aria-label="Game over">
+      <div class="panel">
+        <h2>Game over</h2>
+        <p class="big-score"><span id="over-score">0</span><small>points</small></p>
+        <p class="sub" id="over-rounds"></p>
+        <form id="submit-form" class="submit-form" autocomplete="off">
+          <label for="player-name">Name for the leaderboard</label>
+          <div class="row">
+            <input id="player-name" maxlength="16" placeholder="e.g. CrocDodger" required pattern="[A-Za-z0-9 _\-]{2,16}">
+            <button class="btn btn-primary" type="submit">Submit</button>
+          </div>
+          <p class="form-msg" id="submit-msg" aria-live="polite"></p>
+        </form>
+        <h3>What you learned the hard way</h3>
+        <ul class="lessons" id="over-lessons"></ul>
+        <div class="menu-row">
+          <button class="btn btn-primary" id="btn-again">Play again</button>
+          <button class="btn" id="btn-over-menu">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="screen" id="screen-board" aria-label="Leaderboard">
+      <div class="panel">
+        <h2>Leaderboard</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-period="today" role="tab">Today</button>
+          <button class="tab" data-period="all" role="tab">All time</button>
+        </div>
+        <ol class="board" id="board-list"></ol>
+        <p class="sub" id="board-msg"></p>
+        <button class="btn" data-back>Back</button>
+      </div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="screen" id="screen-learn" aria-label="Safety tips and sources">
+      <div class="panel">
+        <h2>The real rules</h2>
+        <p class="sub">Every mini-game is based on official Northern Territory safety advice. Tap a source to read more.</p>
+        <div id="learn-list" class="learn-list"></div>
+        <p class="sub small">This game is a learning tool, not medical advice. In an emergency call <b>000</b>.</p>
+        <button class="btn" data-back>Back</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/config.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
