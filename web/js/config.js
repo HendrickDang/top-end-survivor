@@ -8,7 +8,9 @@ window.TES_CONFIG = {
   API_BASE: '',
   // Used only inside the Android app. Change this after you deploy the server.
   ANDROID_API_BASE: 'https://top-end-survivor.onrender.com',
-  APP_VERSION: '1.0.0'
+  // Public link to the game (used on the share card QR). Leave '' to use this page's address.
+  PUBLIC_URL: '',
+  APP_VERSION: '1.1.0'
 };
 (function () {
   try {

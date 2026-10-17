@@ -29,6 +29,15 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | FIRST AID! | Drag the wide bandage onto the bite | Pressure immobilisation; don't cut, suck or tourniquet | AVRU, Uni Melbourne |
 | SMOKE! | Choose to leave | Leaving early is the safest choice | NTPFES |
 
+### Fun factor (v1.1)
+
+- **Cartoon fail for every hazard:** croc jaws snap shut, a jellyfish zaps you, the cyclone blows your stuff away, floodwater rises, you get "cooked like a snag", dizzy stars for the wrong first aid, smoke for leaving too late.
+- **Juice:** confetti, screen shake, floating points, win streaks (from 3 in a row: +20 to +100 bonus, scored the same way on the server).
+- **Sound:** a chiptune music loop that speeds up each round, plus themed sound effects (chomp, splash, zap, sizzle). All made in code, with a mute button.
+- **12 badges:** one per safety topic, plus On a Roll, Top End Tourist, Top End Legend, Never Say Die and Read the Rules (for opening the Safety tips screen).
+- **Share card:** a PNG with your score, badges and a QR code back to the game, shared through the phone's share sheet.
+- **Booth boss mode:** a live "just now" ticker of how players got caught out, a crowd challenge to beat today's #1, and a "NEW #1!" celebration with confetti.
+
 Rounds get faster as you go (5.5 s down to 2.6 s). Three lives. Points: 100 per survived round plus 10 per round reached.
 
 All characters and art (including Frilly the frill-neck lizard) are original and drawn in code. The concept is inspired by public-safety games in general; no third-party art, names or audio are used.

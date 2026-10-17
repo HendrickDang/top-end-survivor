@@ -11,7 +11,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
     body { font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif; background: var(--teal); color: var(--ink); overflow: hidden; }
-    .wrap { height: 100vh; display: grid; grid-template-columns: 1fr 1.1fr 1.3fr; gap: 2vw; padding: 2.5vw; }
+    .wrap { height: calc(100vh - 6vw); display: grid; grid-template-columns: 1fr 1.1fr 1.3fr; gap: 2vw; padding: 2.5vw; }
     .card { background: var(--sand); border: 5px solid var(--ink); border-radius: 26px; box-shadow: 0 10px 0 var(--ink); padding: 1.8vw; display: flex; flex-direction: column; min-height: 0; }
     h1 { margin: 0; font-size: 4.2vw; line-height: .9; color: var(--white); text-shadow: 0 5px 0 var(--ink); }
     h1 span { color: #ffe9a8; }
@@ -42,7 +42,21 @@
     .bar .pct { font-size: 1.5vw; font-weight: 800; text-align: right; }
     .note { margin-top: auto; font-size: 1vw; opacity: .7; }
     .empty { font-size: 1.6vw; opacity: .7; }
-    .status { position: fixed; bottom: .6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
+    .challenge { background: #fffaf0; border: 4px solid var(--ink); border-radius: 16px; padding: .5vw 1vw; font-size: 1.5vw; font-weight: 800; line-height: 1.1; }
+    .challenge b { color: var(--red); font-size: 2.2vw; }
+    .ticker { position: fixed; left: 0; right: 0; bottom: 0; height: 6vw; background: var(--ink); color: var(--white); display: flex; align-items: center; overflow: hidden; border-top: 5px solid var(--ochre); }
+    .ticker .lab { flex: none; background: var(--red); height: 100%; display: flex; align-items: center; padding: 0 1.6vw; font-size: 1.7vw; font-weight: 800; z-index: 1; }
+    .ticker .track { display: flex; gap: 4vw; white-space: nowrap; font-size: 1.8vw; padding-left: 100%; animation: scroll var(--dur, 40s) linear infinite; }
+    .ticker .track span b { color: #ffe9a8; }
+    @keyframes scroll { to { transform: translateX(-100%); } }
+    .record { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(15,59,58,.85); z-index: 10; color: var(--white); text-align: center; }
+    .record.show { display: flex; animation: rec 4.5s ease forwards; }
+    .record h3 { margin: 0; font-size: 9vw; line-height: 1; color: #ffe9a8; text-shadow: 0 8px 0 var(--ink); }
+    .record p { margin: 1vw 0 0; font-size: 4vw; font-weight: 800; text-shadow: 0 4px 0 var(--ink); }
+    @keyframes rec { 0% { opacity: 0; transform: scale(.6); } 10% { opacity: 1; transform: scale(1.05); } 15% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+    .snd { position: fixed; top: 1vw; right: 1vw; z-index: 11; font-size: 1.4vw; border: 3px solid var(--ink); border-radius: 12px; background: var(--white); padding: .3vw .8vw; cursor: pointer; font-family: inherit; font-weight: 700; }
+    canvas#conf { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 12; }
+    .status { position: fixed; bottom: 6.6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
   </style>
 </head>
 <body>
@@ -51,6 +65,7 @@
       <h1>Top End<br><span>Survivor</span></h1>
       <div class="qr"><img id="qr" alt="QR code to play the game"></div>
       <p class="scan">Scan to play on your phone</p>
+      <div class="challenge" id="challenge">Be the first on the board!</div>
       <p class="url" id="url"></p>
     </section>
 
@@ -72,6 +87,10 @@
     </section>
   </div>
   <div class="status" id="status"></div>
+  <div class="ticker"><div class="lab">💥 JUST NOW</div><div class="track" id="ticker"><span>Scan the QR code and see how long you survive the Top End...</span></div></div>
+  <div class="record" id="record"><h3>NEW #1!</h3><p id="record-who"></p></div>
+  <button class="snd" id="snd">🔇 Sound off</button>
+  <canvas id="conf"></canvas>
 
   <script type="module">
     import { GAME_LABELS } from './js/lessons.js';
@@ -83,15 +102,62 @@
     $('#qr').src = `${api}/api/qr.svg?url=${encodeURIComponent(playUrl)}`;
 
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    let lastTop = null;
+    let lastTop = null, lastFeed = '', soundOn = false, sfx = null;
+    const DEATH = {
+      'croc-edge': "got croc'd while fishing", 'swim-sign': "got croc'd going for a swim", 'croc-camp': "got croc'd at camp",
+      'stinger-vinegar': 'got zapped by a stinger', 'stinger-suit': 'got zapped by a stinger',
+      'cyclone-kit': 'got blown away by a cyclone', 'flood-road': 'got washed away at a floodway',
+      'heat-drink': 'got cooked like a snag', 'snake-bite': 'botched the snake bite first aid', 'bushfire-leave': 'left the bushfire too late'
+    };
+    $('#snd').onclick = async () => {
+      soundOn = !soundOn;
+      if (!sfx) ({ sfx } = await import('./js/sound.js'));
+      sfx.unlock(); if (soundOn) sfx.coin();
+      $('#snd').textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off';
+    };
+
+    function confetti() {
+      const cv = $('#conf'), c = cv.getContext('2d');
+      cv.width = innerWidth; cv.height = innerHeight;
+      const cols = ['#e0892e', '#ffd25e', '#4f8a3c', '#2f7fd0', '#c8412f', '#f28ab2'];
+      let ps = Array.from({ length: 220 }, (_, i) => ({ x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * .5, vy: 3 + Math.random() * 5, vx: (Math.random() - .5) * 3, r: Math.random() * 6, w: 10 + Math.random() * 10, col: cols[i % 6] }));
+      const step = () => {
+        c.clearRect(0, 0, cv.width, cv.height);
+        ps = ps.filter(p => p.y < cv.height + 20);
+        ps.forEach(p => { p.y += p.vy; p.x += p.vx; p.r += .1; c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); c.restore(); });
+        if (ps.length) requestAnimationFrame(step); else c.clearRect(0, 0, cv.width, cv.height);
+      };
+      step();
+    }
+
+    function celebrate(e) {
+      $('#record-who').textContent = `${e.name} · ${e.score} points`;
+      const r = $('#record'); r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
+      confetti();
+      if (soundOn && sfx) sfx.fanfare();
+    }
 
     async function refresh() {
       try {
-        const [lb, st] = await Promise.all([
+        const [lb, st, fd] = await Promise.all([
           fetch(`${api}/api/leaderboard?period=today&limit=10`).then(r => r.json()),
-          fetch(`${api}/api/stats?period=today`).then(r => r.json())
+          fetch(`${api}/api/stats?period=today`).then(r => r.json()),
+          fetch(`${api}/api/feed?limit=12`).then(r => r.json())
         ]);
         const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
+        if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
+        $('#challenge').innerHTML = lb.entries[0]
+          ? `Crowd challenge: beat <b>${lb.entries[0].score}</b> to take #1 from ${esc(lb.entries[0].name)}!`
+          : 'Be the first on the board!';
+        const feedKey = fd.entries.map(e => e.id).join(',');
+        if (feedKey && feedKey !== lastFeed) {
+          if (lastFeed && soundOn && sfx) sfx.chomp();
+          lastFeed = feedKey;
+          const items = fd.entries.map(e => `<span>💀 <b>${esc(e.name || 'A mystery player')}</b> ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)</span>`);
+          const tr = $('#ticker');
+          tr.innerHTML = items.join('');
+          tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');
+        }
         $('#board').innerHTML = lb.entries.map((e, i) =>
           `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${e.score}</span></li>`).join('');
         lastTop = top;

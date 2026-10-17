@@ -2,7 +2,10 @@
 import { GAMES } from './games.js';
 import { LESSONS, SOURCES } from './lessons.js';
 import { scene, mascotSVG, heartSVG, iconFor, VIEW } from './art.js';
-import { sfx } from './sound.js';
+import { sfx, music, toggleMute, isMuted } from './sound.js';
+import { shake, confetti, floatText, playFail, failKind, FAIL_TITLES, WIN_TITLES } from './fx.js';
+import * as badges from './badges.js';
+import { shareCard } from './share.js';
 import * as api from './api.js';
 
 const $ = (s) => document.querySelector(s);
@@ -11,19 +14,27 @@ const KIOSK = new URLSearchParams(location.search).has('kiosk');
 
 // Difficulty: rounds get shorter, down to a floor.
 export const roundSeconds = (round) => Math.max(2.6, 5.5 - 0.2 * (round - 1));
-// Must match server/scoring.js
+// Must match server/src/scoring.js
 export const pointsFor = (round) => 100 + 10 * (round - 1);
+// Streak bonus: from the 3rd win in a row, +20 per extra win (max +100). Must match the server.
+export const streakBonus = (streak) => (streak >= 3 ? Math.min(streak - 2, 5) * 20 : 0);
 
-const state = { round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0, bag: [], last: null, runLocalId: null };
+const state = { round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0, bag: [], last: null, runLocalId: null, streak: 0, newBadges: [] };
 
 // ---------- screens ----------
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  if (id === 'screen-menu') { renderBest(); renderBadgeCount(); }
 }
 
 function renderLives() {
   $('#hud-lives').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
     `<span class="${i < state.lives ? '' : 'lost'}">${heartSVG()}</span>`).join('');
+}
+
+function renderBadgeCount() {
+  const n = badges.count();
+  $('#btn-badges').textContent = `Badges ${n}/${badges.BADGES.length}`;
 }
 
 function renderBest() {
@@ -46,15 +57,20 @@ function nextGame() {
 
 function startGame() {
   sfx.unlock();
-  Object.assign(state, { round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(), bag: [], last: null, runLocalId: null });
+  Object.assign(state, { round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [] });
   $('#hud-score').textContent = '0';
+  renderStreak();
   renderLives();
+  music.setTempo(132);
+  music.start();
   playRound();
 }
 
 function playRound() {
   state.round++;
   $('#hud-round').textContent = state.round;
+  music.setTempo(132 + state.round * 4);
+  music.duck(false);
   const game = nextGame();
   const seconds = roundSeconds(state.round);
   const stage = $('#stage');
@@ -179,24 +195,51 @@ function playRound() {
   raf = requestAnimationFrame(loop);
 }
 
-function endRound(game, ok, ms) {
+function renderStreak() {
+  const el = $('#hud-streak');
+  if (!el) return;
+  el.textContent = state.streak >= 2 ? `🔥 ${state.streak}` : '';
+  el.classList.toggle('hot', state.streak >= 3);
+}
+
+async function endRound(game, ok, ms) {
+  // Record the result immediately (the animations below are only cosmetic).
   state.results.push({ g: game.id, ok, ms: Math.round(ms) });
+  const stage = $('#stage');
+  const svg = stage.querySelector('svg');
+  let bonus = 0;
   if (ok) {
-    state.score += pointsFor(state.round);
-    sfx.win();
+    state.streak++;
+    bonus = streakBonus(state.streak);
+    const pts = pointsFor(state.round) + bonus;
+    state.score += pts;
+    floatText(stage, `+${pts}`);
+    confetti(state.streak >= 3 ? 90 : 45);
+    state.streak >= 3 ? sfx.streak(state.streak) : sfx.win();
   } else {
+    state.streak = 0;
     state.lives--;
-    sfx.lose();
-    navigator.vibrate?.(120);
+    navigator.vibrate?.([80, 40, 120]);
+    shake(stage, 12);
+    music.duck(true);
   }
   $('#hud-score').textContent = state.score;
   renderLives();
+  renderStreak();
+
+  if (ok) await wait(550);
+  else {
+    const snd = await playFail(game.id, svg);
+    (sfx[snd] || sfx.lose)();
+    await wait(1100);
+  }
 
   const lesson = LESSONS[game.id];
   const card = $('#result-card');
   card.className = 'result-card ' + (ok ? 'win' : 'lose');
   $('#result-face').innerHTML = mascotSVG(ok ? 'happy' : 'sad');
-  $('#result-title').textContent = ok ? pick(['Survived!', 'Too easy!', 'Crocwise!', 'Legend!']) : pick(['Oops!', 'Yikes!', 'Not like that!', 'Ouch!']);
+  $('#result-title').textContent = ok ? pick(WIN_TITLES) : pick(FAIL_TITLES[failKind(game.id)]);
+  $('#result-streak').textContent = ok && bonus ? `🔥 ${state.streak} in a row! +${bonus} bonus` : '';
   $('#result-tip').textContent = ok ? lesson.win : lesson.fail;
   show('screen-result');
 
@@ -206,9 +249,11 @@ function endRound(game, ok, ms) {
   }, ok ? 1500 : 2300);
 }
 
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
 function gameOver() {
+  music.stop();
   sfx.over();
   const durationMs = Math.round(performance.now() - state.startedAt);
   state.runLocalId = api.queueRun({
@@ -223,6 +268,8 @@ function gameOver() {
     if (state.score > best) localStorage.setItem('tes_best', String(state.score));
   } catch { /* ignore */ }
 
+  state.newBadges = badges.evaluateRun(state.results, state.score);
+  renderNewBadges();
   $('#over-score').textContent = state.score;
   const survived = state.results.filter(r => r.ok).length;
   $('#over-rounds').textContent = `You survived ${survived} of ${state.results.length} rounds.`;
@@ -268,6 +315,57 @@ async function submitName(e) {
     'Saved offline. It will upload when you are back online.';
   if (st.state === 'rejected') btn.disabled = false;
   if (KIOSK) armKioskReset();
+}
+
+function renderNewBadges() {
+  const box = $('#over-badges');
+  if (!state.newBadges.length) { box.innerHTML = ''; box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = '<b>New badge' + (state.newBadges.length > 1 ? 's' : '') + '!</b>' +
+    state.newBadges.map(b => `<span class="medal pop-in"><i>${b.icon}</i>${escapeHtml(b.name)}</span>`).join('');
+  setTimeout(() => { sfx.badge(); confetti(80, { x: .5, y: .2 }); }, 400);
+}
+
+async function doShare() {
+  const btn = $('#btn-share');
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = 'Making your card...';
+  try {
+    let name = '';
+    try { name = $('#player-name').value.trim(); } catch { /* ignore */ }
+    const r = await shareCard({
+      score: state.score, rounds: state.results.length,
+      survived: state.results.filter(x => x.ok).length,
+      name: /^[A-Za-z0-9 _-]{2,16}$/.test(name) ? name : '',
+      badgeIds: Object.keys(badges.unlocked())
+    });
+    btn.textContent = r === 'downloaded' ? 'Saved to your device!' : r === 'shared' ? 'Shared!' : old;
+  } catch {
+    btn.textContent = 'Could not make the card';
+  }
+  setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 2500);
+}
+
+function renderBadges() {
+  const got = badges.unlocked();
+  $('#badge-count').textContent = `${Object.keys(got).length} of ${badges.BADGES.length} collected`;
+  $('#badge-grid').innerHTML = badges.BADGES.map(b => {
+    const have = !!got[b.id];
+    const prog = badges.progress(b);
+    return `<div class="badge ${have ? 'have' : 'locked'}">
+      <div class="medal-big">${have ? b.icon : '🔒'}</div>
+      <b>${escapeHtml(b.name)}</b>
+      <small>${have ? 'Unlocked!' : escapeHtml(b.hint) + (prog ? ` (${prog})` : '')}</small>
+    </div>`;
+  }).join('');
+}
+
+function setMuteIcons() {
+  document.querySelectorAll('[data-mute]').forEach(b => {
+    b.textContent = isMuted() ? '🔇' : '🔊';
+    b.setAttribute('aria-label', isMuted() ? 'Unmute' : 'Mute');
+  });
 }
 
 // ---------- leaderboard ----------
@@ -326,9 +424,20 @@ function init() {
   renderLearn();
   $('#btn-play').addEventListener('click', startGame);
   $('#btn-again').addEventListener('click', startGame);
-  $('#btn-over-menu').addEventListener('click', () => { renderBest(); show('screen-menu'); });
+  $('#btn-over-menu').addEventListener('click', () => { renderBest(); renderBadgeCount(); show('screen-menu'); });
   $('#btn-board').addEventListener('click', () => showBoard('today'));
-  $('#btn-learn').addEventListener('click', () => show('screen-learn'));
+  $('#btn-learn').addEventListener('click', () => {
+    show('screen-learn');
+    const fresh = badges.grantReader();
+    if (fresh.length) { sfx.badge(); confetti(60, { x: .5, y: .15 }); }
+  });
+  $('#btn-badges').addEventListener('click', () => { renderBadges(); show('screen-badges'); });
+  $('#btn-share').addEventListener('click', doShare);
+  document.querySelectorAll('[data-mute]').forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation(); sfx.unlock(); toggleMute(); setMuteIcons();
+  }));
+  setMuteIcons();
+  renderBadgeCount();
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('screen-menu')));
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
   $('#submit-form').addEventListener('submit', submitName);
@@ -342,7 +451,7 @@ function init() {
     navigator.serviceWorker.register('sw.js').catch(() => { /* not fatal */ });
   }
   // Test hook used by the automated smoke test (harmless in production).
-  window.__TES__ = { state, GAMES, roundSeconds, pointsFor };
+  window.__TES__ = { state, GAMES, roundSeconds, pointsFor, streakBonus };
 }
 
 init();
