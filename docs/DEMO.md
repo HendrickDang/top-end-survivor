@@ -44,6 +44,10 @@
 
 ## Booth setup (5 Nov)
 
+- **Attract mode is automatic:** after 45 s with no new players the booth shows a self-playing demo and a giant QR. Press `A` on the booth laptop to toggle it by hand.
+- **Push the Daily Challenge at the booth:** "Same 10 hazards for everyone today. Can you beat the top score?" Unlimited tries means people keep coming back to the stand during the day.
+- **Android QR:** put the APK in `server/downloads/top-end-survivor.apk` (see the README in that folder) and a second QR appears on the booth screen.
+
 - Laptop or TV: open `https://<host>/booth` full screen (F11). It shows the QR, top 10 today, and the live "what's catching people out" chart.
 - A tablet or phone on a stand running `https://<host>/?kiosk=1` for people without their own phone.
 - Morning of: reset scores (`POST /api/admin/reset`, see README).

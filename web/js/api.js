@@ -66,6 +66,7 @@ export function flush() {
             method: 'POST',
             body: JSON.stringify({
               clientId: r.clientId, results: r.results, durationMs: r.durationMs,
+              mode: r.mode || 'classic', day: r.day,
               name: r.name || undefined, appVersion: r.appVersion
             })
           });

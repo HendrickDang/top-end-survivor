@@ -196,6 +196,72 @@ export const items = {
     el('circle', { r: 24, fill: '#f28ab2', stroke: INK, 'stroke-width': 3 }),
     el('circle', { r: 11, fill: '#f6e7c8', stroke: INK, 'stroke-width': 3 })
   ]),
+  sunscreen: () => g([
+    el('rect', { x: -14, y: -26, width: 28, height: 50, rx: 8, fill: '#ffd25e', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -6, y: -36, width: 12, height: 12, rx: 3, fill: '#e0892e', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -14, y: -6, width: 28, height: 16, fill: '#fffaf0', stroke: INK, 'stroke-width': 2 }),
+    text(0, 6, 'SPF50', { size: 8.5, fill: '#c8412f' })
+  ]),
+  hat: () => g([
+    el('ellipse', { cx: 0, cy: 8, rx: 34, ry: 9, fill: '#d9b36a', stroke: INK, 'stroke-width': 3 }),
+    el('path', { d: 'M-18 8 q2 -26 18 -26 q16 0 18 26 z', fill: '#e8c77e', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -17, y: -2, width: 34, height: 6, fill: '#7a3b1e' })
+  ]),
+  longshirt: () => g([
+    el('path', { d: 'M-14 -26 h28 l26 22 l-10 10 l-16 -12 v36 h-28 v-36 l-16 12 l-10 -10 z', fill: '#fffaf0', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+    el('path', { d: 'M-6 -26 l6 8 l6 -8', stroke: INK, 'stroke-width': 2, fill: 'none' }),
+    el('line', { x1: 0, y1: -18, x2: 0, y2: 28, stroke: '#ccc', 'stroke-width': 2 })
+  ]),
+  umbrella: () => g([
+    el('path', { d: 'M-34 0 Q-34 -32 0 -32 Q34 -32 34 0 Q26 -6 17 0 Q8 -6 0 0 Q-8 -6 -17 0 Q-26 -6 -34 0 Z', fill: '#2f7fd0', stroke: INK, 'stroke-width': 3 }),
+    el('path', { d: 'M0 -32 Q-10 -16 -17 0 M0 -32 Q10 -16 17 0', stroke: '#fffaf0', 'stroke-width': 3, fill: 'none' }),
+    el('path', { d: 'M0 0 V28 q0 6 -6 6', stroke: INK, 'stroke-width': 3, fill: 'none' })
+  ]),
+  repellent: () => g([
+    el('rect', { x: -14, y: -22, width: 28, height: 48, rx: 6, fill: '#4f8a3c', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -8, y: -32, width: 16, height: 11, rx: 2, fill: '#ddd', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: 8, y: -30, width: 8, height: 4, fill: INK }),
+    el('rect', { x: -14, y: -4, width: 28, height: 16, fill: '#fffaf0', stroke: INK, 'stroke-width': 2 }),
+    text(0, 7, 'REPEL', { size: 9, fill: '#4f8a3c' })
+  ]),
+  perfume: () => g([
+    el('rect', { x: -16, y: -14, width: 32, height: 38, rx: 10, fill: '#f28ab2', stroke: INK, 'stroke-width': 3, opacity: .95 }),
+    el('rect', { x: -5, y: -26, width: 10, height: 12, fill: '#ffd25e', stroke: INK, 'stroke-width': 3 }),
+    el('circle', { cx: 0, cy: -30, r: 6, fill: '#c55a8a', stroke: INK, 'stroke-width': 2 }),
+    text(0, 10, '♥', { size: 14, fill: '#fffaf0' })
+  ]),
+  icecream: () => g([
+    el('path', { d: 'M-14 -4 L0 32 L14 -4 Z', fill: '#d9a35a', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+    el('circle', { cx: 0, cy: -12, r: 15, fill: '#f28ab2', stroke: INK, 'stroke-width': 3 }),
+    el('circle', { cx: 4, cy: -28, r: 4, fill: '#c8412f', stroke: INK, 'stroke-width': 2 })
+  ]),
+  phone: () => g([
+    el('rect', { x: -14, y: -26, width: 28, height: 52, rx: 6, fill: '#333', stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -10, y: -20, width: 20, height: 36, rx: 2, fill: '#7fb8d6' }),
+    el('circle', { cx: 0, cy: 21, r: 2.5, fill: '#999' })
+  ]),
+  swimmer: (sk = '#c68642', cap = '#c8412f') => g([
+    el('ellipse', { cx: 0, cy: 10, rx: 28, ry: 7, fill: 'rgba(255,255,255,.45)' }),
+    el('path', { d: 'M-22 2 q-8 -18 -2 -26', stroke: sk, 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }),
+    el('path', { d: 'M22 2 q8 -18 2 -26', stroke: sk, 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }),
+    el('circle', { cx: 0, cy: -6, r: 15, fill: sk, stroke: INK, 'stroke-width': 3 }),
+    el('path', { d: 'M-15 -8 q15 -22 30 0 z', fill: cap, stroke: INK, 'stroke-width': 3 }),
+    el('circle', { cx: -5, cy: -3, r: 2.5, fill: INK }), el('circle', { cx: 5, cy: -3, r: 2.5, fill: INK }),
+    el('path', { d: 'M-5 4 q5 4 10 0', stroke: INK, 'stroke-width': 2, fill: 'none' })
+  ]),
+  mozzie: () => g([
+    el('ellipse', { cx: -4, cy: -6, rx: 7, ry: 4, fill: 'rgba(255,255,255,.75)', stroke: INK, 'stroke-width': 1.5, transform: 'rotate(-30)' }),
+    el('ellipse', { cx: 4, cy: -6, rx: 7, ry: 4, fill: 'rgba(255,255,255,.75)', stroke: INK, 'stroke-width': 1.5, transform: 'rotate(30)' }),
+    el('ellipse', { cx: 0, cy: 0, rx: 7, ry: 3.5, fill: '#3a3a3a' }),
+    el('line', { x1: -7, y1: 0, x2: -15, y2: 3, stroke: '#3a3a3a', 'stroke-width': 2 }),
+    el('path', { d: 'M-3 2 l-4 7 M1 3 l0 7 M4 2 l4 7', stroke: '#3a3a3a', 'stroke-width': 1.2 })
+  ]),
+  stormcloud: () => g([
+    el('circle', { cx: -40, cy: 0, r: 28, fill: '#4b5363' }), el('circle', { cx: 0, cy: -16, r: 36, fill: '#565f71' }),
+    el('circle', { cx: 42, cy: -2, r: 30, fill: '#4b5363' }),
+    el('rect', { x: -66, y: 0, width: 132, height: 26, rx: 13, fill: '#4b5363' })
+  ]),
+  bolt: () => el('path', { d: 'M8 -40 L-14 6 H2 L-8 42 L22 -6 H6 L18 -40 Z', fill: '#ffe066', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
   tent: () => g([
     el('path', { d: 'M-40 20 L0 -32 L40 20 z', fill: '#e0892e', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
     el('path', { d: 'M0 -32 L-10 20 L10 20 z', fill: '#7a3b1e', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' })
@@ -245,6 +311,9 @@ export function iconFor(key) {
     flood: () => wrap('<path d="M-22 6 q11 -8 22 0 t22 0 M-22 16 q11 -8 22 0 t22 0" stroke="#2f7fd0" stroke-width="5" fill="none"/><path d="M-14 -4 h28 l-4 -12 h-20 z" fill="#c8412f" stroke="#1d1a16" stroke-width="3"/>', '#f6e7c8'),
     heat: () => { tmp.innerHTML = ''; tmp.appendChild(items.water()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     snake: () => { tmp.innerHTML = ''; tmp.appendChild(items.bandage()); return wrap(`<g transform="scale(.8)">${tmp.innerHTML}</g>`, '#e7f3d6'); },
+    lightning: () => { tmp.innerHTML = ''; tmp.appendChild(items.bolt()); return wrap(`<g transform="scale(.6)">${tmp.innerHTML}</g>`, '#4b5363'); },
+    mozzies: () => { tmp.innerHTML = ''; tmp.appendChild(items.mozzie()); return wrap(`<g transform="scale(1.6)">${tmp.innerHTML}</g>`, '#e3d4f0'); },
+    sun: () => { tmp.innerHTML = ''; tmp.appendChild(items.hat()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8')
   };
   return (pick[key] || pick.crocwise)();

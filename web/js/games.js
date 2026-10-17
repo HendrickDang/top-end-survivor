@@ -15,6 +15,57 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const place = (node, x, y, s = 1) => { node.setAttribute('transform', `translate(${x} ${y}) scale(${s})`); return node; };
 
+// Lets a game ask for a sound effect without importing the sound module.
+function sfxHook(ctx, name) { ctx.sound && ctx.sound(name); }
+
+function swirlAt(x, y) {
+  return el('path', { d: `M${x} ${y} m-28 0 a28 28 0 1 1 28 28 a17 17 0 1 1 -14 -17`, stroke: '#9b8fd6', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' });
+}
+
+function houseInside(calm = false) {
+  return g([
+    el('rect', { x: 30, y: 150, width: 300, height: 240, fill: '#e9dcc0', stroke: '#1d1a16', 'stroke-width': 4 }),
+    el('rect', { x: 200, y: 180, width: 100, height: 90, fill: calm ? '#9fd8ef' : '#3a3d66', stroke: '#1d1a16', 'stroke-width': 4 }),
+    el('line', { x1: 250, y1: 180, x2: 250, y2: 270, stroke: '#1d1a16', 'stroke-width': 3 }),
+    calm ? sun(250, 225, 12) : el('path', { d: 'M210 200 q20 10 40 0 t40 0 M210 230 q20 10 40 0 t40 0', stroke: '#fffaf0', 'stroke-width': 3, fill: 'none' }),
+    el('rect', { x: 60, y: 230, width: 70, height: 160, fill: '#b98b5a', stroke: '#1d1a16', 'stroke-width': 4 }),
+    text(95, 220, 'BATHROOM', { size: 12 }),
+    person({ x: 160, y: 380, s: .8, mood: calm ? 'happy' : 'scared' })
+  ]);
+}
+
+// A boss is a 3-step mini story. Each step shows a caption and two choices.
+function boss(id, title, bg, failKind, steps) {
+  return {
+    id, boss: true, seconds: 15, failKind, prompt: '👑 BOSS: ' + title, bg,
+    setup(ctx) {
+      let i = 0;
+      const progress = text(W / 2, 30, '', { size: 16, fill: '#ffe9a8', stroke: '#1d1a16', strokeWidth: 4 });
+      const draw = () => {
+        const step = steps[i];
+        while (ctx.svg.firstChild) ctx.svg.firstChild.remove();
+        ctx.svg.append(el('rect', { x: 0, y: 0, width: W, height: H, fill: bg }));
+        step.draw(ctx.svg);
+        progress.textContent = `BOSS: ${title}  ·  ${i + 1} / ${steps.length}`;
+        ctx.svg.append(progress);
+        step.caption.forEach((line, k) => ctx.svg.append(text(W / 2, 120 + k * 30, line, { size: 24, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 6 })));
+        ctx.clearButtons();
+        ctx.buttons(shuffle(step.choices).map(c => ({
+          label: c.label, ok: c.ok,
+          onPick: () => {
+            if (!c.ok) { ctx.failTip = c.tip; ctx.lose(); return; }
+            i++;
+            if (i >= steps.length) { ctx.win(); return; }
+            ctx.sound && ctx.sound('coin');
+            draw();
+          }
+        })));
+      };
+      draw();
+    }
+  };
+}
+
 export const GAMES = [
 
   // 1. Fishing too close to the edge: tap to back away past the 5 m line.
@@ -340,5 +391,199 @@ export const GAMES = [
         { label: 'Wait & see', ok: false }
       ]));
     }
-  }
+  },
+
+  // 11. Storm over the pool: tap every swimmer to get them out before lightning strikes.
+  {
+    id: 'lightning-pool', prompt: 'STORM! EVERYONE OUT!', bg: '#5b6478',
+    setup(ctx) {
+      const { svg } = ctx;
+      svg.append(
+        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#5b6478' }),
+        el('rect', { x: 0, y: 360, width: W, height: 120, fill: '#cbb894' }),
+        el('rect', { x: 20, y: 180, width: 320, height: 190, rx: 14, fill: '#3fa7c9', stroke: '#fffaf0', 'stroke-width': 8 }),
+        el('path', { d: 'M40 230 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0', stroke: 'rgba(255,255,255,.4)', 'stroke-width': 4, fill: 'none' }),
+        el('path', { d: 'M40 300 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0', stroke: 'rgba(255,255,255,.4)', 'stroke-width': 4, fill: 'none' }),
+        text(W / 2, 410, 'TAP THE SWIMMERS', { size: 15, fill: 'rgba(29,26,22,.5)' })
+      );
+      const cloud = items.stormcloud();
+      svg.append(place(cloud, 260, 70, 1.1));
+      const boltNode = items.bolt();
+      boltNode.setAttribute('opacity', 0);
+      svg.append(place(boltNode, 240, 130, 1));
+      sfxHook(ctx, 'thunder');
+      const counter = text(60, 165, '0 / 3', { size: 18, fill: '#fffaf0' });
+      svg.append(counter);
+      const spots = shuffle([[70, 230], [180, 300], [290, 240], [120, 320], [250, 330]]).slice(0, 3);
+      const skins = shuffle(['#8d5524', '#c68642', '#f1c27d']);
+      const caps = shuffle(['#c8412f', '#ffd25e', '#4f8a3c']);
+      let out = 0;
+      spots.forEach(([x, y], i) => {
+        const node = items.swimmer(skins[i], caps[i]);
+        node.setAttribute('data-ok', 'true');
+        node.classList.add('tap-target');
+        node.insertBefore(el('circle', { r: 40, fill: 'transparent' }), node.firstChild);
+        place(node, x, y, 1.1);
+        node.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          node.removeAttribute('data-ok');
+          node.style.pointerEvents = 'none';
+          node.style.transition = 'transform .3s ease-out';
+          place(node, 40 + out * 50, 420, .8);
+          out++;
+          counter.textContent = `${out} / 3`;
+          if (out === 3) ctx.win();
+        });
+        svg.append(node);
+      });
+      ctx.onTick((p) => {
+        // flicker the bolt more often as time runs out
+        boltNode.setAttribute('opacity', Math.random() < p * 0.12 ? 1 : 0);
+      });
+    }
+  },
+
+  // 12. Dusk at the campsite: drag the repellent onto the camper before the mozzies swarm.
+  {
+    id: 'mozzie-dusk', prompt: 'MOZZIES!', bg: '#6a4c93',
+    setup(ctx) {
+      const { svg } = ctx;
+      svg.append(
+        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#6a4c93' }),
+        el('circle', { cx: 290, cy: 250, r: 44, fill: '#f4845f' }),
+        el('rect', { x: 0, y: 250, width: W, height: 230, fill: '#3d5a3a' }),
+        el('path', { d: 'M0 250 q60 -30 120 0 t120 0 t120 0', fill: '#2f4a2c' }),
+        text(90, 60, 'DUSK', { size: 26, fill: '#ffd25e', stroke: '#1d1a16', strokeWidth: 5 })
+      );
+      const camper = person({ x: 180, y: 330, s: 1.1, shirt: '#e0892e', mood: 'meh' });
+      svg.append(camper);
+      sfxHook(ctx, 'buzz');
+      const bugs = [];
+      for (let i = 0; i < 6; i++) {
+        const m = items.mozzie();
+        const b = { node: m, a: Math.random() * 6.28, r: 70 + Math.random() * 40, sp: 2 + Math.random() * 2 };
+        svg.append(m); bugs.push(b);
+      }
+      ctx.onTick((p, dt) => {
+        for (const b of bugs) {
+          b.a += b.sp * dt * ctx.speed;
+          const r = b.r * (1 - p * 0.6);
+          place(b.node, 180 + Math.cos(b.a) * r, 250 + Math.sin(b.a * 1.3) * r * .6, 1.2);
+        }
+      });
+      const opts = shuffle([['repellent', true], ['perfume', false], ['icecream', false]]);
+      opts.forEach(([key, ok], i) => {
+        const node = items[key]();
+        node.setAttribute('data-ok', ok);
+        svg.append(node);
+        ctx.draggable(node, 70 + i * 110, 420, {
+          scale: 1.2,
+          onDrop: (x, y) => {
+            if (x > 110 && x < 250 && y > 180 && y < 350) { ok ? ctx.win() : ctx.lose(); return; }
+            return 'reset';
+          }
+        });
+      });
+    }
+  },
+
+  // 13. Beach in the midday sun: tap the three sun-safe items.
+  {
+    id: 'sun-slip', prompt: 'SLIP SLOP SLAP!', bg: '#9fdcef',
+    setup(ctx) {
+      const { svg } = ctx;
+      svg.append(
+        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#9fdcef' }),
+        sun(300, 60, 30),
+        el('rect', { x: 0, y: 170, width: W, height: 310, fill: '#f2d89b' }),
+        text(110, 60, 'UV: EXTREME', { size: 20, fill: '#c8412f', stroke: '#fffaf0', strokeWidth: 5 })
+      );
+      const counter = text(W / 2, 395, '0 / 3', { size: 18 });
+      svg.append(counter);
+      const good = shuffle(['longshirt', 'sunscreen', 'hat', 'sunnies', 'umbrella']).slice(0, 3);
+      const bad = shuffle(['icecream', 'phone', 'beachball', 'fizzy']).slice(0, 3);
+      const all = shuffle([...good.map(k => [k, true]), ...bad.map(k => [k, false])]);
+      let got = 0;
+      all.forEach(([key, ok], i) => {
+        const node = items[key]();
+        node.setAttribute('data-ok', ok);
+        node.insertBefore(el('circle', { r: 42, fill: 'transparent' }), node.firstChild);
+        node.classList.add('tap-target');
+        place(node, 70 + (i % 3) * 110, 225 + Math.floor(i / 3) * 105, 1.05);
+        node.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          if (!ok) { ctx.lose(); return; }
+          node.removeAttribute('data-ok');
+          node.style.pointerEvents = 'none';
+          node.style.transition = 'transform .25s ease-in';
+          place(node, 120 + got * 60, 440, .55);
+          got++;
+          counter.textContent = `${got} / 3`;
+          if (got === 3) ctx.win();
+        });
+        svg.append(node);
+      });
+    }
+  },
+
+  // BOSS 1: Cyclone Night. Three decisions in a row; one wrong move loses a life.
+  boss('boss-cyclone', 'CYCLONE NIGHT', '#2d2f52', 'blowaway', [
+    {
+      caption: ['A cyclone warning is out', 'for tonight!'],
+      draw(svg) { svg.append(place(items.radio(), 180, 260, 2)); svg.append(swirlAt(70, 330)); },
+      choices: [
+        { label: 'Check the kit & listen to the radio', ok: true },
+        { label: 'Drive to the beach to watch', ok: false, tip: 'When a cyclone is coming, stay home, check your kit and listen to the radio for updates.' }
+      ]
+    },
+    {
+      caption: ['The wind is howling!', 'Where do you shelter?'],
+      draw(svg) { svg.append(houseInside()); },
+      choices: [
+        { label: 'Strongest room, away from windows', ok: true },
+        { label: 'By the big window to watch', ok: false, tip: 'Shelter in the strongest part of the house and stay well clear of windows.' }
+      ]
+    },
+    {
+      caption: ['Suddenly... it is calm', 'and quiet outside.'],
+      draw(svg) { svg.append(houseInside(true)); },
+      choices: [
+        { label: 'Stay inside, it is the eye', ok: true },
+        { label: 'Go out, it is over', ok: false, tip: 'Beware the calm eye: violent winds can return from the other direction. Stay inside.' }
+      ]
+    }
+  ]),
+
+  // BOSS 2: Croc Creek.
+  boss('boss-croc', 'CROC CREEK', '#3f6b45', 'chomp', [
+    {
+      caption: ['Hot day at the creek.', 'No signs anywhere.'],
+      draw(svg) { svg.append(water(300, 180), person({ x: 180, y: 280, s: .9 })); },
+      choices: [
+        { label: 'Jump in to cool off', ok: false, tip: 'Never swim where crocs may live. Only swim in signed swimming areas.' },
+        { label: 'Stay out of the water', ok: true }
+      ]
+    },
+    {
+      caption: ['Time to fish.', 'Where do you stand?'],
+      draw(svg) {
+        svg.append(water(300, 180));
+        svg.append(el('rect', { x: 200, y: 285, width: 150, height: 18, rx: 9, fill: '#7a5b1e', stroke: '#1d1a16', 'stroke-width': 3 }));
+        svg.append(text(275, 275, 'LOG', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 }));
+      },
+      choices: [
+        { label: 'On the log over the water', ok: false, tip: 'Never stand on logs over the water. Stand at least 5 m back from the edge.' },
+        { label: '5 m back from the edge', ok: true }
+      ]
+    },
+    {
+      caption: ['Your lure is snagged', 'in the water!'],
+      draw(svg) { svg.append(water(300, 180), crocEyes({ x: 220, y: 340, s: .8 })); },
+      choices: [
+        { label: 'Wade in to grab it', ok: false, tip: 'Never go into the water to get a lure back. Cut the line.' },
+        { label: 'Cut the line, leave it', ok: true }
+      ]
+    }
+  ])
+
 ];

@@ -14,7 +14,7 @@ Every year newcomers and visitors to the Top End get hurt by hazards locals take
 
 Each mini-game maps to one official source (NT Government, NT Health, SecureNT, NTPFES, AVRU). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
 
-## The ten mini-games
+## The mini-games
 
 | Mini-game | You must... | Real rule it teaches | Source |
 |---|---|---|---|
@@ -28,6 +28,21 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | HYDRATE! | Keep tapping water, avoid the fizzy drink | 2 to 3 L of water a day, skip sugary drinks | NT Health |
 | FIRST AID! | Drag the wide bandage onto the bite | Pressure immobilisation; don't cut, suck or tourniquet | AVRU, Uni Melbourne |
 | SMOKE! | Choose to leave | Leaving early is the safest choice | NTPFES |
+| STORM! EVERYONE OUT! | Tap every swimmer out of the pool | Leave the water when a storm is close; wait 30 min after the last thunder | Swimming NT |
+| MOZZIES! | Drag the repellent onto the camper | Repellent and long, light sleeves at dusk and dawn | NT Health |
+| SLIP SLOP SLAP! | Tap the 3 sun-safe items | Slip, slop, slap, seek, slide | Cancer Council |
+| BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
+| BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
+
+### Play every day (v1.2)
+
+- **Daily Challenge:** everyone in the NT gets the same 9 hazards plus a boss each day (seeded by the Darwin date, checked by the server). Unlimited tries, your best score counts on the Daily board, and a Wordle-style emoji result to share in group chats. Day streaks and a "Daily Regular" badge reward coming back.
+- **3 new hazards:** storm over the pool (lightning), mozzies at dusk, slip slop slap in the sun.
+- **Boss rounds** every 10th round: *Cyclone Night* and *Croc Creek*, 3 decisions in a row, +200 if you survive.
+- **In season now:** hazards in season in the Top End right now (stingers, cyclones, extreme heat) appear more often, and the menu says so.
+- **Install it:** one-tap "Install the game" button (Android/desktop), step-by-step help on iPhone, and an optional direct Android APK download (`server/downloads/`). Installing unlocks the "Local" badge.
+- **Your weak spot:** game over shows the hazard you miss most, with the rule to remember.
+- **Booth attract mode:** after 45 seconds with no new players, the booth screen shows a self-playing demo with a giant QR code. It switches back the moment someone plays (press `A` to toggle). New "played again" stat shows how many people came back for another go.
 
 ### Fun factor (v1.1)
 
@@ -147,6 +162,10 @@ docs/DEMO.md         submission checklist and demo-day plan
 - NT Government, *Heat stress* - https://nt.gov.au/wellbeing/health-conditions-treatments/heat-stress
 - Australian Venom Research Unit, *Pressure immobilisation first aid* - https://biomedicalsciences.unimelb.edu.au/departments/pharmacology/engage/avru/discover/first-aid/pressure-immobilisation-first-aid
 - NTPFES, *Bushfire survival plan* - https://pfes.nt.gov.au/file/download/36012
+- Swimming NT, *Lightning policy* - https://nt.swimming.org.au/sites/default/files/assets/documents/SNT%20Lightning%20Policy%20-%20SNT-POL-007.pdf
+- NT Health, *Murray Valley encephalitis public health alert* (mosquito protection) - https://health.nt.gov.au/news/2023/murray-valley-encephalitis-public-health-alert2
+- Cancer Council, *Slip, slop, slap, seek, slide* - https://www.cancercouncil.com.au/cancer-prevention/sun-protection/preventing-skin-cancer/slip-slop-slap-seek-slide/
+- SecureNT, *Emergency plan: evacuate or stay* (cyclone shelter) - https://securent.nt.gov.au/prepare-for-an-emergency/weather-events/cyclones/emergency-plan-evacuate-or-stay
 
 This game is a learning tool, not medical advice. In an emergency call 000.
 

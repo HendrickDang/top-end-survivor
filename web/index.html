@@ -23,11 +23,15 @@
         <h1 class="logo">Top End<br><span>Survivor</span></h1>
         <p class="tagline">Ten seconds of panic. A lifetime of croc sense.</p>
         <button class="btn btn-primary btn-big" id="btn-play">Play</button>
+        <button class="btn btn-daily" id="btn-daily">📅 Daily Challenge<small id="daily-sub">New challenge today!</small></button>
+        <p class="chips"><span id="daily-streak-chip"></span></p>
         <div class="menu-row">
           <button class="btn" id="btn-board">Leaderboard</button>
           <button class="btn" id="btn-learn">Safety tips</button>
           <button class="btn" id="btn-badges">Badges</button>
         </div>
+        <button class="btn btn-install" data-install hidden>📲 Install the game · free badge</button>
+        <p class="season-chip" id="season-chip"></p>
         <p class="menu-foot"><span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
       </div>
     </section>
@@ -57,10 +61,16 @@
     <!-- GAME OVER -->
     <section class="screen" id="screen-over" aria-label="Game over">
       <div class="panel">
-        <h2>Game over</h2>
+        <h2 id="over-title">Game over</h2>
         <p class="big-score"><span id="over-score">0</span><small>points</small></p>
         <p class="sub" id="over-rounds"></p>
+        <div class="over-daily" id="over-daily" hidden>
+          <div class="daily-grid" id="daily-grid"></div>
+          <p class="sub" id="daily-streak"></p>
+          <button class="btn btn-share" id="btn-share-daily">📋 Share my Daily result</button>
+        </div>
         <div class="over-badges" id="over-badges" hidden></div>
+        <p class="over-weak" id="over-weak" hidden></p>
         <button class="btn btn-share" id="btn-share">📸 Share my score card</button>
         <form id="submit-form" class="submit-form" autocomplete="off">
           <label for="player-name">Name for the leaderboard</label>
@@ -76,6 +86,7 @@
           <button class="btn btn-primary" id="btn-again">Play again</button>
           <button class="btn" id="btn-over-menu">Menu</button>
         </div>
+        <button class="btn btn-install" data-install hidden>📲 Play every day: install the game</button>
         <p class="vote-nudge">Enjoyed it? Tell the judges: <b>Team CAP003</b> 🐊</p>
       </div>
     </section>
@@ -86,6 +97,7 @@
         <h2>Leaderboard</h2>
         <div class="tabs" role="tablist">
           <button class="tab active" data-period="today" role="tab">Today</button>
+          <button class="tab" data-period="daily" role="tab">Daily</button>
           <button class="tab" data-period="all" role="tab">All time</button>
         </div>
         <ol class="board" id="board-list"></ol>
@@ -115,6 +127,23 @@
       </div>
     </section>
 
+    <!-- INSTALL HELP -->
+    <div class="sheet" id="install-sheet" hidden>
+      <div class="sheet-card">
+        <h3>📲 Put Top End Survivor on your phone</h3>
+        <div id="install-ios">
+          <p><b>iPhone / iPad (Safari):</b></p>
+          <ol><li>Tap the <b>Share</b> button (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>.</li><li>Open it from your home screen to unlock the <b>Local</b> badge.</li></ol>
+        </div>
+        <div id="install-apk">
+          <p><b>Android:</b> download the app, then allow "install unknown apps" when asked.</p>
+          <a class="btn btn-primary" href="/app.apk" download>Download the Android app</a>
+        </div>
+        <p class="sub small">Works offline, so you can play anywhere in the Territory.</p>
+        <button class="btn" id="install-close">Close</button>
+      </div>
+    </div>
+    <div class="demo-ribbon">DEMO · Scan the QR to play on your phone!</div>
   </main>
 
   <script src="js/config.js"></script>

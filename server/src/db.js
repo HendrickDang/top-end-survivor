@@ -33,19 +33,23 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
     );
     CREATE INDEX IF NOT EXISTS idx_results_game ON results(game);
   `);
+  // v1.2 migration: game mode (classic or daily). Safe to run on an existing database.
+  const cols = db.prepare('PRAGMA table_info(runs)').all().map(c => c.name);
+  if (!cols.includes('mode')) db.exec("ALTER TABLE runs ADD COLUMN mode TEXT NOT NULL DEFAULT 'classic'");
+  db.exec('CREATE INDEX IF NOT EXISTS idx_runs_mode_day ON runs(mode, day, score DESC)');
   return db;
 }
 
 export function makeRepo(db) {
-  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day, mode)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insRes = db.prepare('INSERT INTO results (run_id, idx, game, ok, ms) VALUES (?, ?, ?, ?, ?)');
 
   return {
     addRun(run, name, day) {
       db.exec('BEGIN');
       try {
-        const { lastInsertRowid } = insRun.run(run.clientId, name || null, run.score, run.rounds, run.wins, run.durationMs, run.appVersion, day);
+        const { lastInsertRowid } = insRun.run(run.clientId, name || null, run.score, run.rounds, run.wins, run.durationMs, run.appVersion, run.day || day, run.mode || 'classic');
         const id = Number(lastInsertRowid);
         run.results.forEach((r, i) => insRes.run(id, i, r.g, r.ok ? 1 : 0, r.ms));
         db.exec('COMMIT');
@@ -57,8 +61,8 @@ export function makeRepo(db) {
     setName: (id, name) => db.prepare('UPDATE runs SET name = ? WHERE id = ?').run(name, id),
 
     // Best named run per player (client + name), highest first.
-    leaderboard({ day = null, limit = 20, client = null } = {}) {
-      const where = day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL';
+    leaderboard({ day = null, limit = 20, client = null, mode = 'classic' } = {}) {
+      const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ` AND mode = '${mode === 'daily' ? 'daily' : 'classic'}'`;
       const rows = db.prepare(`
         SELECT name, client_id, MAX(score) AS score, MAX(rounds) AS rounds, MIN(created_at) AS first_at
         FROM runs ${where}
@@ -83,13 +87,18 @@ export function makeRepo(db) {
         GROUP BY r.game`).all(...args)
         .map(g => ({ ...g, failRate: g.plays ? +(g.fails / g.plays).toFixed(3) : 0 }))
         .sort((a, b) => b.failRate - a.failRate || b.plays - a.plays);
-      return { ...totals, games };
+      // Engagement: how many players came back for another go.
+      const per = db.prepare(`SELECT client_id, COUNT(*) AS n FROM runs ${runWhere} GROUP BY client_id`).all(...args);
+      const replayers = per.filter(p => p.n > 1).length;
+      const replayRate = per.length ? +(replayers / per.length).toFixed(3) : 0;
+      const dailyPlayers = db.prepare(`SELECT COUNT(DISTINCT client_id) AS n FROM runs ${runWhere ? runWhere + ' AND' : 'WHERE'} mode = 'daily'`).get(...args).n;
+      return { ...totals, games, replayers, replayRate, dailyPlayers };
     },
 
     // Recent runs for the booth's live feed, with the game that ended each run.
     feed({ day = null, limit = 12 } = {}) {
       return db.prepare(`
-        SELECT u.id, u.name, u.score, u.rounds, u.created_at AS at,
+        SELECT u.id, u.name, u.score, u.rounds, u.mode, u.created_at AS at,
                (SELECT game FROM results r WHERE r.run_id = u.id ORDER BY idx DESC LIMIT 1) AS killedBy
         FROM runs u ${day ? 'WHERE u.day = ?' : ''}
         ORDER BY u.id DESC LIMIT ?`).all(...(day ? [day, limit] : [limit]));

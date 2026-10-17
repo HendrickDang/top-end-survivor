@@ -10,7 +10,7 @@ window.TES_CONFIG = {
   ANDROID_API_BASE: 'https://top-end-survivor.onrender.com',
   // Public link to the game (used on the share card QR). Leave '' to use this page's address.
   PUBLIC_URL: '',
-  APP_VERSION: '1.1.0'
+  APP_VERSION: '1.2.0'
 };
 (function () {
   try {

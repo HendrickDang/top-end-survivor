@@ -13,7 +13,13 @@ export const BADGES = [
   { id: 'heat', icon: '💧', name: 'Heat Beater', hint: `Survive ${NEED} heat rounds`, topic: 'heat' },
   { id: 'snake', icon: '🩹', name: 'First Aider', hint: `Survive ${NEED} snake bite rounds`, topic: 'snake' },
   { id: 'bushfire', icon: '🔥', name: 'Fire Ready', hint: `Survive ${NEED} bushfire rounds`, topic: 'bushfire' },
-  { id: 'streak5', icon: '⚡', name: 'On a Roll', hint: 'Win 5 rounds in a row' },
+  { id: 'lightning', icon: '⛈️', name: 'Storm Smart', hint: `Survive ${NEED} storm rounds`, topic: 'lightning' },
+  { id: 'mozzies', icon: '🦟', name: 'Mozzie Proof', hint: `Survive ${NEED} mozzie rounds`, topic: 'mozzies' },
+  { id: 'sun', icon: '😎', name: 'Sun Smart', hint: `Survive ${NEED} sun rounds`, topic: 'sun' },
+  { id: 'boss', icon: '👑', name: 'Boss Beater', hint: 'Beat a boss round (every 10th round)' },
+  { id: 'daily3', icon: '📅', name: 'Daily Regular', hint: 'Play the Daily Challenge 3 days in a row' },
+  { id: 'install', icon: '📲', name: 'Local', hint: 'Install the game on your phone' },
+  { id: 'streak5', icon: '🎯', name: 'On a Roll', hint: 'Win 5 rounds in a row' },
   { id: 'all10', icon: '🗺️', name: 'Top End Tourist', hint: 'Survive all 10 different games in one run' },
   { id: 'score1500', icon: '🏆', name: 'Top End Legend', hint: 'Score 1,500 in one run' },
   { id: 'comeback', icon: '❤️', name: 'Never Say Die', hint: 'Survive 5 rounds on your last life' },
@@ -39,8 +45,9 @@ export function evaluateRun(results, score) {
   const survived = new Set();
   for (const r of results) {
     if (r.ok) {
-      const topic = LESSONS[r.g]?.source;
+      const topic = r.g.startsWith('boss-') ? null : LESSONS[r.g]?.source;
       if (topic) s.topicWins[topic] = (s.topicWins[topic] || 0) + 1;
+      if (r.g.startsWith('boss-')) grant(s, 'boss', fresh);
       survived.add(r.g);
       streak++; best = Math.max(best, streak);
       if (losses === 2) lastLifeWins++;
@@ -52,6 +59,19 @@ export function evaluateRun(results, score) {
   if (score >= 1500) grant(s, 'score1500', fresh);
   if (lastLifeWins >= 5) grant(s, 'comeback', fresh);
   save(s);
+  return fresh;
+}
+
+export function grantDailyStreak(days) {
+  const s = load(); const fresh = [];
+  if (days >= 3) grant(s, 'daily3', fresh);
+  save(s);
+  return fresh;
+}
+
+export function grantInstall() {
+  const s = load(); const fresh = [];
+  grant(s, 'install', fresh); save(s);
   return fresh;
 }
 

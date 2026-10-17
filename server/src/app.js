@@ -3,10 +3,13 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
+import fs from 'node:fs';
 import { validateRun, cleanName, darwinDay } from './scoring.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = path.resolve(__dirname, '../../web');
+// Optional: put the Android APK here (downloaded from GitHub Actions) to serve it at /app.apk.
+const APK_PATH = process.env.APK_PATH || path.resolve(__dirname, '../downloads/top-end-survivor.apk');
 
 // Simple fixed-window rate limiter (per IP). Good enough for one booth + phones.
 function rateLimit({ windowMs, max }) {
@@ -44,11 +47,16 @@ export function createApp(repo, opts = {}) {
   const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? 40 });
   const today = () => darwinDay(now());
 
-  app.get('/api/health', (req, res) => res.json({ ok: true, day: today() }));
+  app.get('/api/health', (req, res) => res.json({ ok: true, day: today(), apk: fs.existsSync(APK_PATH) }));
+
+  app.get('/app.apk', (req, res) => {
+    if (!fs.existsSync(APK_PATH)) return res.status(404).send('The Android app is not available yet.');
+    res.download(APK_PATH, 'top-end-survivor.apk', { headers: { 'Content-Type': 'application/vnd.android.package-archive' } });
+  });
 
   // Submit a finished run (name optional, can be attached later).
   app.post('/api/runs', writeLimit, (req, res) => {
-    const v = validateRun(req.body);
+    const v = validateRun(req.body, { today: today() });
     if (v.error) return res.status(400).json({ error: v.error });
     let name = null;
     if (req.body.name != null) {
@@ -73,10 +81,12 @@ export function createApp(repo, opts = {}) {
   });
 
   app.get('/api/leaderboard', (req, res) => {
-    const period = req.query.period === 'all' ? 'all' : 'today';
+    const period = ['all', 'daily'].includes(req.query.period) ? req.query.period : 'today';
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const client = typeof req.query.client === 'string' ? req.query.client : null;
-    const entries = repo.leaderboard({ day: period === 'today' ? today() : null, limit, client });
+    const entries = repo.leaderboard({
+      day: period === 'all' ? null : today(), limit, client, mode: period === 'daily' ? 'daily' : 'classic'
+    });
     res.json({ period, day: today(), entries });
   });
 

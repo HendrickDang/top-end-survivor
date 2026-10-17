@@ -30,7 +30,7 @@
     .board .s { font-weight: 800; }
     .board li.new { animation: flash 1.2s ease-out 3; }
     @keyframes flash { 50% { background: var(--ochre); color: var(--white); } }
-    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vw; margin-bottom: 1.2vw; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1vw; margin-bottom: 1.2vw; }
     .kpi { background: var(--white); border: 3px solid var(--ink); border-radius: 14px; padding: .6vw; text-align: center; }
     .kpi b { display: block; font-size: 2.6vw; line-height: 1; }
     .kpi span { font-size: 1vw; }
@@ -56,6 +56,21 @@
     @keyframes rec { 0% { opacity: 0; transform: scale(.6); } 10% { opacity: 1; transform: scale(1.05); } 15% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
     .snd { position: fixed; top: 1vw; right: 1vw; z-index: 11; font-size: 1.4vw; border: 3px solid var(--ink); border-radius: 12px; background: var(--white); padding: .3vw .8vw; cursor: pointer; font-family: inherit; font-weight: 700; }
     canvas#conf { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 12; }
+    .attract { position: fixed; inset: 0; z-index: 9; background: radial-gradient(circle at 30% 40%, #17524f, #0f3b3a 70%); display: none; align-items: center; justify-content: center; gap: 5vw; padding: 2vw 4vw 7vw; }
+    .attract.show { display: flex; animation: fadein .6s ease; }
+    @keyframes fadein { from { opacity: 0; } }
+    .phone { width: 22vw; aspect-ratio: 390 / 760; border: 1vw solid var(--ink); border-radius: 3vw; overflow: hidden; background: var(--ink); box-shadow: 0 2vw 4vw rgba(0,0,0,.5); transform: rotate(-3deg); }
+    .phone iframe { width: 390px; height: 760px; border: 0; transform-origin: 0 0; pointer-events: none; }
+    .attract-copy { color: var(--white); max-width: 46vw; }
+    .attract-copy h2 { font-size: 5.4vw; line-height: .95; margin: 0 0 1.5vw; text-shadow: 0 .5vw 0 var(--ink); }
+    .attract-copy h2 span { color: #ffe9a8; }
+    .attract-copy p { font-size: 2vw; margin: 0 0 1.5vw; }
+    .attract-qr { display: flex; gap: 2vw; align-items: center; }
+    .attract-qr img { width: 16vw; height: 16vw; background: var(--white); border: .6vw solid var(--ink); border-radius: 1.2vw; padding: .6vw; }
+    .attract-qr b { font-size: 2.6vw; line-height: 1.1; }
+    .apkqr { display: none; align-items: center; gap: .8vw; background: #fffaf0; border: 3px solid var(--ink); border-radius: 12px; padding: .4vw .8vw; font-size: 1.1vw; font-weight: 700; }
+    .apkqr img { width: 5vw; height: 5vw; }
+    .apkqr.show { display: flex; }
     .status { position: fixed; bottom: 6.6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
   </style>
 </head>
@@ -66,6 +81,7 @@
       <div class="qr"><img id="qr" alt="QR code to play the game"></div>
       <p class="scan">Scan to play on your phone</p>
       <div class="challenge" id="challenge">Be the first on the board!</div>
+      <div class="apkqr" id="apkqr"><img id="apkqr-img" alt="QR code to download the Android app"><span>🤖 Android app:<br>scan to download</span></div>
       <p class="url" id="url"></p>
     </section>
 
@@ -81,6 +97,7 @@
         <div class="kpi"><b id="k-players">0</b><span>players</span></div>
         <div class="kpi"><b id="k-rounds">0</b><span>rounds played</span></div>
         <div class="kpi"><b id="k-top">0</b><span>top score</span></div>
+        <div class="kpi"><b id="k-replay">0%</b><span>played again</span></div>
       </div>
       <div class="bars" id="bars"></div>
       <p class="note">% of attempts failed, live from every game played today. Each mistake teaches an official NT safety rule.</p>
@@ -91,6 +108,15 @@
   <div class="record" id="record"><h3>NEW #1!</h3><p id="record-who"></p></div>
   <button class="snd" id="snd">🔇 Sound off</button>
   <canvas id="conf"></canvas>
+  <div class="attract" id="attract">
+    <div class="phone"><iframe id="demo" title="Game demo" tabindex="-1"></iframe></div>
+    <div class="attract-copy">
+      <h2>Can you survive<br><span>the Top End?</span></h2>
+      <p>13 deadly-funny Top End hazards. A few seconds each. Real NT safety rules.</p>
+      <div class="attract-qr"><img id="attract-qr" alt="QR code to play"><b>Scan to play<br>on your phone 📱</b></div>
+      <p id="attract-challenge" style="margin-top:1.5vw"></p>
+    </div>
+  </div>
 
   <script type="module">
     import { GAME_LABELS } from './js/lessons.js';
@@ -107,8 +133,30 @@
       'croc-edge': "got croc'd while fishing", 'swim-sign': "got croc'd going for a swim", 'croc-camp': "got croc'd at camp",
       'stinger-vinegar': 'got zapped by a stinger', 'stinger-suit': 'got zapped by a stinger',
       'cyclone-kit': 'got blown away by a cyclone', 'flood-road': 'got washed away at a floodway',
-      'heat-drink': 'got cooked like a snag', 'snake-bite': 'botched the snake bite first aid', 'bushfire-leave': 'left the bushfire too late'
+      'heat-drink': 'got cooked like a snag', 'snake-bite': 'botched the snake bite first aid', 'bushfire-leave': 'left the bushfire too late',
+      'lightning-pool': 'got frazzled by lightning', 'mozzie-dusk': 'got eaten alive by mozzies', 'sun-slip': 'went full lobster in the sun',
+      'boss-cyclone': 'lost to the Cyclone Night boss', 'boss-croc': 'lost to the Croc Creek boss'
     };
+
+    // ---- attract mode: after a quiet spell, show a self-playing demo + big QR ----
+    const IDLE_MS = Number(params.get('idle') || 45) * 1000;
+    let lastActivity = Date.now(), attractOn = false;
+    $('#attract-qr').src = $('#qr').src;
+    function fitDemo() {
+      const ph = document.querySelector('.phone');
+      const f = $('#demo');
+      f.style.transform = `scale(${ph.clientWidth / 390})`;
+    }
+    function setAttract(on) {
+      if (on === attractOn || params.get('attract') === '0') return;
+      attractOn = on;
+      $('#attract').classList.toggle('show', on);
+      if (on) { $('#demo').src = '/?demo=1'; requestAnimationFrame(fitDemo); }
+      else $('#demo').src = 'about:blank';
+    }
+    addEventListener('resize', fitDemo);
+    addEventListener('keydown', (e) => { if (e.key === 'a') { lastActivity = attractOn ? Date.now() : 0; setAttract(!attractOn); } });
+    setInterval(() => { if (!attractOn && Date.now() - lastActivity > IDLE_MS) setAttract(true); }, 1000);
     $('#snd').onclick = async () => {
       soundOn = !soundOn;
       if (!sfx) ({ sfx } = await import('./js/sound.js'));
@@ -137,6 +185,13 @@
       if (soundOn && sfx) sfx.fanfare();
     }
 
+    fetch(`${api}/api/health`).then(r => r.json()).then(h => {
+      if (!h.apk) return;
+      const apkUrl = (params.get('play') || location.origin + '/').replace(/\/$/, '') + '/app.apk';
+      $('#apkqr-img').src = `${api}/api/qr.svg?url=${encodeURIComponent(apkUrl)}`;
+      $('#apkqr').classList.add('show');
+    }).catch(() => {});
+
     async function refresh() {
       try {
         const [lb, st, fd] = await Promise.all([
@@ -151,6 +206,7 @@
           : 'Be the first on the board!';
         const feedKey = fd.entries.map(e => e.id).join(',');
         if (feedKey && feedKey !== lastFeed) {
+          if (lastFeed) { lastActivity = Date.now(); setAttract(false); }
           if (lastFeed && soundOn && sfx) sfx.chomp();
           lastFeed = feedKey;
           const items = fd.entries.map(e => `<span>💀 <b>${esc(e.name || 'A mystery player')}</b> ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)</span>`);
@@ -165,6 +221,8 @@
         $('#k-players').textContent = st.players;
         $('#k-rounds').textContent = st.rounds;
         $('#k-top').textContent = st.topScore;
+        $('#k-replay').textContent = Math.round((st.replayRate || 0) * 100) + '%';
+        $('#attract-challenge').textContent = lb.entries[0] ? `Today's #1: ${lb.entries[0].name} with ${lb.entries[0].score}. Beat it!` : 'Nobody on the board yet. Be the first!';
         const games = st.games.filter(g => g.plays > 0).slice(0, 7);
         $('#bars').innerHTML = games.length ? games.map(g => {
           const pct = Math.round(g.failRate * 100);

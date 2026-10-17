@@ -67,7 +67,10 @@ export const sfx = {
   over: () => { tone(392, .2, { type: 'triangle' }); tone(330, .2, { type: 'triangle', when: .2 }); tone(262, .5, { type: 'triangle', when: .4 }); },
   fanfare: () => { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .14, { when: i * .1, vol: .07 })); },
   badge: () => { [784, 988, 1175, 1568].forEach((f, i) => tone(f, .12, { type: 'triangle', when: i * .08, vol: .08 })); },
-  tick: () => tone(1200, .03, { vol: .03 })
+  thunder: () => { noise(1.6, { vol: .35, filter: 400, sweep: -300 }); noise(.25, { vol: .3, filter: 2500, when: .02 }); },
+  buzz: () => { for (let i = 0; i < 6; i++) tone(560 + (i % 2) * 40, .12, { type: 'sawtooth', when: i * .1, vol: .025 }); },
+  struck: () => { noise(.12, { vol: .5, filter: 6000, type: 'highpass' }); noise(1.2, { vol: .35, filter: 350, when: .08, sweep: -250 }); },
+    tick: () => tone(1200, .03, { vol: .03 })
 };
 
 // ---------- music: a cheerful 8-bar chiptune loop, tempo rises with the round ----------

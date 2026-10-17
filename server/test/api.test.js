@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDb, makeRepo } from '../src/db.js';
 import { createApp } from '../src/app.js';
-import { GAME_IDS, scoreOf, cleanName } from '../src/scoring.js';
+import { GAME_IDS, REGULAR, scoreOf, cleanName, validateRun, dailySequence, darwinDay } from '../src/scoring.js';
 import { LESSONS } from '../../web/js/lessons.js';
 
 let server, base;
@@ -22,7 +22,7 @@ const post = (path, body, headers = {}) => fetch(base + path, {
 
 function makeRun(wins, extra = {}) {
   const results = [];
-  for (let i = 0; i < wins; i++) results.push({ g: GAME_IDS[i % GAME_IDS.length], ok: true, ms: 1500 });
+  for (let i = 0; i < wins; i++) results.push({ g: REGULAR[i % REGULAR.length], ok: true, ms: 1500 });
   results.splice(1, 0, { g: 'flood-road', ok: false, ms: 4000 });
   results.splice(3, 0, { g: 'croc-edge', ok: false, ms: 4000 });
   results.push({ g: 'heat-drink', ok: false, ms: 900 });
@@ -64,7 +64,7 @@ test('rejects unknown games and bad JSON', async () => {
 });
 
 test('name can be attached later, only by the same device', async () => {
-  const { id } = await (await post('/api/runs', makeRun(8))).json();
+  const { id } = await (await post('/api/runs', makeRun(6))).json();
   assert.equal((await post(`/api/runs/${id}/name`, { name: 'CrocDodger', clientId: 'someone-else-999' })).status, 403);
   assert.equal((await post(`/api/runs/${id}/name`, { name: 'CrocDodger', clientId: CLIENT })).status, 200);
   const lb = await (await fetch(`${base}/api/leaderboard?period=today&client=${CLIENT}`)).json();
@@ -85,6 +85,48 @@ test('booth feed shows recent runs and what ended them', async () => {
   const feed = await (await fetch(base + '/api/feed')).json();
   assert.ok(feed.entries.length >= 1);
   assert.equal(feed.entries[0].killedBy, 'heat-drink');
+});
+
+test('boss rounds must be on rounds 10, 20, 30 and are worth +200', () => {
+  const ok = (g) => ({ g, ok: true, ms: 2000 });
+  const bad = (g) => ({ g, ok: false, ms: 3000 });
+  const nine = REGULAR.slice(0, 9).map(ok);
+  const run = { clientId: CLIENT, results: [...nine, ok('boss-cyclone'), bad('croc-edge'), bad('croc-edge'), bad('croc-edge')], durationMs: 60000 };
+  const v = validateRun(run);
+  assert.equal(v.error, undefined);
+  const withoutBoss = scoreOf([...nine, { g: 'croc-edge', ok: true, ms: 2000 }]);
+  assert.equal(scoreOf([...nine, ok('boss-cyclone')]), withoutBoss + 200);
+  const misplaced = { ...run, results: [ok('boss-croc'), bad('croc-edge'), bad('croc-edge'), bad('croc-edge')] };
+  assert.match(validateRun(misplaced).error, /Boss/);
+});
+
+test('daily challenge: same sequence for everyone, validated by the server', async () => {
+  const day = darwinDay();
+  const seq = dailySequence(day);
+  assert.equal(seq.length, 10);
+  assert.deepEqual(seq, dailySequence(day));
+  assert.ok(seq[9].startsWith('boss-'));
+  assert.equal(new Set(seq).size, 10);
+  // complete daily with 2 misses
+  const results = seq.map((g, i) => ({ g, ok: i !== 2 && i !== 5, ms: 2000 }));
+  const res = await post('/api/runs', { clientId: CLIENT, mode: 'daily', day, results, durationMs: 60000, name: 'DailyDan' });
+  assert.equal(res.status, 201);
+  // wrong order is rejected
+  const swapped = results.slice(); [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+  assert.equal((await post('/api/runs', { clientId: CLIENT, mode: 'daily', day, results: swapped, durationMs: 60000 })).status, 400);
+  // old days are rejected
+  assert.equal((await post('/api/runs', { clientId: CLIENT, mode: 'daily', day: '2020-01-01', results, durationMs: 60000 })).status, 400);
+  // daily board is separate from the classic board
+  const daily = await (await fetch(base + '/api/leaderboard?period=daily')).json();
+  assert.equal(daily.entries[0].name, 'DailyDan');
+  const classic = await (await fetch(base + '/api/leaderboard?period=today')).json();
+  assert.ok(!classic.entries.some(e => e.name === 'DailyDan'));
+});
+
+test('stats include replay rate for the booth', async () => {
+  const st = await (await fetch(base + '/api/stats')).json();
+  assert.ok(st.replayRate > 0 && st.replayRate <= 1);
+  assert.ok(st.dailyPlayers >= 1);
 });
 
 test('blocks rude names', () => {

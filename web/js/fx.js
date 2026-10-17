@@ -223,11 +223,49 @@ const FAILS = {
   }
 };
 
+Object.assign(FAILS, {
+  async struck(svg) {
+    const dark = el('rect', { x: 0, y: 0, width: W, height: H, fill: '#1d1a16', opacity: 0 });
+    svg.appendChild(dark);
+    dark.animate?.([{ opacity: 0 }, { opacity: .55 }], { duration: 200, fill: 'forwards' });
+    const bolt = el('path', { d: 'M200 -10 L150 170 H195 L140 330 L250 140 H200 L250 -10 Z', fill: '#ffe066', stroke: INK, 'stroke-width': 5, 'stroke-linejoin': 'round' });
+    svg.appendChild(bolt);
+    bolt.animate?.([{ opacity: 0 }, { opacity: 1 }, { opacity: .2 }, { opacity: 1 }], { duration: 400, fill: 'forwards' });
+    const flash = el('rect', { x: 0, y: 0, width: W, height: H, fill: '#fffaf0', opacity: 0 });
+    svg.appendChild(flash);
+    flash.animate?.([{ opacity: .9 }, { opacity: 0 }, { opacity: .7 }, { opacity: 0 }], { duration: 450, fill: 'forwards' });
+    await wait(250);
+    bigWord(svg, 'FRAZZLED!', '#ffe066', 400);
+    return 'struck';
+  },
+  async bitten(svg) {
+    for (let i = 0; i < 40; i++) {
+      const d = el('circle', { cx: 120 + Math.random() * 120, cy: 200 + Math.random() * 150, r: 3 + Math.random() * 4, fill: '#c8412f', stroke: INK, 'stroke-width': 1 });
+      svg.appendChild(d);
+      d.animate?.([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 200, delay: i * 18, fill: 'forwards' });
+    }
+    await wait(250);
+    bigWord(svg, 'ITCHY!', '#f28ab2', 120);
+    return 'buzz';
+  },
+  async sunburnt(svg) {
+    const red = el('rect', { x: 0, y: 0, width: W, height: H, fill: '#e2553f', opacity: 0 });
+    svg.appendChild(red);
+    red.animate?.([{ opacity: 0 }, { opacity: .5 }, { opacity: .35 }, { opacity: .55 }], { duration: 900, fill: 'forwards' });
+    await wait(200);
+    bigWord(svg, 'LOBSTER', '#ffd25e', 110);
+    setTimeout(() => bigWord(svg, 'MODE!', '#ffd25e', 160), 180);
+    return 'sizzle';
+  }
+});
+
 const FAIL_FOR = {
   'croc-edge': 'chomp', 'swim-sign': 'chomp', 'croc-camp': 'chomp',
   'stinger-vinegar': 'zap', 'stinger-suit': 'zap',
   'cyclone-kit': 'blowaway', 'flood-road': 'float', 'heat-drink': 'cooked',
-  'snake-bite': 'dizzy', 'bushfire-leave': 'smoke'
+  'snake-bite': 'dizzy', 'bushfire-leave': 'smoke',
+  'lightning-pool': 'struck', 'mozzie-dusk': 'bitten', 'sun-slip': 'sunburnt',
+  'boss-cyclone': 'blowaway', 'boss-croc': 'chomp'
 };
 
 // Plays the cartoon fail for a game. Returns the name of the matching sound effect.
@@ -245,7 +283,10 @@ export const FAIL_TITLES = {
   float: ['Washed away!', 'Sunk, mate!', 'Glug glug!'],
   cooked: ['Cooked like a snag!', 'Fried, mate!', 'Toasty!'],
   dizzy: ['Wrong fix, mate!', 'Yikes!', 'Not like that!'],
-  smoke: ['Smoked out!', 'Too slow, mate!', 'Should have left!']
+  smoke: ['Smoked out!', 'Too slow, mate!', 'Should have left!'],
+  struck: ['Frazzled!', 'Zapped from above!', 'Shocking, mate!'],
+  bitten: ['Eaten alive!', 'Itchy, mate!', 'Mozzie buffet!'],
+  sunburnt: ['Lobster mode!', 'Burnt to a crisp!', 'Ouch, sunburn!']
 };
 export const WIN_TITLES = ['Too easy!', 'Crocwise!', 'Legend!', 'Bonza!', 'Ripper!', 'Spot on, mate!'];
 export const failKind = (gameId) => FAIL_FOR[gameId] || 'chomp';
