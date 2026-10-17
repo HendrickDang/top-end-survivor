@@ -72,6 +72,21 @@ test('name can be attached later, only by the same device', async () => {
   assert.equal(lb.entries[0].mine, true);
 });
 
+test('streak bonus is added server-side', async () => {
+  // The browser copy of this formula is checked by scripts/smoke_test.py.
+  const { streakBonus } = await import('../src/scoring.js');
+  assert.deepEqual([1, 2, 3, 4, 7, 9].map(streakBonus), [0, 0, 20, 40, 100, 100]);
+  const five = [1, 2, 3, 4, 5].map(i => ({ g: 'croc-edge', ok: true, ms: 1000 }));
+  // rounds 1..5 base = 100+110+120+130+140 = 600, bonus = 20+40+60 = 120
+  assert.equal(scoreOf(five), 720);
+});
+
+test('booth feed shows recent runs and what ended them', async () => {
+  const feed = await (await fetch(base + '/api/feed')).json();
+  assert.ok(feed.entries.length >= 1);
+  assert.equal(feed.entries[0].killedBy, 'heat-drink');
+});
+
 test('blocks rude names', () => {
   assert.ok(cleanName('sh1t head').error);
   assert.ok(cleanName('a').error);

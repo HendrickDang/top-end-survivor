@@ -85,6 +85,13 @@ export function createApp(repo, opts = {}) {
     res.json({ period, day: today(), ...repo.stats({ day: period === 'today' ? today() : null }) });
   });
 
+  // Live "just died" feed for the booth screen.
+  app.get('/api/feed', (req, res) => {
+    const limit = Math.min(30, Math.max(1, Number(req.query.limit) || 12));
+    const entries = repo.feed({ day: today(), limit }).map(e => ({ ...e, name: e.name || null }));
+    res.json({ day: today(), entries });
+  });
+
   // QR code pointing players to the game (shown on the booth screen).
   app.get('/api/qr.svg', async (req, res) => {
     const target = (typeof req.query.url === 'string' && /^https?:\/\//.test(req.query.url))

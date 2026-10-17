@@ -86,6 +86,15 @@ export function makeRepo(db) {
       return { ...totals, games };
     },
 
+    // Recent runs for the booth's live feed, with the game that ended each run.
+    feed({ day = null, limit = 12 } = {}) {
+      return db.prepare(`
+        SELECT u.id, u.name, u.score, u.rounds, u.created_at AS at,
+               (SELECT game FROM results r WHERE r.run_id = u.id ORDER BY idx DESC LIMIT 1) AS killedBy
+        FROM runs u ${day ? 'WHERE u.day = ?' : ''}
+        ORDER BY u.id DESC LIMIT ?`).all(...(day ? [day, limit] : [limit]));
+    },
+
     deleteRun: (id) => db.prepare('DELETE FROM runs WHERE id = ?').run(id),
     reset: () => db.exec('DELETE FROM results; DELETE FROM runs;'),
     exportCsv() {

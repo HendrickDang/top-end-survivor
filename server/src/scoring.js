@@ -10,8 +10,16 @@ export const MAX_LIVES = 3;
 // Must match web/js/main.js pointsFor()
 export const pointsFor = (round) => 100 + 10 * (round - 1);
 
+// Must match web/js/main.js streakBonus()
+export const streakBonus = (streak) => (streak >= 3 ? Math.min(streak - 2, 5) * 20 : 0);
+
 export function scoreOf(results) {
-  return results.reduce((sum, r, i) => sum + (r.ok ? pointsFor(i + 1) : 0), 0);
+  let sum = 0, streak = 0;
+  results.forEach((r, i) => {
+    if (r.ok) { streak++; sum += pointsFor(i + 1) + streakBonus(streak); }
+    else streak = 0;
+  });
+  return sum;
 }
 
 const NAME_RE = /^[A-Za-z0-9 _-]{2,16}$/;

@@ -88,7 +88,28 @@ def main():
             ok = bool(res) and res[0]['ok']
             print(f"{'PASS' if ok else 'FAIL'}  {gid}  {res}")
             if not ok: failures.append(gid)
-            if SHOTS and gid in ('croc-edge', 'snake-bite'): page.screenshot(path=str(SHOTS / f'result-{gid}.png'))
+            if SHOTS and gid in ('croc-edge', 'snake-bite'):
+                page.wait_for_timeout(700)
+                page.screenshot(path=str(SHOTS / f'result-{gid}.png'))
+
+        # Streak bonus in the browser must match the server formula.
+        bonus = page.evaluate("[1,2,3,4,7,9].map(window.__TES__.streakBonus)")
+        if bonus != [0, 0, 20, 40, 100, 100]: failures.append(f'streakBonus {bonus}')
+
+        # Cartoon fail animation for each kind of hazard.
+        LOSE = {'croc-edge': None, 'stinger-suit': '[data-ok="false"]', 'cyclone-kit': '[data-ok="false"]',
+                'flood-road': '.choice-bad', 'heat-drink': None, 'snake-bite': None, 'bushfire-leave': '.choice-bad'}
+        for gid, sel in LOSE.items():
+            page.goto(BASE + '/'); page.wait_for_timeout(300)
+            page.evaluate(f"window.__TES_FORCE__ = '{gid}'")
+            page.click('#btn-play'); page.wait_for_timeout(600)
+            if sel: page.locator(sel).first.dispatch_event('pointerdown')
+            page.wait_for_function("window.__TES__.state.results.length > 0", timeout=9000)
+            page.wait_for_timeout(750)
+            res = page.evaluate("window.__TES__.state.results")
+            print(f"{'PASS' if not res[0]['ok'] else 'FAIL'}  lose {gid}")
+            if res[0]['ok']: failures.append('lose ' + gid)
+            if SHOTS: page.screenshot(path=str(SHOTS / f'fail-{gid}.png'))
 
         # Full run: do nothing until all lives are gone, then submit a name.
         page.goto(BASE + '/'); page.wait_for_timeout(300)
@@ -98,7 +119,13 @@ def main():
         page.fill('#player-name', 'SmokeTester')
         page.click('#submit-form button[type=submit]')
         page.wait_for_function("document.querySelector('#submit-msg').textContent.includes('board')", timeout=8000)
-        if SHOTS: page.screenshot(path=str(SHOTS / '10-gameover.png'))
+        if SHOTS: page.screenshot(path=str(SHOTS / '10-gameover.png'), full_page=True)
+        with page.expect_download(timeout=10000) as dl:
+            page.click('#btn-share')
+        card = dl.value.path()
+        print('Share card:', dl.value.suggested_filename)
+        if SHOTS:
+            import shutil; shutil.copy(card, SHOTS / '13-share-card.png')
         page.click('#btn-over-menu'); page.click('#btn-board'); page.wait_for_timeout(800)
         board = page.inner_text('#board-list')
         print('Leaderboard:', board.replace('\n', ' | '))
@@ -106,11 +133,15 @@ def main():
         if SHOTS: page.screenshot(path=str(SHOTS / '11-board.png'))
         page.goto(BASE + '/'); page.click('#btn-learn'); page.wait_for_timeout(300)
         if SHOTS: page.screenshot(path=str(SHOTS / '12-learn.png'), full_page=True)
+        page.click('#screen-learn [data-back]'); page.click('#btn-badges'); page.wait_for_timeout(300)
+        if 'Unlocked' not in page.inner_text('#badge-grid'): failures.append('reader badge')
+        if SHOTS: page.screenshot(path=str(SHOTS / '14-badges.png'))
 
         # Booth screen on a 1080p display.
         booth = browser.new_page(viewport={'width': 1920, 'height': 1080})
         booth.on('pageerror', lambda e: errors.append('booth: ' + str(e)))
-        booth.goto(BASE + '/booth'); booth.wait_for_timeout(1500)
+        booth.goto(BASE + '/booth'); booth.wait_for_timeout(2500)
+        if 'SmokeTester' not in booth.inner_text('#ticker'): failures.append('booth ticker')
         if SHOTS: booth.screenshot(path=str(SHOTS / '20-booth.png'))
         if 'SmokeTester' not in booth.inner_text('#board'): failures.append('booth')
         browser.close()
