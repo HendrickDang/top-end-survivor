@@ -1,5 +1,6 @@
 // Game engine: screens, round loop, scoring, offline leaderboard sync.
 import { GAMES } from './games.js';
+<<<<<<< Updated upstream
 import { LESSONS, SOURCES, GAME_LABELS, GAME_ICONS } from './lessons.js';
 import { REGULAR, DAILY_ROUNDS, dailySequence, darwinDay, prevDay, isBoss, isBossRound, classicBossFor } from './daily.js';
 import { inSeason, inSeasonGames } from './season.js';
@@ -8,13 +9,27 @@ import { sfx, music, toggleMute, isMuted } from './sound.js';
 import { shake, confetti, floatText, playFail, failKind, FAIL_TITLES, WIN_TITLES } from './fx.js';
 import * as badges from './badges.js';
 import { shareCard } from './share.js';
+=======
+import { LESSONS, SOURCES, GAME_LABELS } from './lessons.js';
+import { scene, mascotSVG, heartSVG, soundSVG, coinSVG, lockSVG, iconFor, VIEW, NS } from './art.js';
+import { CHARACTERS, characterSVG, profile } from './characters.js';
+import { failScene } from './fails.js';
+import { LOCATIONS, LOCATION_COUNT, locationAt, locationArt, locationBackdrop } from './locations.js';
+import { sfx, music, toggleMute, isMuted } from './sound.js';
+>>>>>>> Stashed changes
 import * as api from './api.js';
 
 const $ = (s) => document.querySelector(s);
 const MAX_LIVES = 3;
+<<<<<<< Updated upstream
 const PARAMS = new URLSearchParams(location.search);
 const KIOSK = PARAMS.has('kiosk');
 const DEMO = PARAMS.has('demo'); // self-playing attract mode for the booth screen
+=======
+const KIOSK = new URLSearchParams(location.search).has('kiosk');
+const ADMIN = new URLSearchParams(location.search).has('admin');   // ?admin=1 for the debug picker
+const COINS_PER_POINT_DIVISOR = 10;   // 1 coin per 10 points scored
+>>>>>>> Stashed changes
 
 // Difficulty: rounds get shorter, down to a floor.
 export const roundSeconds = (round) => Math.max(2.6, 5.5 - 0.2 * (round - 1));
@@ -25,12 +40,26 @@ export const streakBonus = (streak) => (streak >= 3 ? Math.min(streak - 2, 5) * 
 // Beating a boss round is worth an extra 200. Must match the server.
 export const BOSS_BONUS = 200;
 
+<<<<<<< Updated upstream
 const state = { mode: 'classic', dailyDay: null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0, bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], ctx: null };
 const byId = (id) => GAMES.find(g => g.id === id);
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } }
 };
+=======
+const state = {
+  round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0,
+  last: null, runLocalId: null,
+  locationIndex: 0, roundInLocation: 0, pendingIntro: true, furthest: 0
+};
+
+// Admin / debug (see the "admin" screen): play one chosen mini-game in a chosen
+// location, without touching lives, score, coins or the leaderboard.
+let forcedGame = null;        // when set, nextGame() plays exactly this mini-game
+let adminMode = false;        // true while testing a single admin-picked round
+let adminLocationIndex = 0;   // the location whose backdrop is previewed
+>>>>>>> Stashed changes
 
 // ---------- screens ----------
 function show(id) {
@@ -54,9 +83,63 @@ function renderBest() {
   $('#best-score').textContent = best ? `Your best: ${best}` : '';
 }
 
+// ---------- journey: locations ----------
+function loadFurthest() {
+  try { state.furthest = Math.min(LOCATION_COUNT - 1, Math.max(0, Number(localStorage.getItem('tes_location') || 0) | 0)); }
+  catch { state.furthest = 0; }
+  return state.furthest;
+}
+
+function saveFurthest(index) {
+  if (index <= state.furthest) return;
+  state.furthest = index;
+  try { localStorage.setItem('tes_location', String(index)); } catch { /* ignore */ }
+}
+
+function renderJourney() {
+  $('#menu-journey').textContent = state.furthest > 0
+    ? `Furthest stop: ${locationAt(state.furthest).name}`
+    : 'Your trip starts in Darwin.';
+}
+
+function renderHudLocation() {
+  const loc = locationAt(state.locationIndex);
+  $('#hud-location').textContent = loc.name;
+  $('#hud-step').textContent = `${Math.min(state.roundInLocation + 1, loc.rounds)}/${loc.rounds}`;
+}
+
+let introTimer = 0;
+function showLocationIntro(loc, done) {
+  const box = $('#loc-intro');
+  box.querySelector('.loc-art').innerHTML = locationArt(loc.id);
+  box.querySelector('.loc-name').textContent = loc.name;
+  box.querySelector('.loc-blurb').textContent = loc.blurb;
+  box.classList.add('show');
+  const finish = () => {
+    clearTimeout(introTimer);
+    introTimer = 0;
+    box.classList.remove('show');
+    box.removeEventListener('pointerdown', finish);
+    done();
+  };
+  clearTimeout(introTimer);
+  introTimer = setTimeout(finish, 2000);
+  box.addEventListener('pointerdown', finish);
+}
+
+function advanceLocation() {
+  const next = (state.locationIndex + 1) % LOCATION_COUNT;   // wraps back to Darwin after Uluru
+  saveFurthest(next);
+  state.locationIndex = next;
+  state.roundInLocation = 0;
+  state.pendingIntro = true;
+  playRound();
+}
+
 // ---------- game flow ----------
 function nextGame() {
   // Test hook: force a specific game (used by scripts/smoke_test.py).
+<<<<<<< Updated upstream
   if (window.__TES_FORCE__) return byId(window.__TES_FORCE__);
   if (state.mode === 'daily') return byId(dailySequence(state.dailyDay)[state.round - 1]);
   if (isBossRound(state.round)) return byId(classicBossFor(state.round));
@@ -67,13 +150,33 @@ function nextGame() {
     if (state.bag[0] === state.last && state.bag.length > 1) state.bag.push(state.bag.shift());
   }
   state.last = state.bag.shift();
+=======
+  if (window.__TES_FORCE__) return GAMES.find(g => g.id === window.__TES_FORCE__);
+  // Admin picker: play the chosen mini-game.
+  if (forcedGame) return GAMES.find(g => g.id === forcedGame);
+  const here = locationAt(state.locationIndex).games.map(id => GAMES.find(g => g.id === id)).filter(Boolean);
+  const pool = here.filter(g => g !== state.last);
+  const list = pool.length ? pool : here;
+  state.last = list[Math.floor(Math.random() * list.length)];
+>>>>>>> Stashed changes
   return state.last;
 }
 
 function startGame(mode = 'classic') {
   sfx.unlock();
+<<<<<<< Updated upstream
   if (typeof mode !== 'string') mode = 'classic';
   Object.assign(state, { mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [] });
+=======
+  music.play('play');
+  forcedGame = null;
+  adminMode = false;
+  Object.assign(state, {
+    round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
+    last: null, runLocalId: null,
+    locationIndex: 0, roundInLocation: 0, pendingIntro: true
+  });
+>>>>>>> Stashed changes
   $('#hud-score').textContent = '0';
   renderStreak();
   renderLives();
@@ -84,9 +187,39 @@ function startGame(mode = 'classic') {
 }
 
 function playRound() {
+  const loc = locationAt(state.locationIndex);
+  if (state.roundInLocation >= loc.rounds) return advanceLocation();
+  // The "now arriving" card. Skipped when a specific game is forced (smoke test).
+  if (state.pendingIntro && !window.__TES_SKIP_INTRO__) {
+    state.pendingIntro = false;
+    show('screen-game');            // the card lives on the game screen
+    renderHudLocation();
+    showLocationIntro(loc, runRound);
+    return;
+  }
+  state.pendingIntro = false;
+  runRound();
+}
+
+// Draw the location's landscape as the bottom layer of a round's scene. The game art
+// is appended afterwards, so it always sits on top of the backdrop.
+function addLocationBackdrop(svg, id) {
+  const doc = new DOMParser().parseFromString(
+    `<svg xmlns="${NS}">${locationBackdrop(id)}</svg>`, 'image/svg+xml');
+  const node = doc.documentElement.firstChild;
+  if (node) svg.appendChild(document.importNode(node, true));
+}
+
+function runRound() {
   state.round++;
+<<<<<<< Updated upstream
   $('#hud-round').textContent = state.round;
   music.duck(false);
+=======
+  state.roundInLocation++;
+  renderHudLocation();
+  const loc = locationAt(state.locationIndex);
+>>>>>>> Stashed changes
   const game = nextGame();
   music.setTempo(game.boss ? 190 : 132 + state.round * 4);
   const seconds = game.seconds || roundSeconds(state.round);
@@ -96,6 +229,7 @@ function playRound() {
   show('screen-game');
 
   const svg = scene(game.bg);
+  addLocationBackdrop(svg, loc.id);
   stage.appendChild(svg);
 
   let finished = false, raf = 0, started = 0;
@@ -118,7 +252,7 @@ function playRound() {
   };
 
   const ctx = {
-    svg, stage, speed: 5.5 / seconds,
+    svg, stage, speed: 5.5 / seconds, location: loc,
     win: () => finish(true),
     lose: () => finish(false),
     onTick: (fn) => tickers.push(fn),
@@ -142,15 +276,24 @@ function playRound() {
       });
       stage.appendChild(row);
     },
-    draggable(node, x, y, { scale = 1, onDrop } = {}) {
+    draggable(node, x, y, { scale = 1, onDrop, hitBox } = {}) {
       const home = { x, y };
       let pos = { x, y }, grab = null;
       const put = (p, s = scale) => node.setAttribute('transform', `translate(${p.x} ${p.y}) scale(${s})`);
       put(pos);
       node.classList.add('draggable');
-      // generous invisible grab area
-      const hit = document.createElementNS(svg.namespaceURI, 'circle');
-      hit.setAttribute('r', 42); hit.setAttribute('fill', 'transparent');
+      // Generous invisible grab area (an ellipse when the art is anchored off-centre,
+      // e.g. a person whose origin is at the feet).
+      const hit = document.createElementNS(svg.namespaceURI, hitBox ? 'ellipse' : 'circle');
+      if (hitBox) {
+        hit.setAttribute('cx', hitBox.x || 0);
+        hit.setAttribute('cy', hitBox.y || 0);
+        hit.setAttribute('rx', hitBox.rx || 42);
+        hit.setAttribute('ry', hitBox.ry || 42);
+      } else {
+        hit.setAttribute('r', 42);
+      }
+      hit.setAttribute('fill', 'transparent');
       node.insertBefore(hit, node.firstChild);
       node.addEventListener('pointerdown', (e) => {
         e.preventDefault(); e.stopPropagation();
@@ -223,6 +366,7 @@ function playRound() {
   raf = requestAnimationFrame(loop);
 }
 
+<<<<<<< Updated upstream
 function renderStreak() {
   const el = $('#hud-streak');
   if (!el) return;
@@ -262,31 +406,73 @@ async function endRound(game, ok, ms) {
     (sfx[snd] || sfx.lose)();
     await wait(1100);
   }
+=======
+function endRound(game, ok, ms) {
+  if (adminMode) {
+    // Debug round: don't spend lives, add score or queue a leaderboard run.
+    if (ok) sfx.win();
+    else { sfx.lose(); navigator.vibrate?.(120); }
+  } else {
+    state.results.push({ g: game.id, ok, ms: Math.round(ms) });
+    if (ok) {
+      state.score += pointsFor(state.round);
+      sfx.win();
+    } else {
+      state.lives--;
+      sfx.lose();
+      navigator.vibrate?.(120);
+    }
+    $('#hud-score').textContent = state.score;
+    renderLives();
+  }
+>>>>>>> Stashed changes
 
   const lesson = LESSONS[game.id];
+  const c = profile.character;
   const card = $('#result-card');
   card.className = 'result-card ' + (ok ? 'win' : 'lose');
+<<<<<<< Updated upstream
   $('#result-face').innerHTML = mascotSVG(ok ? 'happy' : 'sad');
   $('#result-title').textContent = ok ? pick(WIN_TITLES) : pick(FAIL_TITLES[failKind(game.id)]);
   $('#result-streak').textContent = ok && game.boss ? `👑 Boss beaten! +${bonus} bonus`
     : ok && bonus ? `🔥 ${state.streak} in a row! +${bonus} bonus` : '';
   $('#result-tip').textContent = ok ? lesson.win : (state.ctx?.failTip || lesson.fail);
+=======
+  // Win: the character celebrates. Fail: a bespoke comic animation for that mini-game.
+  const face = $('#result-face');
+  face.classList.toggle('scene', !ok);
+  face.innerHTML = ok ? characterSVG(c.id, 'win') : failScene(game.id, c);
+  $('#result-title').textContent = ok ? c.winLine : c.failLine;
+  $('#result-tip').textContent = ok ? lesson.win : lesson.fail;
+>>>>>>> Stashed changes
   show('screen-result');
 
   const dailyDone = state.mode === 'daily' && state.round >= DAILY_ROUNDS;
   setTimeout(() => {
+<<<<<<< Updated upstream
     if (state.lives <= 0 || dailyDone) gameOver();
+=======
+    if (adminMode) { showAdmin(); return; }
+    if (state.lives <= 0) gameOver();
+>>>>>>> Stashed changes
     else playRound();
   }, ok ? 1500 : 2300);
 }
 
+<<<<<<< Updated upstream
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
+=======
+>>>>>>> Stashed changes
 function gameOver() {
   music.stop();
   sfx.over();
+<<<<<<< Updated upstream
   if (DEMO) { show('screen-over'); $('#over-score').textContent = state.score; setTimeout(() => startGame('classic'), 3500); return; }
+=======
+  music.play('menu');
+>>>>>>> Stashed changes
   const durationMs = Math.round(performance.now() - state.startedAt);
   state.runLocalId = api.queueRun({
     mode: state.mode,
@@ -308,11 +494,23 @@ function gameOver() {
   renderDailyResult();
   renderWeakSpot();
   $('#over-score').textContent = state.score;
+
+  // Coins: 1 per 10 points scored this run.
+  const earned = Math.floor(state.score / COINS_PER_POINT_DIVISOR);
+  profile.addCoins(earned);
+  $('#over-char').innerHTML = characterSVG(profile.selected, 'fail');
+  $('#over-coins').innerHTML = `${coinSVG()}<span>+${earned} coin${earned === 1 ? '' : 's'} · ${profile.coins} total</span>`;
+  renderCoins();
+
   const survived = state.results.filter(r => r.ok).length;
+<<<<<<< Updated upstream
   $('#over-rounds').textContent = state.mode === 'daily'
     ? `Daily Challenge: you survived ${survived} of ${DAILY_ROUNDS} hazards.`
     : `You survived ${survived} of ${state.results.length} rounds.`;
   $('#over-title').textContent = state.mode === 'daily' && state.lives > 0 ? 'Daily complete!' : 'Game over';
+=======
+  $('#over-rounds').textContent = `You made it to ${locationAt(state.locationIndex).name} - survived ${survived} of ${state.results.length} rounds.`;
+>>>>>>> Stashed changes
 
   const failed = [...new Set(state.results.filter(r => !r.ok).map(r => r.g))];
   $('#over-lessons').innerHTML = failed.map(id => {
@@ -540,7 +738,7 @@ function demoBot(ctx, isFinished) {
 // ---------- leaderboard ----------
 async function showBoard(period = 'today') {
   show('screen-board');
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
+  document.querySelectorAll('#screen-board .tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
   const list = $('#board-list'), msg = $('#board-msg');
   list.innerHTML = '';
   msg.textContent = 'Loading...';
@@ -572,6 +770,150 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ---------- characters & coins ----------
+function renderCoins() {
+  $('#menu-coins').innerHTML = `${coinSVG()}<span>${profile.coins}</span>`;
+  const ic = $('#shop-coin-ic'); if (ic) ic.innerHTML = coinSVG();
+  const sc = $('#shop-coins'); if (sc) sc.textContent = profile.coins;
+}
+
+function renderMenuAvatar() {
+  $('#menu-mascot').innerHTML = characterSVG(profile.selected, 'idle');
+}
+
+function renderCharacters(msg = '') {
+  $('#shop-coins').textContent = profile.coins;
+  const grid = $('#char-grid');
+  grid.innerHTML = '';
+  for (const c of CHARACTERS) {
+    const owned = profile.owns(c.id);
+    const selected = profile.selected === c.id;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'char-card ' + (owned ? 'owned' : 'locked') + (selected ? ' selected' : '');
+    card.innerHTML = `
+      ${selected ? '<span class="badge">Playing</span>' : owned ? '<span class="badge">Owned</span>' : ''}
+      <div class="pic">${characterSVG(c.id, 'idle')}</div>
+      <h4>${escapeHtml(c.name)}</h4>
+      <span class="tag">${escapeHtml(c.tagline)}</span>
+      ${owned
+        ? '<span class="price">Tap to play</span>'
+        : `<span class="price tagrow">${lockSVG()}<span>${c.price} coins</span></span>`}`;
+    card.addEventListener('click', () => onCharacterClick(c));
+    grid.appendChild(card);
+  }
+  $('#shop-msg').textContent = msg;
+}
+
+function onCharacterClick(c) {
+  if (profile.owns(c.id)) {
+    if (profile.selected === c.id) { renderCharacters(`Already playing as ${c.name}.`); return; }
+    profile.select(c.id);
+    sfx.tap();
+    renderCharacters(`Now playing as ${c.name}.`);
+    renderMenuAvatar();
+    return;
+  }
+  const res = profile.buy(c.id);
+  if (!res.ok) {
+    sfx.lose();
+    renderCharacters(`Not enough coins for ${c.name} - you need ${c.price - profile.coins} more.`);
+    return;
+  }
+  sfx.win();
+  renderCharacters(`Unlocked ${c.name}! They're now your character.`);
+  renderMenuAvatar();
+}
+
+function showCharacters() {
+  show('screen-characters');
+  $('#shop-frilly').innerHTML = mascotSVG('happy');
+  renderCoins();
+  renderCharacters();
+}
+
+// ---------- admin / debug ----------
+// Enabled with ?admin=1 (see the "admin" screen in index.html). Handy for testing a
+// single mini-game: pick a location for the backdrop, then tap any mini-game to play
+// it straight away. Lives, score, coins and the leaderboard are not touched.
+function playAdminGame(gameId) {
+  sfx.unlock();
+  music.play('play');
+  forcedGame = gameId;
+  adminMode = true;
+  Object.assign(state, {
+    round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
+    last: null, runLocalId: null,
+    locationIndex: adminLocationIndex, roundInLocation: 0, pendingIntro: false
+  });
+  $('#hud-score').textContent = '0';
+  renderLives();
+  runRound();
+}
+
+function renderAdmin() {
+  const locRow = $('#admin-locs');
+  locRow.innerHTML = '';
+  LOCATIONS.forEach((loc, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tab' + (i === adminLocationIndex ? ' active' : '');
+    b.textContent = loc.name;
+    b.addEventListener('click', () => { adminLocationIndex = i; renderAdmin(); });
+    locRow.appendChild(b);
+  });
+
+  // The current location's mini-games are listed first, then the rest.
+  const here = locationAt(adminLocationIndex).games;
+  const ordered = [...GAMES.filter(g => here.includes(g.id)), ...GAMES.filter(g => !here.includes(g.id))];
+  const grid = $('#admin-games');
+  grid.innerHTML = '';
+  for (const gme of ordered) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'admin-game' + (here.includes(gme.id) ? ' here' : '');
+    b.innerHTML = `<b>${escapeHtml(GAME_LABELS[gme.id] || gme.id)}</b>
+      <span class="ag-prompt">${escapeHtml(gme.prompt)}</span>
+      <span class="ag-id">${escapeHtml(gme.id)}</span>`;
+    b.addEventListener('click', () => playAdminGame(gme.id));
+    grid.appendChild(b);
+  }
+}
+
+function showAdmin() {
+  show('screen-admin');
+  renderAdmin();
+}
+
+function playRandomHere() {
+  const here = locationAt(adminLocationIndex).games;
+  playAdminGame(here[Math.floor(Math.random() * here.length)]);
+}
+
+// ---------- sound ----------
+function renderSound() {
+  const on = !isMuted();
+  document.querySelectorAll('[data-sound-toggle]').forEach(b => {
+    b.classList.toggle('off', !on);
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', on ? 'Turn sound off' : 'Turn sound on');
+    b.innerHTML = soundSVG(on);
+  });
+}
+
+// Browsers block audio until the player interacts, so the effects context and the
+// soundtrack both wait for the first tap or key press (music.play() is retried).
+function armAudio() {
+  const go = () => {
+    sfx.unlock();
+    music.play('menu');
+    window.removeEventListener('pointerdown', go);
+    window.removeEventListener('keydown', go);
+  };
+  window.addEventListener('pointerdown', go);
+  window.addEventListener('keydown', go);
+}
+
 // ---------- network status ----------
 async function updateNet() {
   const pill = $('#net-status');
@@ -590,9 +932,14 @@ async function updateNet() {
 
 // ---------- wire up ----------
 function init() {
-  $('#menu-mascot').innerHTML = mascotSVG('happy');
+  profile.load();
+  loadFurthest();
+  renderMenuAvatar();
+  renderCoins();
   renderBest();
+  renderJourney();
   renderLearn();
+<<<<<<< Updated upstream
   $('#btn-play').addEventListener('click', () => startGame('classic'));
   $('#btn-daily').addEventListener('click', () => startGame('daily'));
   $('#btn-again').addEventListener('click', () => startGame(state.mode));
@@ -618,12 +965,40 @@ function init() {
   }));
   setMuteIcons();
   renderBadgeCount();
+=======
+  $('#btn-play').addEventListener('click', startGame);
+  $('#btn-again').addEventListener('click', startGame);
+  $('#btn-over-menu').addEventListener('click', () => { renderBest(); renderJourney(); show('screen-menu'); });
+  $('#btn-chars').addEventListener('click', showCharacters);
+  $('#btn-board').addEventListener('click', () => showBoard('today'));
+  $('#btn-learn').addEventListener('click', () => show('screen-learn'));
+  if (ADMIN) {
+    const adminBtn = $('#btn-admin');
+    adminBtn.hidden = false;
+    adminBtn.addEventListener('click', showAdmin);
+    $('#admin-random').addEventListener('click', playRandomHere);
+    $('#admin-play').addEventListener('click', startGame);
+    $('#admin-menu').addEventListener('click', () => { renderBest(); renderJourney(); show('screen-menu'); });
+    if (!KIOSK) showAdmin();   // ?admin=1 opens the picker straight away
+  }
+>>>>>>> Stashed changes
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('screen-menu')));
-  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
+  document.querySelectorAll('#screen-board .tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
   $('#submit-form').addEventListener('submit', submitName);
+  document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', () => {
+    toggleMute();
+    sfx.tap();
+    renderSound();
+  }));
   window.addEventListener('online', updateNet);
   window.addEventListener('offline', updateNet);
   updateNet();
+  // Don't keep the music playing in a hidden tab; pick the soundtrack back up on return.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) music.stop(); else music.resume();
+  });
+  renderSound();
+  armAudio();
   // prevent pull-to-refresh / scroll during play
   $('#stage').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 

@@ -1,4 +1,11 @@
+<<<<<<< Updated upstream
 // Synthesised sound effects + a chiptune music loop (no audio files: works offline, no copyright issues).
+=======
+// Sound: short feedback effects + a looping soundtrack.
+// The effects are synthesised live with the Web Audio API (no files needed).
+// The soundtrack is a single bundled MP3, cached with the rest of the app by the
+// service worker, so it still plays offline.
+>>>>>>> Stashed changes
 let ctx = null;
 let master = null, musicBus = null, sfxBus = null;
 let muted = false;
@@ -8,17 +15,29 @@ function ac() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
+<<<<<<< Updated upstream
     ctx = new AC();
     master = ctx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(ctx.destination);
     musicBus = ctx.createGain(); musicBus.gain.value = 0.32; musicBus.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = 1; sfxBus.connect(master);
+=======
+    try { ctx = new AC(); } catch { return null; }
+>>>>>>> Stashed changes
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  // A browser may keep the context suspended until the player interacts.
+  if (ctx.state === 'suspended' && ctx.resume) Promise.resolve(ctx.resume()).catch(() => { /* blocked for now */ });
   return ctx;
 }
 
+<<<<<<< Updated upstream
 function tone(freq, dur, { type = 'square', when = 0, vol = 0.08, slide = 0, bus } = {}) {
   const a = ac(); if (!a || muted) return;
+=======
+// ---------- one-shot effects ----------
+function tone(freq, dur, type = 'square', when = 0, vol = 0.08) {
+  if (muted) return;
+  const a = ac(); if (!a) return;
+>>>>>>> Stashed changes
   const o = a.createOscillator(), gn = a.createGain();
   o.type = type;
   const t = a.currentTime + when;
@@ -108,10 +127,78 @@ export const music = {
   duck(on) { if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? 0.1 : 0.32, ctx.currentTime, 0.05); }
 };
 
+// ---------- soundtrack ----------
+// One looping track, bundled in web/audio/ and precached by the service worker so
+// it plays offline. Levels are faded in and out rather than clipped, and the mute
+// toggle simply drives the same fade. The mood name is remembered so resume() can
+// pick the track back up after a hidden tab or a mute.
+const TRACK = 'audio/Clockwork_Catastrophe.mp3';
+const MUSIC_VOL = 0.45;         // master volume once faded in (kept under the effects)
+const FADE_MS = 600;
+
+let el = null;        // the looping <audio> element
+let wanted = null;    // mood the screens last asked for
+let fadeTimer = 0;
+let stopTimer = 0;
+
+function track() {
+  if (el) return el;
+  if (typeof Audio !== 'function') return null;
+  el = new Audio(TRACK);
+  el.loop = true;
+  el.preload = 'auto';
+  el.volume = 0;
+  return el;
+}
+
+function fadeTo(target, ms) {
+  const a = track(); if (!a) return;
+  if (fadeTimer) { clearInterval(fadeTimer); fadeTimer = 0; }
+  const from = a.volume, steps = Math.max(1, Math.round(ms / 40));
+  let i = 0;
+  fadeTimer = setInterval(() => {
+    i++;
+    a.volume = Math.min(1, Math.max(0, from + (target - from) * (i / steps)));
+    if (i >= steps) { clearInterval(fadeTimer); fadeTimer = 0; a.volume = target; }
+  }, 40);
+}
+
+export const music = {
+  // Play (or keep playing) the track. Safe to call on every screen change.
+  play(name) {
+    if (!name) return;
+    wanted = name;
+    if (muted) return;                      // remember it, stay silent until unmuted
+    const a = track(); if (!a) return;
+    if (stopTimer) { clearTimeout(stopTimer); stopTimer = 0; }
+    if (a.paused) {
+      a.volume = 0;
+      // Browsers block playback until the player interacts; armAudio() retries on the
+      // first tap or key press.
+      const p = a.play();
+      if (p && p.catch) p.catch(() => { /* blocked for now */ });
+    }
+    fadeTo(MUSIC_VOL, FADE_MS);
+  },
+  // Fade out and pause but remember the mood, so resume() can pick the track back up.
+  stop() {
+    if (!el) return;
+    if (stopTimer) clearTimeout(stopTimer);
+    fadeTo(0, 400);
+    stopTimer = setTimeout(() => { if (el) { el.pause(); el.volume = 0; } stopTimer = 0; }, 450);
+  },
+  resume() { if (wanted) this.play(wanted); }
+};
+
+// ---------- mute ----------
 export function toggleMute() {
   muted = !muted;
   try { localStorage.setItem('tes_muted', muted ? '1' : '0'); } catch { /* ignore */ }
+<<<<<<< Updated upstream
   if (master && ctx) master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.02);
+=======
+  if (muted) music.stop(); else music.resume();
+>>>>>>> Stashed changes
   return muted;
 }
 export const isMuted = () => muted;

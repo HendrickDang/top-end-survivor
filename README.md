@@ -14,6 +14,7 @@ Every year newcomers and visitors to the Top End get hurt by hazards locals take
 
 Each mini-game maps to one official source (NT Government, NT Health, SecureNT, NTPFES, AVRU). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
 
+<<<<<<< Updated upstream
 ## The mini-games
 
 | Mini-game | You must... | Real rule it teaches | Source |
@@ -52,15 +53,70 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 - **12 badges:** one per safety topic, plus On a Roll, Top End Tourist, Top End Legend, Never Say Die and Read the Rules (for opening the Safety tips screen).
 - **Share card:** a PNG with your score, badges and a QR code back to the game, shared through the phone's share sheet.
 - **Booth boss mode:** a live "just now" ticker of how players got caught out, a crowd challenge to beat today's #1, and a "NEW #1!" celebration with confetti.
+=======
+## The journey: eight locations
+
+A run is a road trip across the Territory. Each location is a stage of five rounds drawn from that region's hazards; clear it and you travel on. Your three lives carry the whole way, so a strong run travels further and scores more. After Uluru the trip loops back to Darwin. Your furthest stop is saved and shown on the menu, and a "now arriving" card introduces each location. Every round is played against that location's landscape backdrop, so the scene changes as you travel.
+
+| # | Location | What it throws at you |
+|---|---|---|
+| 1 | Darwin | Stingers in the sea, crocs at the boat ramp, cyclone season |
+| 2 | Kakadu | Wetland crocs, flooded roads and problem-croc trapping |
+| 3 | Litchfield | Plunge pools and waterfalls that hide crocodiles |
+| 4 | Katherine | Big river country: fast floods and relentless heat |
+| 5 | Arnhem Land | Remote rock holes and waterholes full of saltwater crocs |
+| 6 | Barkly | Long flat drives: dust storms and flooded crossings |
+| 7 | Alice Springs | Dry rivers that flood in minutes, snakes and heat |
+| 8 | Uluru Region | Red centre heat, snakes and fire plans |
+
+## The mini-games
+
+Fourteen mini-games, each mapped to one official source. Every location draws from its own set, so travelling on always brings something new.
+
+| Mini-game | First seen | You must... | Real rule it teaches | Source |
+|---|---|---|---|---|
+| STEP BACK! | Darwin | Tap to back a fisher past the 5 m line | Stand at least 5 m from the water when fishing | Be Crocwise (NT Gov) |
+| SWIM? | Darwin | Decide from the sign | Only swim in signed swimming areas | Be Crocwise |
+| TREAT THE STING! | Darwin | Drag the right bottle onto a sting | Vinegar, never fresh water; call 000 | NT Health |
+| SUIT UP! | Darwin | Pick the stinger suit | Stinger season is Oct to May | NT Health |
+| PACK THE KIT! | Darwin | Tap only the essentials | Water, torch, battery radio, first aid | SecureNT |
+| PITCH IT FAR! | Kakadu | Drag the tent past 50 m | Camp at least 50 m from the water's edge | Be Crocwise |
+| FLOODED ROAD! | Kakadu | Turn around in time | If it's flooded, forget it | NTPFES |
+| SMOKE! | Kakadu | Choose to leave | Leaving early is the safest choice | NTPFES |
+| TRAP IT! | Kakadu | Tap when the croc is in the trap | Rangers trap problem crocs; report sightings, stay back | Be Crocwise |
+| HYDRATE! | Katherine | Keep tapping water, avoid the fizzy drink | 2 to 3 L of water a day, skip sugary drinks | NT Health |
+| GET OUT! | Arnhem Land | Drag everyone out of the rock hole | Never swim in a waterhole; crocs move in after the wet | Be Crocwise |
+| DUST STORM! | Barkly | Drag the ute off the road | In dust: slow down, lights on, pull over | Road Safety NT |
+| FIRST AID! | Alice Springs | Drag the wide bandage onto the bite | Pressure immobilisation; don't cut, suck or tourniquet | AVRU, Uni Melbourne |
+| DRY RIVER! | Alice Springs | Tap to climb the bank | Never camp or walk in a dry river bed; flash floods | NTPFES |
+>>>>>>> Stashed changes
 
 Rounds get faster as you go (5.5 s down to 2.6 s). Three lives. Points: 100 per survived round plus 10 per round reached.
 
-All characters and art (including Frilly the frill-neck lizard) are original and drawn in code. The concept is inspired by public-safety games in general; no third-party art, names or audio are used.
+Fail a round and you get a bespoke comic animation for that hazard - the croc drags the tent into the billabong, the ute floats away gurgling, the stinger dance, the burning hat run - and the victim wears your chosen character's colours. (`web/js/fails.js`.)
+
+## Territory Characters
+
+Seven funny Top End locals are unlockable playable avatars. Each has its own code-drawn art, a unique idle animation, and its own win and fail reactions and one-liners.
+
+| Character | Who they are | Unlocks at |
+|---|---|---|
+| Backpacker Barry | Two thumbs, one billy, zero sunscreen | Free |
+| Croc-Wrestling Craig | He calls the big ones "mate" | 100 coins |
+| Cyclone Cheryl | Already taped the windows. Twice. | 180 coins |
+| Bush Mechanic Bazza | She'll be right | 260 coins |
+| Tourist Trevor | Is this the one with the crocs? | 350 coins |
+| Mad Dog Mick | Hold my stubby | 450 coins |
+| Market Stall Sheila | Mangoes, two for five | 600 coins |
+
+You earn **1 coin per 10 points** scored in a run, shown on the game-over screen. Coins, unlocked characters and your selection are saved in `localStorage`, so progress survives offline. Your chosen character is your avatar on the menu, the round result cards and the game-over screen ("Territory Characters" on the menu).
+
+All characters and art (including Frilly the frill-neck lizard, who runs the character store) are original and drawn in code. The concept is inspired by public-safety games in general; no third-party art or names are used. The sound effects are synthesised live with the Web Audio API, and the looping soundtrack is a bundled file (`web/audio/Clockwork_Catastrophe.mp3`) cached with the rest of the app, so the music works offline too. Tap the speaker on the menu (or in the round HUD) to mute.
 
 ## How it meets the judging criteria
 
 - **Innovation**: safety education as a crowd game with a live "what's catching people out" analytics board. Every round played becomes data on which safety rules people actually misunderstand.
-- **Functionality**: 10 mini-games, offline play, leaderboard, booth screen with QR code, Android app, admin tools, CSV export.
+- **Functionality**: 14 mini-games across 8 NT locations, offline play, leaderboard, booth screen with QR code, Android app, admin tools, CSV export, and a coin-driven character store with 7 unlockable avatars.
 - **Usability**: one-tap play, no sign-up, portrait phone layout, big touch targets, reduced-motion support, works with no signal.
 - **Scalability**: stateless API + SQLite (swap for Postgres with one module), server-side score validation, rate limiting, offline outbox so spiky booth traffic never loses a score. New mini-games are a single object in `web/js/games.js`.
 
@@ -128,12 +184,15 @@ curl -H "X-Admin-Token: $TOKEN" https://<host>/api/admin/export.csv -o rounds.cs
 
 Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box and returns to the menu after 45 s).
 
+Debug a single mini-game: open `/?admin=1` for the picker. Choose a location, then tap any mini-game to play it immediately - lives, score, coins and the leaderboard are left untouched, and each round returns you to the picker. The "Admin" button also appears on the menu.
+
 ## Add a new mini-game
 
 1. Add an object to `GAMES` in `web/js/games.js` (see the comment at the top of the file).
 2. Add its tip and source to `LESSONS` and a label to `GAME_LABELS` in `web/js/lessons.js`.
 3. Add its id to `GAME_IDS` in `server/src/scoring.js` (a test checks they match).
-4. Add a win strategy to `scripts/smoke_test.py`, bump `CACHE` in `web/sw.js`.
+4. Add its id to a location's `games` list in `web/js/locations.js`.
+5. Add a win strategy to `scripts/smoke_test.py`, bump `CACHE` in `web/sw.js`.
 
 ## Project structure
 
@@ -141,11 +200,16 @@ Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box and return
 web/                 the game (also the Android app's content)
   index.html         screens
   booth.html         big-screen leaderboard + live analytics + QR
-  js/games.js        the 10 mini-games
+  js/games.js        the 14 mini-games
+  js/fails.js        comic failure animation for each mini-game
+  js/locations.js    the 8 journey locations + card art and mini-game backdrops
   js/lessons.js      tips + official sources (edit wording here)
   js/main.js         engine: rounds, timer, scoring, screens
   js/api.js          leaderboard client with offline outbox
   js/art.js          all characters and items, drawn as SVG in code
+  js/characters.js   the 7 Territory Characters + the coin profile
+  js/sound.js        sound effects + the looping soundtrack
+  audio/             bundled soundtrack (Clockwork_Catastrophe.mp3)
   sw.js              offline cache
 server/              Express API + SQLite
 android/             Capacitor Android project

@@ -1,14 +1,19 @@
-// The ten micro-games. Each one is a few seconds long and teaches one NT safety rule.
+// The fourteen micro-games. Each one is a few seconds long and teaches one NT safety rule.
 //
 // A game is { id, prompt, bg, timeoutWins, setup(ctx) }.
 //   prompt       - the shouted instruction ("STEP BACK!")
 //   timeoutWins  - true if surviving until the timer ends counts as a win
 //   setup(ctx)   - draws the scene and wires input. Call ctx.win() or ctx.lose() once.
 //
-// ctx gives you: svg (the scene), stage (div), win(), lose(), onTick(fn(progress, dt)),
-// toSvg(event) -> {x, y}, draggable(node, x, y, opts), buttons([{label, ok}]), speed.
+// The engine draws the current location's landscape (see locationBackdrop in
+// locations.js) behind the scene, so games should not paint their own opaque,
+// full-stage background - draw only the ground, water and props the round needs.
+//
+// ctx gives you: svg (the scene), stage (div), location (the place being played),
+// win(), lose(), onTick(fn(progress, dt)), toSvg(event) -> {x, y},
+// draggable(node, x, y, opts), buttons([{label, ok}]), speed.
 
-import { el, g, text, person, crocEyes, water, sun, sign, items, VIEW } from './art.js';
+import { el, g, text, person, crocEyes, water, sign, items, VIEW } from './art.js';
 
 const W = VIEW.w, H = VIEW.h;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -74,7 +79,6 @@ export const GAMES = [
     setup(ctx) {
       const { svg } = ctx;
       svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#d9c08e' }),
         water(360, 120),
         el('line', { x1: 0, y1: 190, x2: W, y2: 190, stroke: '#1d1a16', 'stroke-width': 3, 'stroke-dasharray': '10 8' }),
         text(310, 182, '5 m', { size: 20 }),
@@ -110,7 +114,6 @@ export const GAMES = [
       const variant = safe ? 'safe' : pick(['croc', 'none']);
       ctx.correct = safe ? 'swim' : 'stay';
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#9bbf4a' }),
         el('ellipse', { cx: W / 2, cy: 300, rx: 170, ry: 80, fill: '#2f7f8f', stroke: '#1d1a16', 'stroke-width': 3 }),
         el('path', { d: 'M60 300 q30 -10 60 0 t60 0 t60 0 t60 0', stroke: 'rgba(255,255,255,.35)', 'stroke-width': 4, fill: 'none' })
       );
@@ -133,8 +136,7 @@ export const GAMES = [
     id: 'croc-camp', prompt: 'PITCH IT FAR!', bg: '#c9b27a',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#c9b27a' }),
-        el('rect', { x: 0, y: 0, width: W, height: 150, fill: '#a9c46a' }),
+        el('rect', { x: 0, y: 0, width: W, height: 150, fill: 'rgba(140,180,90,.4)' }),
         water(400, 80),
         el('line', { x1: 0, y1: 150, x2: W, y2: 150, stroke: '#1d1a16', 'stroke-width': 3, 'stroke-dasharray': '10 8' }),
         text(312, 142, '50 m', { size: 20 }),
@@ -156,7 +158,6 @@ export const GAMES = [
     id: 'stinger-vinegar', prompt: 'TREAT THE STING!', bg: '#cfeefc',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#cfeefc' }),
         // an arm
         el('path', { d: 'M-10 150 C 120 130, 220 150, 300 170 L 300 230 C 220 215, 120 200, -10 220 z', fill: '#c68642', stroke: '#1d1a16', 'stroke-width': 3 }),
         el('circle', { cx: 318, cy: 200, r: 34, fill: '#c68642', stroke: '#1d1a16', 'stroke-width': 3 })
@@ -190,7 +191,6 @@ export const GAMES = [
     setup(ctx) {
       const months = ['OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY'];
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: 200, fill: '#8fd0e0' }),
         water(130, 90, '#2f8fa8'),
         el('rect', { x: 0, y: 220, width: W, height: 260, fill: '#f2d89b' }),
         g([
@@ -220,7 +220,6 @@ export const GAMES = [
     id: 'cyclone-kit', prompt: 'PACK THE KIT!', bg: '#d9d2f0',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#d9d2f0' }),
         // swirl
         el('path', { d: 'M310 60 m-28 0 a28 28 0 1 1 28 28 a17 17 0 1 1 -14 -17', stroke: '#6a5aa8', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' }),
         text(120, 60, 'CYCLONE COMING', { size: 20, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
@@ -263,7 +262,6 @@ export const GAMES = [
     id: 'flood-road', prompt: 'FLOODED ROAD!', bg: '#a9c46a',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#a9c46a' }),
         el('rect', { x: 120, y: 0, width: 120, height: H, fill: '#6d6d6d' }),
         el('line', { x1: W / 2, y1: 0, x2: W / 2, y2: H, stroke: '#fffaf0', 'stroke-width': 4, 'stroke-dasharray': '18 16' }),
         el('rect', { x: 0, y: 60, width: W, height: 110, fill: '#7a6a3a', opacity: .9 }),
@@ -291,8 +289,6 @@ export const GAMES = [
     id: 'heat-drink', prompt: 'HYDRATE!', bg: '#ffd9a0', timeoutWins: true,
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#ffd9a0' }),
-        sun(70, 70),
         text(250, 70, '41°C', { size: 40, fill: '#c8412f', stroke: '#fffaf0', strokeWidth: 5 }),
         person({ x: W / 2, y: 300, s: 1.1, mood: 'meh' })
       );
@@ -307,11 +303,24 @@ export const GAMES = [
         node.insertBefore(el('circle', { r: 44, fill: 'transparent' }), node.firstChild);
         node.classList.add('tap-target');
         place(node, x, 400, 1.3);
+        let pulse = 0;   // tap feedback: pulse the scale on the transform attribute
+        // A CSS transform animation would override that attribute and fling the item
+        // to the SVG origin, so the bump is done here in the attribute instead.
+        const bump = () => {
+          cancelAnimationFrame(pulse);
+          const t0 = performance.now();
+          const step = (now) => {
+            const k = Math.min(1, (now - t0) / 200);
+            place(node, x, 400, 1.3 * (1 + 0.25 * Math.sin(Math.PI * k)));
+            pulse = k < 1 ? requestAnimationFrame(step) : 0;
+          };
+          pulse = requestAnimationFrame(step);
+        };
         node.addEventListener('pointerdown', (e) => {
           e.stopPropagation();
           if (over) return;
           level = Math.min(1, level + delta);
-          node.classList.remove('pop'); void node.getBBox(); node.classList.add('pop');
+          bump();
           set();
           if (level <= 0) { over = true; ctx.lose(); }
         });
@@ -331,7 +340,6 @@ export const GAMES = [
     id: 'snake-bite', prompt: 'FIRST AID!', bg: '#e7f3d6',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#e7f3d6' }),
         // a leg, foot to the right
         el('path', { d: 'M-10 140 L 250 150 L 250 210 L -10 220 z', fill: '#e0ac69', stroke: '#1d1a16', 'stroke-width': 3 }),
         el('path', { d: 'M250 150 q60 -10 80 40 q-10 25 -80 20 z', fill: '#e0ac69', stroke: '#1d1a16', 'stroke-width': 3 }),
@@ -363,7 +371,6 @@ export const GAMES = [
     id: 'bushfire-leave', prompt: 'SMOKE!', bg: '#f4c28a',
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: H, fill: '#f4c28a' }),
         el('rect', { x: 0, y: 220, width: W, height: 260, fill: '#c9a25a' })
       );
       const smoke = g([
@@ -393,6 +400,7 @@ export const GAMES = [
     }
   },
 
+<<<<<<< Updated upstream
   // 11. Storm over the pool: tap every swimmer to get them out before lightning strikes.
   {
     id: 'lightning-pool', prompt: 'STORM! EVERYONE OUT!', bg: '#5b6478',
@@ -480,10 +488,69 @@ export const GAMES = [
           scale: 1.2,
           onDrop: (x, y) => {
             if (x > 110 && x < 250 && y > 180 && y < 350) { ok ? ctx.win() : ctx.lose(); return; }
+=======
+  // 11. Kakadu: rangers trap a problem croc at the ramp. One tap, right moment.
+  {
+    id: 'croc-trap', prompt: 'TRAP IT!', bg: '#7fb8a8',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        water(240, 240, '#2f7f8f'),
+        text(W / 2, 44, 'ONE TAP - WHEN THE CROC IS IN THE TRAP', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
+      );
+      const zx = 190, zy = 300, zr = 54;
+      svg.append(el('circle', { cx: zx, cy: zy, r: zr, fill: 'rgba(255,233,168,.3)', stroke: '#ffe9a8', 'stroke-width': 4, 'stroke-dasharray': '9 9' }));
+      svg.append(g([
+        el('rect', { x: -42, y: -28, width: 84, height: 56, rx: 10, fill: 'none', stroke: '#cfd6dc', 'stroke-width': 6 }),
+        el('line', { x1: -42, y1: -28, x2: 42, y2: 28, stroke: '#cfd6dc', 'stroke-width': 5 }),
+        el('line', { x1: -42, y1: 28, x2: 42, y2: -28, stroke: '#cfd6dc', 'stroke-width': 5 })
+      ], { transform: `translate(${zx} ${zy})` }));
+      const croc = crocEyes({ x: -70, y: 300, s: 1 });
+      croc.setAttribute('data-croc', '');
+      svg.append(croc);
+      let done = false, cx = -70;
+      svg.addEventListener('pointerdown', () => {
+        if (done) return;
+        done = true;
+        if (Math.abs(cx - zx) <= zr) ctx.win(); else ctx.lose();
+      });
+      ctx.onTick((p) => { if (done) return; cx = -70 + p * (W + 160); place(croc, cx, 300, 1); });
+    }
+  },
+
+  // 12. Arnhem Land: get everyone out of the rock hole before the croc surfaces.
+  {
+    id: 'rock-hole', prompt: 'GET OUT!', bg: '#d9c08e',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        el('path', { d: 'M-10 84 q70 -44 150 -22 q80 -22 150 10 l0 120 q-80 22 -150 4 q-80 -18 -150 0 z', fill: '#b9a074', stroke: '#1d1a16', 'stroke-width': 4 }),
+        el('ellipse', { cx: W / 2, cy: 286, rx: 150, ry: 78, fill: '#2f7f8f', stroke: '#1d1a16', 'stroke-width': 4 }),
+        text(W / 2, 40, 'DRAG EVERYONE TO THE BANK', { size: 15 })
+      );
+      const croc = crocEyes({ x: W / 2 + 66, y: 286, s: .5 });
+      svg.append(croc);
+      let saved = 0;
+      [[118, 296], [246, 262]].forEach(([x, y]) => {
+        const who = person({ x, y, s: .8, mood: 'scared' });
+        who.setAttribute('data-ok', true);
+        svg.append(who);
+        ctx.draggable(who, x, y, {
+          scale: .8,
+          hitBox: { y: -46, rx: 34, ry: 62 },
+          onDrop: (dx, dy) => {
+            if (dy > 396) {
+              who.style.pointerEvents = 'none'; who.style.opacity = '.45';
+              saved++;
+              if (saved >= 2) ctx.win();
+              return;
+            }
+>>>>>>> Stashed changes
             return 'reset';
           }
         });
       });
+<<<<<<< Updated upstream
     }
   },
 
@@ -586,4 +653,68 @@ export const GAMES = [
     }
   ])
 
+=======
+      ctx.onTick((p) => place(croc, W / 2 + 66, 286 - p * 30, .5 + p * .7));
+    }
+  },
+
+  // 13. Barkly: pull the ute off the road before the dust wall hits.
+  {
+    id: 'dust-storm', prompt: 'DUST STORM!', bg: '#c9a25a',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        el('rect', { x: 132, y: 0, width: 96, height: H, fill: '#6d6d6d' }),
+        el('line', { x1: W / 2, y1: 0, x2: W / 2, y2: H, stroke: '#fffaf0', 'stroke-width': 4, 'stroke-dasharray': '18 16' }),
+        text(W / 2, 62, 'DRAG THE UTE OFF THE ROAD', { size: 14, fill: 'rgba(29,26,22,.6)' })
+      );
+      const blobs = [];
+      for (let i = 0; i < 9; i++) blobs.push(el('circle', { cx: i * 46 - 10, cy: (i % 2) * 26, r: 48, fill: 'rgba(158,128,88,.92)' }));
+      const dust = g(blobs);
+      svg.append(dust);
+      const car = g([
+        el('rect', { x: -26, y: -44, width: 52, height: 88, rx: 12, fill: '#c8412f', stroke: '#1d1a16', 'stroke-width': 3 }),
+        el('rect', { x: -19, y: -32, width: 38, height: 22, rx: 4, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 }),
+        el('rect', { x: -19, y: 16, width: 38, height: 18, rx: 4, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 })
+      ]);
+      car.setAttribute('data-ok', true);
+      svg.append(car);
+      ctx.draggable(car, 180, 380, {
+        onDrop: (x) => { if (x < 106 || x > 254) ctx.win(); return 'reset'; }
+      });
+      ctx.onTick((p) => place(dust, 0, -150 + p * 420));
+    }
+  },
+
+  // 14. Alice Springs: dry riverbeds flood in minutes. Climb the bank.
+  {
+    id: 'flash-flood', prompt: 'DRY RIVER!', bg: '#e6d3a3',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        el('rect', { x: 0, y: 200, width: W, height: 150, fill: '#d8c391' }),
+        el('rect', { x: 148, y: 350, width: 64, height: 130, fill: '#6d6d6d' }),
+        text(W / 2, 40, 'TAP TO CLIMB THE BANK', { size: 15 })
+      );
+      const flood = el('rect', { x: 0, y: 380, width: W, height: 0, fill: 'rgba(47,127,143,.8)' });
+      svg.append(flood);
+      let py = 310, done = false;
+      const guy = person({ x: 180, y: py, s: .9, mood: 'scared' });
+      svg.append(guy);
+      svg.addEventListener('pointerdown', () => {
+        if (done) return;
+        py -= 40;
+        place(guy, 180, Math.max(110, py), .9);
+        if (py <= 110) { done = true; ctx.win(); }
+      });
+      ctx.onTick((p) => {
+        if (done) return;
+        const top = 380 - p * 260;
+        flood.setAttribute('y', top);
+        flood.setAttribute('height', Math.max(0, 400 - top));
+        if (top < py) { done = true; ctx.lose(); }
+      });
+    }
+  }
+>>>>>>> Stashed changes
 ];

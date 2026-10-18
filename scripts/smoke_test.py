@@ -1,4 +1,4 @@
-"""End-to-end smoke test: plays every micro-game in a real (headless) phone browser.
+﻿"""End-to-end smoke test: plays every micro-game in a real (headless) phone browser.
 
 Usage:
     cd server && PORT=8099 npm start      # in one terminal
@@ -15,7 +15,11 @@ if SHOTS: SHOTS.mkdir(parents=True, exist_ok=True)
 
 GAMES = ['croc-edge', 'swim-sign', 'croc-camp', 'stinger-vinegar', 'stinger-suit',
          'cyclone-kit', 'flood-road', 'heat-drink', 'snake-bite', 'bushfire-leave',
+<<<<<<< Updated upstream
          'lightning-pool', 'mozzie-dusk', 'sun-slip', 'boss-cyclone', 'boss-croc']
+=======
+         'croc-trap', 'rock-hole', 'dust-storm', 'flash-flood']
+>>>>>>> Stashed changes
 
 SVG_PT = """([x, y]) => { const svg = document.querySelector('#stage svg'); const p = svg.createSVGPoint();
   p.x = x; p.y = y; const r = p.matrixTransform(svg.getScreenCTM()); return [r.x, r.y]; }"""
@@ -54,6 +58,38 @@ def win(page, gid):
         drag(page, '[data-ok="true"]', (190, 175))
     elif gid == 'stinger-suit':
         page.click('[data-ok="true"]')
+    elif gid == 'rock-hole':
+        # draggable() moves the grabbed node to the front of the DOM, so bind to the
+        # element handle before dragging rather than re-querying the selector.
+        for _ in range(2):
+            handle = page.query_selector('[data-ok="true"]')
+            if not handle:
+                break
+            box = handle.bounding_box()
+            sx, sy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+            tx, ty = svg_point(page, 100, 445)
+            page.mouse.move(sx, sy); page.mouse.down()
+            for i in range(1, 9):
+                page.mouse.move(sx + (tx - sx) * i / 8, sy + (ty - sy) * i / 8)
+            page.mouse.up()
+            handle.evaluate("n => n.removeAttribute('data-ok')")
+            time.sleep(0.15)
+    elif gid == 'dust-storm':
+        drag(page, '[data-ok="true"]', (60, 400))
+    elif gid == 'croc-trap':
+        for _ in range(80):
+            cx = page.evaluate("() => { const n = document.querySelector('[data-croc]'); if (!n) return -999;"
+                               " const m = n.getAttribute('transform').match(/translate\\(([-0-9.]+)/);"
+                               " return m ? parseFloat(m[1]) : -999; }")
+            if abs(cx - 190) < 34:
+                tap(page, *svg_point(page, 190, 300))
+                break
+            time.sleep(0.05)
+    elif gid == 'flash-flood':
+        x, y = svg_point(page, 180, 300)
+        for _ in range(8):
+            tap(page, x, y)
+            time.sleep(0.05)
     elif gid == 'cyclone-kit':
         for _ in range(3):
             page.locator('[data-ok="true"]').filter(has_not=page.locator('xx')).first.dispatch_event('pointerdown')
@@ -90,7 +126,7 @@ def main():
 
         for gid in GAMES:
             page.goto(BASE + '/'); page.wait_for_timeout(300)
-            page.evaluate(f"window.__TES_FORCE__ = '{gid}'")
+            page.evaluate(f"window.__TES_SKIP_INTRO__ = true; window.__TES_FORCE__ = '{gid}'")
             page.click('#btn-play'); page.wait_for_timeout(700)
             if SHOTS: page.screenshot(path=str(SHOTS / f'game-{gid}.png'))
             win(page, gid)
@@ -127,9 +163,9 @@ def main():
 
         # Full run: do nothing until all lives are gone, then submit a name.
         page.goto(BASE + '/'); page.wait_for_timeout(300)
-        page.evaluate("window.__TES_FORCE__ = 'flood-road'")
+        page.evaluate("window.__TES_SKIP_INTRO__ = true; window.__TES_FORCE__ = 'flood-road'")
         page.click('#btn-play')
-        page.wait_for_selector('#screen-over.active', timeout=40000)
+        page.wait_for_selector('#screen-over.active', timeout=60000)
         page.fill('#player-name', 'SmokeTester')
         page.click('#submit-form button[type=submit]')
         page.wait_for_function("document.querySelector('#submit-msg').textContent.includes('board')", timeout=8000)

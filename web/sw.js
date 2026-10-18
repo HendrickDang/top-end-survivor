@@ -1,9 +1,17 @@
 // Service worker: caches the whole game so it plays with no signal.
 // Bump CACHE when you change any file so phones pick up the new version.
+<<<<<<< Updated upstream
 const CACHE = 'tes-v1.2.0';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/fx.js', 'js/badges.js', 'js/share.js', 'js/daily.js', 'js/season.js',
+=======
+const CACHE = 'tes-v1.0.10';
+const SHELL = [
+  './', 'index.html', 'manifest.webmanifest', 'css/style.css',
+  'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/characters.js', 'js/locations.js', 'js/fails.js',
+  'audio/Clockwork_Catastrophe.mp3',
+>>>>>>> Stashed changes
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
@@ -35,12 +43,20 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (url.origin !== location.origin) return;
-  // App shell: cache first, refresh in the background.
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
-    const net = fetch(e.request).then(res => {
-      if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+
+  // App shell: fresh from the network while online, so a new version is picked up on
+  // the next load rather than the one after it. Falls back to the cached copy when
+  // there is no signal, which is what keeps the game playable offline.
+  // `no-cache` revalidates with the server instead of trusting the browser's HTTP
+  // cache (static files are served with a 1 h max-age), otherwise a changed file
+  // would keep serving the old copy for up to an hour even after CACHE is bumped.
+  e.respondWith((async () => {
+    try {
+      const res = await fetch(e.request, { cache: 'no-cache' });
+      if (res.status === 200) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
       return res;
-    }).catch(() => hit || caches.match('index.html'));
-    return hit || net;
-  }));
+    } catch {
+      return (await caches.match(e.request, { ignoreSearch: true })) || caches.match('index.html');
+    }
+  })());
 });

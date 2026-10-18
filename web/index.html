@@ -22,17 +22,25 @@
         <div class="mascot" id="menu-mascot" aria-hidden="true"></div>
         <h1 class="logo">Top End<br><span>Survivor</span></h1>
         <p class="tagline">Ten seconds of panic. A lifetime of croc sense.</p>
+        <p class="journey" id="menu-journey"></p>
         <button class="btn btn-primary btn-big" id="btn-play">Play</button>
         <button class="btn btn-daily" id="btn-daily">📅 Daily Challenge<small id="daily-sub">New challenge today!</small></button>
         <p class="chips"><span id="daily-streak-chip"></span></p>
         <div class="menu-row">
+          <button class="btn" id="btn-chars">Characters</button>
           <button class="btn" id="btn-board">Leaderboard</button>
           <button class="btn" id="btn-learn">Safety tips</button>
+<<<<<<< Updated upstream
           <button class="btn" id="btn-badges">Badges</button>
         </div>
         <button class="btn btn-install" data-install hidden>📲 Install the game · free badge</button>
         <p class="season-chip" id="season-chip"></p>
         <p class="menu-foot"><span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
+=======
+          <button class="btn" id="btn-admin" hidden>Admin</button>
+        </div>
+        <p class="menu-foot"><span class="coin-total" id="menu-coins"></span> <span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span> <button class="sound-toggle" type="button" data-sound-toggle aria-label="Sound on" aria-pressed="true"></button></p>
+>>>>>>> Stashed changes
       </div>
     </section>
 
@@ -40,12 +48,29 @@
     <section class="screen" id="screen-game" aria-label="Game">
       <header class="hud">
         <div class="lives" id="hud-lives" aria-label="Lives"></div>
+<<<<<<< Updated upstream
         <div class="round">Round <b id="hud-round">1</b> <span class="streak" id="hud-streak"></span></div>
         <div class="score"><b id="hud-score">0</b> <button class="mute-btn" data-mute aria-label="Mute">🔊</button></div>
+=======
+        <div class="hud-loc"><b id="hud-location">Darwin</b><span id="hud-step">1/5</span></div>
+        <div class="score"><b id="hud-score">0</b></div>
+        <button class="sound-toggle" type="button" data-sound-toggle aria-label="Sound on" aria-pressed="true"></button>
+>>>>>>> Stashed changes
       </header>
       <div class="timer"><div class="timer-bar" id="timer-bar"></div></div>
       <div class="stage" id="stage"></div>
       <div class="banner" id="banner" aria-live="assertive"></div>
+
+      <!-- "now arriving" location card -->
+      <div class="loc-intro" id="loc-intro" role="status" aria-live="polite">
+        <div class="loc-card">
+          <span class="loc-kicker">Now arriving</span>
+          <div class="loc-art"></div>
+          <h3 class="loc-name"></h3>
+          <p class="loc-blurb"></p>
+          <span class="loc-hint">tap to continue</span>
+        </div>
+      </div>
     </section>
 
     <!-- BETWEEN ROUNDS -->
@@ -61,8 +86,14 @@
     <!-- GAME OVER -->
     <section class="screen" id="screen-over" aria-label="Game over">
       <div class="panel">
+<<<<<<< Updated upstream
         <h2 id="over-title">Game over</h2>
+=======
+        <h2>Game over</h2>
+        <div class="over-char" id="over-char" aria-hidden="true"></div>
+>>>>>>> Stashed changes
         <p class="big-score"><span id="over-score">0</span><small>points</small></p>
+        <p class="coin-total" id="over-coins"></p>
         <p class="sub" id="over-rounds"></p>
         <div class="over-daily" id="over-daily" hidden>
           <div class="daily-grid" id="daily-grid"></div>
@@ -88,6 +119,23 @@
         </div>
         <button class="btn btn-install" data-install hidden>📲 Play every day: install the game</button>
         <p class="vote-nudge">Enjoyed it? Tell the judges: <b>Team CAP003</b> 🐊</p>
+      </div>
+    </section>
+
+    <!-- CHARACTERS / STORE -->
+    <section class="screen" id="screen-characters" aria-label="Territory Characters">
+      <div class="panel">
+        <div class="shop-head">
+          <div class="shop-frilly" id="shop-frilly" aria-hidden="true"></div>
+          <div>
+            <h2>Territory Characters</h2>
+            <p class="sub">Play to earn coins, then unlock a new mate. Tap an unlocked character to play as them.</p>
+          </div>
+        </div>
+        <p class="coin-total shop-coins">You have <b id="shop-coins">0</b> coins <span class="coin-ic" id="shop-coin-ic"></span></p>
+        <div class="char-grid" id="char-grid"></div>
+        <p class="form-msg" id="shop-msg" aria-live="polite"></p>
+        <button class="btn" data-back>Back</button>
       </div>
     </section>
 
@@ -127,6 +175,7 @@
       </div>
     </section>
 
+<<<<<<< Updated upstream
     <!-- INSTALL HELP -->
     <div class="sheet" id="install-sheet" hidden>
       <div class="sheet-card">
@@ -144,6 +193,23 @@
       </div>
     </div>
     <div class="demo-ribbon">DEMO · Scan the QR to play on your phone!</div>
+=======
+    <!-- ADMIN / DEBUG (enabled with ?admin=1) -->
+    <section class="screen" id="screen-admin" aria-label="Admin mini-game tester">
+      <div class="panel">
+        <h2>Admin</h2>
+        <p class="sub">Testing tools. Pick a location, then jump straight into any mini-game. Lives, score and the leaderboard are left untouched.</p>
+        <div class="tabs admin-locs" id="admin-locs"></div>
+        <button class="btn btn-primary" id="admin-random">Random mini-game here</button>
+        <div class="admin-games" id="admin-games"></div>
+        <div class="menu-row">
+          <button class="btn" id="admin-play">Play normally</button>
+          <button class="btn" id="admin-menu">Back to menu</button>
+        </div>
+      </div>
+    </section>
+
+>>>>>>> Stashed changes
   </main>
 
   <script src="js/config.js"></script>

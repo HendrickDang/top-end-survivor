@@ -300,6 +300,25 @@ export function heartSVG() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z" fill="#c8412f" stroke="#1d1a16" stroke-width="2"/></svg>`;
 }
 
+// Speaker, for the sound on/off toggle.
+export function soundSVG(on = true) {
+  const body = '<path d="M4 9.5h3.6L12 6v12l-4.4-3.5H4z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>';
+  const waves = on
+    ? '<path d="M14.8 9.4a4.2 4.2 0 0 1 0 5.2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M17.6 6.8a8 8 0 0 1 0 10.4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>'
+    : '<path d="M15.4 9.6l5 4.8M20.4 9.6l-5 4.8" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${body}${waves}</svg>`;
+}
+
+// Gold coin, for the character store.
+export function coinSVG() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#ffd25e" stroke="#1d1a16" stroke-width="2"/><circle cx="12" cy="12" r="6" fill="none" stroke="#e0b400" stroke-width="2"/><path d="M12 8.2v7.6M10.2 10.2h3.2M10.2 13.6h3.2" stroke="#b5641a" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+}
+
+// Padlock, for locked characters in the store.
+export function lockSVG() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2.5" fill="#fffaf0" stroke="#1d1a16" stroke-width="2"/><path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="#1d1a16" stroke-width="2"/><circle cx="12" cy="15" r="1.6" fill="#1d1a16"/></svg>`;
+}
+
 // Small icons for the learn screen.
 export function iconFor(key) {
   const wrap = (inner, bg) => `<svg class="ic" viewBox="-36 -36 72 72" xmlns="${NS}"><circle r="34" fill="${bg}" stroke="#1d1a16" stroke-width="3"/>${inner}</svg>`;
@@ -311,10 +330,15 @@ export function iconFor(key) {
     flood: () => wrap('<path d="M-22 6 q11 -8 22 0 t22 0 M-22 16 q11 -8 22 0 t22 0" stroke="#2f7fd0" stroke-width="5" fill="none"/><path d="M-14 -4 h28 l-4 -12 h-20 z" fill="#c8412f" stroke="#1d1a16" stroke-width="3"/>', '#f6e7c8'),
     heat: () => { tmp.innerHTML = ''; tmp.appendChild(items.water()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     snake: () => { tmp.innerHTML = ''; tmp.appendChild(items.bandage()); return wrap(`<g transform="scale(.8)">${tmp.innerHTML}</g>`, '#e7f3d6'); },
+<<<<<<< Updated upstream
     lightning: () => { tmp.innerHTML = ''; tmp.appendChild(items.bolt()); return wrap(`<g transform="scale(.6)">${tmp.innerHTML}</g>`, '#4b5363'); },
     mozzies: () => { tmp.innerHTML = ''; tmp.appendChild(items.mozzie()); return wrap(`<g transform="scale(1.6)">${tmp.innerHTML}</g>`, '#e3d4f0'); },
     sun: () => { tmp.innerHTML = ''; tmp.appendChild(items.hat()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8')
+=======
+    bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8'),
+    roads: () => wrap('<path d="M0 -26 L16 26 L-16 26 z" fill="#6d6d6d" stroke="#1d1a16" stroke-width="3"/><path d="M0 -12 v8 M0 6 v8" stroke="#ffe9a8" stroke-width="4" stroke-linecap="round"/>', '#f0d9a8')
+>>>>>>> Stashed changes
   };
   return (pick[key] || pick.crocwise)();
 }

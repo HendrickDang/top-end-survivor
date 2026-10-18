@@ -1,11 +1,19 @@
 // Server-side scoring and run validation.
 // The server never trusts the client's score: it recomputes it from the per-round results.
 
+<<<<<<< Updated upstream
 import { REGULAR, BOSSES, DAILY_ROUNDS, dailySequence, darwinDay, prevDay, isBoss, isBossRound } from '../../web/js/daily.js';
 
 // Game ids and the Daily Challenge order come from the web app, so the two can never drift apart.
 export const GAME_IDS = [...REGULAR, ...BOSSES];
 export { REGULAR, BOSSES, dailySequence, darwinDay };
+=======
+export const GAME_IDS = [
+  'croc-edge', 'swim-sign', 'croc-camp', 'stinger-vinegar', 'stinger-suit',
+  'cyclone-kit', 'flood-road', 'heat-drink', 'snake-bite', 'bushfire-leave',
+  'croc-trap', 'rock-hole', 'dust-storm', 'flash-flood'
+];
+>>>>>>> Stashed changes
 export const MAX_LIVES = 3;
 export const BOSS_BONUS = 200; // must match web/js/main.js
 
