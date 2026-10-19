@@ -1,19 +1,22 @@
-// The fourteen micro-games. Each one is a few seconds long and teaches one NT safety rule.
+// The mini-games (17 hazards + 2 boss rounds). Each one is a few seconds long and teaches one NT safety rule.
 //
 // A game is { id, prompt, bg, timeoutWins, setup(ctx) }.
 //   prompt       - the shouted instruction ("STEP BACK!")
 //   timeoutWins  - true if surviving until the timer ends counts as a win
 //   setup(ctx)   - draws the scene and wires input. Call ctx.win() or ctx.lose() once.
 //
-// The engine draws the current location's landscape (see locationBackdrop in
-// locations.js) behind the scene, so games should not paint their own opaque,
-// full-stage background - draw only the ground, water and props the round needs.
+// The engine draws a location's landscape (see locationBackdrop in locations.js)
+// behind the scene: the stop you are at in Journey mode, or the hazard's home
+// location in Classic and Daily. So games should not paint their own opaque,
+// full-stage background; draw only the ground, water and props the round needs.
+// A game whose sky IS the hazard (a storm, dusk) sets ownBackdrop: true instead.
 //
 // ctx gives you: svg (the scene), stage (div), location (the place being played),
 // win(), lose(), onTick(fn(progress, dt)), toSvg(event) -> {x, y},
-// draggable(node, x, y, opts), buttons([{label, ok}]), speed.
+// draggable(node, x, y, opts), buttons([{label, ok, onPick}]), clearButtons(), sound(name),
+// failTip (set it to override the lesson shown after a fail), speed.
 
-import { el, g, text, person, crocEyes, water, sign, items, VIEW } from './art.js';
+import { el, g, text, person, crocEyes, water, sun, sign, items, VIEW } from './art.js';
 
 const W = VIEW.w, H = VIEW.h;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -400,10 +403,9 @@ export const GAMES = [
     }
   },
 
-<<<<<<< Updated upstream
   // 11. Storm over the pool: tap every swimmer to get them out before lightning strikes.
   {
-    id: 'lightning-pool', prompt: 'STORM! EVERYONE OUT!', bg: '#5b6478',
+    id: 'lightning-pool', prompt: 'STORM! EVERYONE OUT!', bg: '#5b6478', ownBackdrop: true,
     setup(ctx) {
       const { svg } = ctx;
       svg.append(
@@ -453,7 +455,7 @@ export const GAMES = [
 
   // 12. Dusk at the campsite: drag the repellent onto the camper before the mozzies swarm.
   {
-    id: 'mozzie-dusk', prompt: 'MOZZIES!', bg: '#6a4c93',
+    id: 'mozzie-dusk', prompt: 'MOZZIES!', bg: '#6a4c93', ownBackdrop: true,
     setup(ctx) {
       const { svg } = ctx;
       svg.append(
@@ -488,75 +490,16 @@ export const GAMES = [
           scale: 1.2,
           onDrop: (x, y) => {
             if (x > 110 && x < 250 && y > 180 && y < 350) { ok ? ctx.win() : ctx.lose(); return; }
-=======
-  // 11. Kakadu: rangers trap a problem croc at the ramp. One tap, right moment.
-  {
-    id: 'croc-trap', prompt: 'TRAP IT!', bg: '#7fb8a8',
-    setup(ctx) {
-      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
-      svg.append(
-        water(240, 240, '#2f7f8f'),
-        text(W / 2, 44, 'ONE TAP - WHEN THE CROC IS IN THE TRAP', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
-      );
-      const zx = 190, zy = 300, zr = 54;
-      svg.append(el('circle', { cx: zx, cy: zy, r: zr, fill: 'rgba(255,233,168,.3)', stroke: '#ffe9a8', 'stroke-width': 4, 'stroke-dasharray': '9 9' }));
-      svg.append(g([
-        el('rect', { x: -42, y: -28, width: 84, height: 56, rx: 10, fill: 'none', stroke: '#cfd6dc', 'stroke-width': 6 }),
-        el('line', { x1: -42, y1: -28, x2: 42, y2: 28, stroke: '#cfd6dc', 'stroke-width': 5 }),
-        el('line', { x1: -42, y1: 28, x2: 42, y2: -28, stroke: '#cfd6dc', 'stroke-width': 5 })
-      ], { transform: `translate(${zx} ${zy})` }));
-      const croc = crocEyes({ x: -70, y: 300, s: 1 });
-      croc.setAttribute('data-croc', '');
-      svg.append(croc);
-      let done = false, cx = -70;
-      svg.addEventListener('pointerdown', () => {
-        if (done) return;
-        done = true;
-        if (Math.abs(cx - zx) <= zr) ctx.win(); else ctx.lose();
-      });
-      ctx.onTick((p) => { if (done) return; cx = -70 + p * (W + 160); place(croc, cx, 300, 1); });
-    }
-  },
-
-  // 12. Arnhem Land: get everyone out of the rock hole before the croc surfaces.
-  {
-    id: 'rock-hole', prompt: 'GET OUT!', bg: '#d9c08e',
-    setup(ctx) {
-      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
-      svg.append(
-        el('path', { d: 'M-10 84 q70 -44 150 -22 q80 -22 150 10 l0 120 q-80 22 -150 4 q-80 -18 -150 0 z', fill: '#b9a074', stroke: '#1d1a16', 'stroke-width': 4 }),
-        el('ellipse', { cx: W / 2, cy: 286, rx: 150, ry: 78, fill: '#2f7f8f', stroke: '#1d1a16', 'stroke-width': 4 }),
-        text(W / 2, 40, 'DRAG EVERYONE TO THE BANK', { size: 15 })
-      );
-      const croc = crocEyes({ x: W / 2 + 66, y: 286, s: .5 });
-      svg.append(croc);
-      let saved = 0;
-      [[118, 296], [246, 262]].forEach(([x, y]) => {
-        const who = person({ x, y, s: .8, mood: 'scared' });
-        who.setAttribute('data-ok', true);
-        svg.append(who);
-        ctx.draggable(who, x, y, {
-          scale: .8,
-          hitBox: { y: -46, rx: 34, ry: 62 },
-          onDrop: (dx, dy) => {
-            if (dy > 396) {
-              who.style.pointerEvents = 'none'; who.style.opacity = '.45';
-              saved++;
-              if (saved >= 2) ctx.win();
-              return;
-            }
->>>>>>> Stashed changes
             return 'reset';
           }
         });
       });
-<<<<<<< Updated upstream
     }
   },
 
   // 13. Beach in the midday sun: tap the three sun-safe items.
   {
-    id: 'sun-slip', prompt: 'SLIP SLOP SLAP!', bg: '#9fdcef',
+    id: 'sun-slip', prompt: 'SLIP SLOP SLAP!', bg: '#9fdcef', ownBackdrop: true,
     setup(ctx) {
       const { svg } = ctx;
       svg.append(
@@ -651,14 +594,73 @@ export const GAMES = [
         { label: 'Cut the line, leave it', ok: true }
       ]
     }
-  ])
+  ]),
 
-=======
+  // 14. Kakadu: rangers trap a problem croc at the ramp. One tap, right moment.
+  {
+    id: 'croc-trap', prompt: 'TRAP IT!', bg: '#7fb8a8',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        water(240, 240, '#2f7f8f'),
+        text(W / 2, 44, 'ONE TAP - WHEN THE CROC IS IN THE TRAP', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
+      );
+      const zx = 190, zy = 300, zr = 54;
+      svg.append(el('circle', { cx: zx, cy: zy, r: zr, fill: 'rgba(255,233,168,.3)', stroke: '#ffe9a8', 'stroke-width': 4, 'stroke-dasharray': '9 9' }));
+      svg.append(g([
+        el('rect', { x: -42, y: -28, width: 84, height: 56, rx: 10, fill: 'none', stroke: '#cfd6dc', 'stroke-width': 6 }),
+        el('line', { x1: -42, y1: -28, x2: 42, y2: 28, stroke: '#cfd6dc', 'stroke-width': 5 }),
+        el('line', { x1: -42, y1: 28, x2: 42, y2: -28, stroke: '#cfd6dc', 'stroke-width': 5 })
+      ], { transform: `translate(${zx} ${zy})` }));
+      const croc = crocEyes({ x: -70, y: 300, s: 1 });
+      croc.setAttribute('data-croc', '');
+      svg.append(croc);
+      let done = false, cx = -70;
+      svg.addEventListener('pointerdown', () => {
+        if (done) return;
+        done = true;
+        if (Math.abs(cx - zx) <= zr) ctx.win(); else ctx.lose();
+      });
+      ctx.onTick((p) => { if (done) return; cx = -70 + p * (W + 160); place(croc, cx, 300, 1); });
+    }
+  },
+
+  // 15. Arnhem Land: get everyone out of the rock hole before the croc surfaces.
+  {
+    id: 'rock-hole', prompt: 'GET OUT!', bg: '#d9c08e',
+    setup(ctx) {
+      const { svg } = ctx, W = VIEW.w, H = VIEW.h;
+      svg.append(
+        el('path', { d: 'M-10 84 q70 -44 150 -22 q80 -22 150 10 l0 120 q-80 22 -150 4 q-80 -18 -150 0 z', fill: '#b9a074', stroke: '#1d1a16', 'stroke-width': 4 }),
+        el('ellipse', { cx: W / 2, cy: 286, rx: 150, ry: 78, fill: '#2f7f8f', stroke: '#1d1a16', 'stroke-width': 4 }),
+        text(W / 2, 40, 'DRAG EVERYONE TO THE BANK', { size: 15 })
+      );
+      const croc = crocEyes({ x: W / 2 + 66, y: 286, s: .5 });
+      svg.append(croc);
+      let saved = 0;
+      [[118, 296], [246, 262]].forEach(([x, y]) => {
+        const who = person({ x, y, s: .8, mood: 'scared' });
+        who.setAttribute('data-ok', true);
+        svg.append(who);
+        ctx.draggable(who, x, y, {
+          scale: .8,
+          hitBox: { y: -46, rx: 34, ry: 62 },
+          onDrop: (dx, dy) => {
+            if (dy > 396) {
+              who.style.pointerEvents = 'none'; who.style.opacity = '.45';
+              saved++;
+              if (saved >= 2) ctx.win();
+              return;
+            }
+            return 'reset';
+          }
+        });
+      });
       ctx.onTick((p) => place(croc, W / 2 + 66, 286 - p * 30, .5 + p * .7));
     }
   },
 
-  // 13. Barkly: pull the ute off the road before the dust wall hits.
+  // 16. Barkly: pull the ute off the road before the dust wall hits.
   {
     id: 'dust-storm', prompt: 'DUST STORM!', bg: '#c9a25a',
     setup(ctx) {
@@ -686,7 +688,7 @@ export const GAMES = [
     }
   },
 
-  // 14. Alice Springs: dry riverbeds flood in minutes. Climb the bank.
+  // 17. Alice Springs: dry riverbeds flood in minutes. Climb the bank.
   {
     id: 'flash-flood', prompt: 'DRY RIVER!', bg: '#e6d3a3',
     setup(ctx) {
@@ -716,5 +718,4 @@ export const GAMES = [
       });
     }
   }
->>>>>>> Stashed changes
 ];

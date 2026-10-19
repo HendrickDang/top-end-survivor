@@ -1,5 +1,6 @@
 // The journey: eight Northern Territory locations, in travel order. Each one is a
 // stage of the run that introduces its own hazards (mini-games) and has its own art.
+// Shared with the server (server/src/scoring.js), so keep this file free of DOM calls.
 // Everything is drawn in code, like the rest of the game.
 import { NS } from './art.js';
 
@@ -9,17 +10,17 @@ export const LOCATIONS = [
   {
     id: 'darwin', name: 'Darwin', accent: '#8fd0e0', rounds: 5,
     blurb: 'The big smoke by the harbour. Stingers in the sea, crocs at the boat ramp.',
-    games: ['stinger-suit', 'swim-sign', 'croc-edge', 'stinger-vinegar', 'cyclone-kit']
+    games: ['stinger-suit', 'swim-sign', 'croc-edge', 'stinger-vinegar', 'cyclone-kit', 'lightning-pool', 'sun-slip']
   },
   {
     id: 'kakadu', name: 'Kakadu', accent: '#4f8a3c', rounds: 5,
     blurb: 'World-heritage wetlands. Crocs in every billabong and roads that disappear under water.',
-    games: ['croc-edge', 'croc-camp', 'croc-trap', 'flood-road', 'bushfire-leave']
+    games: ['croc-edge', 'croc-camp', 'croc-trap', 'flood-road', 'bushfire-leave', 'mozzie-dusk']
   },
   {
     id: 'litchfield', name: 'Litchfield', accent: '#2f8fa8', rounds: 5,
     blurb: 'Waterfalls and plunge pools. That inviting pool may already have a croc in it.',
-    games: ['swim-sign', 'croc-camp', 'croc-edge', 'flood-road']
+    games: ['swim-sign', 'croc-camp', 'croc-edge', 'flood-road', 'lightning-pool']
   },
   {
     id: 'katherine', name: 'Katherine', accent: '#c9a25a', rounds: 5,
@@ -29,7 +30,7 @@ export const LOCATIONS = [
   {
     id: 'arnhem', name: 'Arnhem Land', accent: '#b5641a', rounds: 5,
     blurb: 'Escarpment and rock holes. Beautiful, remote, and home to plenty of saltwater crocs.',
-    games: ['rock-hole', 'croc-camp', 'bushfire-leave', 'croc-edge']
+    games: ['rock-hole', 'croc-camp', 'bushfire-leave', 'croc-edge', 'mozzie-dusk']
   },
   {
     id: 'barkly', name: 'Barkly', accent: '#e0892e', rounds: 5,
@@ -44,12 +45,20 @@ export const LOCATIONS = [
   {
     id: 'uluru', name: 'Uluru Region', accent: '#f4845f', rounds: 5,
     blurb: 'Red centre and big skies. Carry water, watch for snakes, know your fire plan.',
-    games: ['heat-drink', 'snake-bite', 'bushfire-leave', 'flash-flood']
+    games: ['heat-drink', 'snake-bite', 'bushfire-leave', 'flash-flood', 'sun-slip']
   }
 ];
 
 export const LOCATION_COUNT = LOCATIONS.length;
 export const locationAt = (i) => LOCATIONS[((i % LOCATION_COUNT) + LOCATION_COUNT) % LOCATION_COUNT];
+
+// Journey: which stop a round (1-based) is played at, counting on past Uluru (stop 8 = Darwin again).
+// The server uses this too, to check that every Journey round was a hazard from that stop.
+export function journeyStop(round) {
+  let r = round, i = 0;
+  while (r > locationAt(i).rounds) { r -= locationAt(i).rounds; i++; }
+  return i;
+}
 
 // Themed landscape for a location, used on the "now arriving" card.
 export function locationArt(id) {
@@ -219,4 +228,9 @@ export function locationBackdrop(id) {
   // scene afterwards and therefore renders crisply on top of it.
   const haze = `<rect x="-240" y="-700" width="840" height="2400" fill="#fffaf0" opacity=".45"/>`;
   return `<g class="loc-backdrop" aria-hidden="true">${art[id] || art.darwin}${haze}</g>`;
+}
+
+// Classic and Daily rounds also get a backdrop: the first location that features the hazard.
+export function homeLocationFor(gameId) {
+  return LOCATIONS.find(l => l.games.includes(gameId)) || LOCATIONS[0];
 }

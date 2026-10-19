@@ -1,17 +1,10 @@
 // Service worker: caches the whole game so it plays with no signal.
 // Bump CACHE when you change any file so phones pick up the new version.
-<<<<<<< Updated upstream
-const CACHE = 'tes-v1.2.0';
+const CACHE = 'tes-v1.4.0';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/fx.js', 'js/badges.js', 'js/share.js', 'js/daily.js', 'js/season.js',
-=======
-const CACHE = 'tes-v1.0.10';
-const SHELL = [
-  './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/characters.js', 'js/locations.js', 'js/fails.js',
-  'audio/Clockwork_Catastrophe.mp3',
->>>>>>> Stashed changes
+  'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/fx.js', 'js/badges.js', 'js/share.js', 'js/daily.js', 'js/season.js', 'js/towns.js', 'js/quiz.js', 'js/social.js', 'js/quizui.js', 'js/wardrobe.js', 'js/wardrobeui.js', 'js/judge.js',
+  'js/characters.js', 'js/fails.js', 'js/locations.js', 'audio/Clockwork_Catastrophe.mp3',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
@@ -43,20 +36,28 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (url.origin !== location.origin) return;
-
-  // App shell: fresh from the network while online, so a new version is picked up on
-  // the next load rather than the one after it. Falls back to the cached copy when
-  // there is no signal, which is what keeps the game playable offline.
-  // `no-cache` revalidates with the server instead of trusting the browser's HTTP
-  // cache (static files are served with a 1 h max-age), otherwise a changed file
-  // would keep serving the old copy for up to an hour even after CACHE is bumped.
-  e.respondWith((async () => {
-    try {
-      const res = await fetch(e.request, { cache: 'no-cache' });
-      if (res.status === 200) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+  // The soundtrack: audio players ask for byte ranges, so answer those from the cache too (works offline).
+  if (e.request.headers.has('range')) {
+    e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(async hit => {
+      if (!hit) return fetch(e.request);
+      const buf = await hit.arrayBuffer();
+      const m = /bytes=(\d*)-(\d*)/.exec(e.request.headers.get('range')) || [];
+      const len = buf.byteLength;
+      const start = m[1] ? Number(m[1]) : m[2] ? Math.max(0, len - Number(m[2])) : 0; // "bytes=-500" = last 500
+      const end = m[1] && m[2] ? Math.min(Number(m[2]), len - 1) : len - 1;
+      return new Response(buf.slice(start, end + 1), {
+        status: 206,
+        headers: { 'Content-Type': hit.headers.get('Content-Type') || 'audio/mpeg', 'Content-Range': `bytes ${start}-${end}/${len}`, 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes' }
+      });
+    }));
+    return;
+  }
+  // App shell: cache first, refresh in the background.
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
+    const net = fetch(e.request).then(res => {
+      if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
       return res;
-    } catch {
-      return (await caches.match(e.request, { ignoreSearch: true })) || caches.match('index.html');
-    }
-  })());
+    }).catch(() => hit || caches.match('index.html'));
+    return hit || net;
+  }));
 });

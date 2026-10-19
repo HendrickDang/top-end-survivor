@@ -4,7 +4,8 @@
 export const REGULAR = [
   'croc-edge', 'swim-sign', 'croc-camp', 'stinger-vinegar', 'stinger-suit',
   'cyclone-kit', 'flood-road', 'heat-drink', 'snake-bite', 'bushfire-leave',
-  'lightning-pool', 'mozzie-dusk', 'sun-slip'
+  'lightning-pool', 'mozzie-dusk', 'sun-slip',
+  'croc-trap', 'rock-hole', 'dust-storm', 'flash-flood'
 ];
 export const BOSSES = ['boss-cyclone', 'boss-croc'];
 export const DAILY_ROUNDS = 10;

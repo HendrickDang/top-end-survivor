@@ -1,6 +1,7 @@
 // Builds a shareable score card (PNG) with the score, badges and a QR code back to the game.
 import { mascotSVG } from './art.js';
 import { BADGES } from './badges.js';
+import { characterSVG, profile } from './characters.js';
 
 export function playUrl() {
   const c = window.TES_CONFIG || {};
@@ -31,8 +32,11 @@ export async function makeCard({ score, survived, rounds, name, badgeIds = [] })
   c.fillStyle = '#ffe9a8'; c.beginPath(); c.arc(820, 230, 110, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#6b3b1f'; c.fillRect(0, H - 170, W, 170);
 
-  // mascot
-  try { const m = await loadImg(svgUrl(mascotSVG('happy'))); c.drawImage(m, 60, 60, 300, 300); } catch { /* ignore */ }
+  // your Territory Character (falls back to Frilly the mascot)
+  try {
+    const m = await loadImg(svgUrl(characterSVG(profile.selected, 'win'))).catch(() => loadImg(svgUrl(mascotSVG('happy'))));
+    c.drawImage(m, 60, 60, 300, 300);
+  } catch { /* ignore */ }
 
   c.textAlign = 'left'; c.lineJoin = 'round';
   const outlined = (str, x, y, size, fill, w = 12) => {

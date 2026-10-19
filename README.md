@@ -1,6 +1,6 @@
 # Top End Survivor
 
-A fast, funny micro-game that teaches real Northern Territory safety rules in ten-second bursts: crocodiles, box jellyfish, cyclones, flooded roads, heat, snake bites and bushfire.
+A fast, funny micro-game that teaches real Northern Territory safety rules in ten-second bursts: crocodiles, box jellyfish, cyclones, flooded roads, flash floods, dust storms, heat, sun, mozzies, lightning, snake bites and bushfire.
 
 Built for the **CDU IT Code Fair 2026, Coding Competition (Capable Coders, Group, ID CAP003)** by Van Hoi (Hendrick) Dang, Le Nhat Minh Tran and Phuong Vy Ho.
 
@@ -12,9 +12,8 @@ Built for the **CDU IT Code Fair 2026, Coding Competition (Capable Coders, Group
 
 Every year newcomers and visitors to the Top End get hurt by hazards locals take for granted. Official safety advice exists, but it lives in PDFs and media releases that few people read. Short, playful games are proven to make safety messages stick, so Top End Survivor turns each official rule into a five-second challenge you can't help replaying.
 
-Each mini-game maps to one official source (NT Government, NT Health, SecureNT, NTPFES, AVRU). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
+Each mini-game maps to one official source (NT Government, NT Health, SecureNT, NTPFES, AVRU, Cancer Council, RACV). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
 
-<<<<<<< Updated upstream
 ## The mini-games
 
 | Mini-game | You must... | Real rule it teaches | Source |
@@ -32,8 +31,33 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | STORM! EVERYONE OUT! | Tap every swimmer out of the pool | Leave the water when a storm is close; wait 30 min after the last thunder | Swimming NT |
 | MOZZIES! | Drag the repellent onto the camper | Repellent and long, light sleeves at dusk and dawn | NT Health |
 | SLIP SLOP SLAP! | Tap the 3 sun-safe items | Slip, slop, slap, seek, slide | Cancer Council |
+| TRAP IT! | Tap when the croc is in the rangers' trap | Report croc sightings, never touch a croc trap, stand back | Be Crocwise |
+| GET OUT! | Drag everyone out of the rock hole | Only swim in signed swimming areas; crocs move into waterholes after the wet | Be Crocwise |
+| DUST STORM! | Drag the ute off the road | Slow down, lights and hazards on, pull over and wait in the car | RACV |
+| DRY RIVER! | Tap to climb the bank | Never camp or walk in a dry river bed; flash floods come fast | NTPFES |
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
+
+### Road trip, characters and a soundtrack (v1.4)
+
+Minh's Journey, characters, fail cartoons and music, merged with everything from v1.3.
+
+- **Journey mode:** a road trip across the Territory in 8 stops: Darwin, Kakadu, Litchfield, Katherine, Arnhem Land, Barkly, Alice Springs and the Uluru Region. Each stop is 5 rounds of that region's own hazards, played over that region's landscape, with a "Now arriving" card in between. Three lives for the whole trip; after Uluru it loops back to Darwin for lap 2. Your furthest stop shows on the menu, reaching Uluru unlocks the *Red Centre* badge, and the server checks every Journey round really came from that stop.
+- **4 new hazards:** croc traps (Kakadu), rock holes (Arnhem Land), dust storms (Barkly) and flash floods in dry river beds (Alice Springs). 17 hazards plus 2 bosses in total.
+- **Territory Characters:** 7 cheeky locals to play as, from Backpacker Barry (free) to Market Stall Sheila (600 coins). Every game earns 1 coin per 10 points, and game over says how close the next one is. Your character is the menu avatar, celebrates your wins and stars in your fails. Their skin and shirt carry into every mini-game, with your wardrobe hats, shirts and specs on top.
+- **A fail cartoon for every hazard:** after the in-game fail animation, the result card plays a looping cartoon of exactly what went wrong (the croc drags the tent into the billabong, the ute floats away, lobster mode in the sun), starring your character.
+- **Location backdrops:** every round is drawn over a real NT landscape: the stop you are at in Journey, or the hazard's home region in Classic and Daily.
+- **Soundtrack:** a looping track that fades in on the first tap, speeds up as rounds get faster (and a lot for bosses), ducks under the fail sounds, pauses in a background tab and is cached for offline play. The mute button covers music and effects.
+- **Admin tester** (`/?admin=1`): pick a location and jump straight into any mini-game. Nothing is saved.
+
+### Friends, towns and proof it works (v1.3)
+
+- **Challenge a mate:** game over gives a link like `/?vs=42`. Your mate sees "Hendrick challenged you! Beat 820", plays with your score as a 🎯 target, and gets a "You beat Hendrick by 120!" (or a Rematch button). Your menu then shows who took you on.
+- **Town Battle:** pick your town (Darwin, Palmerston, Litchfield, Katherine, Alice Springs...). Each player's best score today counts for their town. New *Towns* tab on the leaderboard and a live NT map on the booth screen.
+- **Wardrobe:** every badge unlocks gear for your character (croc hat, stinger suit, hi-vis, boss crown, graduate cap...). 23 badges, 27 pieces of gear.
+- **Optional quick safety check:** 3 questions before your first game and the same 3 after it, once per device, always skippable. Plus a zero-effort measure: survival rate the first time someone meets a hazard vs. later tries. Both show live on the booth.
+- **Judge's tour** (`/?judge=1`, or the link on the menu): 6 steps, about 60 seconds, with a live demo, live learning numbers, load test results and the team.
+- **Load test:** `scripts/load_test.mjs` simulates hundreds of players finishing games at once. Latest local run: 500 players, 3,000 requests, 0 errors, 95% of requests under about 210 ms. CI runs 200 players on every push.
 
 ### Play every day (v1.2)
 
@@ -49,74 +73,19 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 
 - **Cartoon fail for every hazard:** croc jaws snap shut, a jellyfish zaps you, the cyclone blows your stuff away, floodwater rises, you get "cooked like a snag", dizzy stars for the wrong first aid, smoke for leaving too late.
 - **Juice:** confetti, screen shake, floating points, win streaks (from 3 in a row: +20 to +100 bonus, scored the same way on the server).
-- **Sound:** a chiptune music loop that speeds up each round, plus themed sound effects (chomp, splash, zap, sizzle). All made in code, with a mute button.
+- **Sound:** themed sound effects made in code (chomp, splash, zap, sizzle) and music that speeds up each round, with a mute button.
 - **12 badges:** one per safety topic, plus On a Roll, Top End Tourist, Top End Legend, Never Say Die and Read the Rules (for opening the Safety tips screen).
 - **Share card:** a PNG with your score, badges and a QR code back to the game, shared through the phone's share sheet.
 - **Booth boss mode:** a live "just now" ticker of how players got caught out, a crowd challenge to beat today's #1, and a "NEW #1!" celebration with confetti.
-=======
-## The journey: eight locations
-
-A run is a road trip across the Territory. Each location is a stage of five rounds drawn from that region's hazards; clear it and you travel on. Your three lives carry the whole way, so a strong run travels further and scores more. After Uluru the trip loops back to Darwin. Your furthest stop is saved and shown on the menu, and a "now arriving" card introduces each location. Every round is played against that location's landscape backdrop, so the scene changes as you travel.
-
-| # | Location | What it throws at you |
-|---|---|---|
-| 1 | Darwin | Stingers in the sea, crocs at the boat ramp, cyclone season |
-| 2 | Kakadu | Wetland crocs, flooded roads and problem-croc trapping |
-| 3 | Litchfield | Plunge pools and waterfalls that hide crocodiles |
-| 4 | Katherine | Big river country: fast floods and relentless heat |
-| 5 | Arnhem Land | Remote rock holes and waterholes full of saltwater crocs |
-| 6 | Barkly | Long flat drives: dust storms and flooded crossings |
-| 7 | Alice Springs | Dry rivers that flood in minutes, snakes and heat |
-| 8 | Uluru Region | Red centre heat, snakes and fire plans |
-
-## The mini-games
-
-Fourteen mini-games, each mapped to one official source. Every location draws from its own set, so travelling on always brings something new.
-
-| Mini-game | First seen | You must... | Real rule it teaches | Source |
-|---|---|---|---|---|
-| STEP BACK! | Darwin | Tap to back a fisher past the 5 m line | Stand at least 5 m from the water when fishing | Be Crocwise (NT Gov) |
-| SWIM? | Darwin | Decide from the sign | Only swim in signed swimming areas | Be Crocwise |
-| TREAT THE STING! | Darwin | Drag the right bottle onto a sting | Vinegar, never fresh water; call 000 | NT Health |
-| SUIT UP! | Darwin | Pick the stinger suit | Stinger season is Oct to May | NT Health |
-| PACK THE KIT! | Darwin | Tap only the essentials | Water, torch, battery radio, first aid | SecureNT |
-| PITCH IT FAR! | Kakadu | Drag the tent past 50 m | Camp at least 50 m from the water's edge | Be Crocwise |
-| FLOODED ROAD! | Kakadu | Turn around in time | If it's flooded, forget it | NTPFES |
-| SMOKE! | Kakadu | Choose to leave | Leaving early is the safest choice | NTPFES |
-| TRAP IT! | Kakadu | Tap when the croc is in the trap | Rangers trap problem crocs; report sightings, stay back | Be Crocwise |
-| HYDRATE! | Katherine | Keep tapping water, avoid the fizzy drink | 2 to 3 L of water a day, skip sugary drinks | NT Health |
-| GET OUT! | Arnhem Land | Drag everyone out of the rock hole | Never swim in a waterhole; crocs move in after the wet | Be Crocwise |
-| DUST STORM! | Barkly | Drag the ute off the road | In dust: slow down, lights on, pull over | Road Safety NT |
-| FIRST AID! | Alice Springs | Drag the wide bandage onto the bite | Pressure immobilisation; don't cut, suck or tourniquet | AVRU, Uni Melbourne |
-| DRY RIVER! | Alice Springs | Tap to climb the bank | Never camp or walk in a dry river bed; flash floods | NTPFES |
->>>>>>> Stashed changes
 
 Rounds get faster as you go (5.5 s down to 2.6 s). Three lives. Points: 100 per survived round plus 10 per round reached.
 
-Fail a round and you get a bespoke comic animation for that hazard - the croc drags the tent into the billabong, the ute floats away gurgling, the stinger dance, the burning hat run - and the victim wears your chosen character's colours. (`web/js/fails.js`.)
-
-## Territory Characters
-
-Seven funny Top End locals are unlockable playable avatars. Each has its own code-drawn art, a unique idle animation, and its own win and fail reactions and one-liners.
-
-| Character | Who they are | Unlocks at |
-|---|---|---|
-| Backpacker Barry | Two thumbs, one billy, zero sunscreen | Free |
-| Croc-Wrestling Craig | He calls the big ones "mate" | 100 coins |
-| Cyclone Cheryl | Already taped the windows. Twice. | 180 coins |
-| Bush Mechanic Bazza | She'll be right | 260 coins |
-| Tourist Trevor | Is this the one with the crocs? | 350 coins |
-| Mad Dog Mick | Hold my stubby | 450 coins |
-| Market Stall Sheila | Mangoes, two for five | 600 coins |
-
-You earn **1 coin per 10 points** scored in a run, shown on the game-over screen. Coins, unlocked characters and your selection are saved in `localStorage`, so progress survives offline. Your chosen character is your avatar on the menu, the round result cards and the game-over screen ("Territory Characters" on the menu).
-
-All characters and art (including Frilly the frill-neck lizard, who runs the character store) are original and drawn in code. The concept is inspired by public-safety games in general; no third-party art or names are used. The sound effects are synthesised live with the Web Audio API, and the looping soundtrack is a bundled file (`web/audio/Clockwork_Catastrophe.mp3`) cached with the rest of the app, so the music works offline too. Tap the speaker on the menu (or in the round HUD) to mute.
+All characters and art (including Frilly the frill-neck lizard, who runs the character store, and the 7 Territory Characters) are original and drawn in code. The concept is inspired by public-safety games in general; no third-party art or names are used. Sound effects are synthesised live with the Web Audio API. The soundtrack, *Clockwork Catastrophe* (`web/audio/`), was AI-generated for the team by Le Nhat Minh Tran.
 
 ## How it meets the judging criteria
 
 - **Innovation**: safety education as a crowd game with a live "what's catching people out" analytics board. Every round played becomes data on which safety rules people actually misunderstand.
-- **Functionality**: 14 mini-games across 8 NT locations, offline play, leaderboard, booth screen with QR code, Android app, admin tools, CSV export, and a coin-driven character store with 7 unlockable avatars.
+- **Functionality**: 17 mini-games and 2 boss rounds across 8 NT locations, three modes (Classic, Daily, Journey), 7 unlockable characters, offline play, leaderboards, booth screen with QR code, Android app, admin tools, CSV export.
 - **Usability**: one-tap play, no sign-up, portrait phone layout, big touch targets, reduced-motion support, works with no signal.
 - **Scalability**: stateless API + SQLite (swap for Postgres with one module), server-side score validation, rate limiting, offline outbox so spiky booth traffic never loses a score. New mini-games are a single object in `web/js/games.js`.
 
@@ -126,7 +95,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
  Phone / tablet / Android app                    Server (Node 22 + Express)
  ┌──────────────────────────┐   HTTPS JSON   ┌──────────────────────────────┐
  │ web/  (vanilla JS PWA)   │ ─────────────► │ POST /api/runs  validate +   │
- │  games.js  10 mini-games │                │                 rescore      │
+ │  games.js  19 mini-games │                │                 rescore      │
  │  main.js   engine        │ ◄───────────── │ GET  /api/leaderboard        │
  │  api.js    offline outbox│                │ GET  /api/stats (analytics)  │
  │  sw.js     offline cache │                │ GET  /api/qr.svg             │
@@ -136,7 +105,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 ```
 
 - **No build step.** The game is plain HTML, CSS and ES modules, so anyone on the team can edit it.
-- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, rounds can't be faster than humanly possible, and names pass a profanity filter.
+- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter.
 - **Offline first.** Finished runs go into a localStorage outbox and upload when online. The service worker caches the whole game.
 
 ## Run it locally
@@ -169,6 +138,15 @@ The `android/` folder is a Capacitor project that wraps `web/`.
 - After changing anything in `web/`, run `npx cap sync android`.
 - To regenerate launcher icons: `python3 scripts/make_android_icons.py`.
 
+## Load test
+
+```bash
+npm start                                   # in one terminal (or use your deployed URL)
+node scripts/load_test.mjs --url http://localhost:8080 --players 500 --concurrency 50 --save
+```
+
+`--save` writes `web/load-test.json`, which the Judge's tour displays. Fake players use client ids starting with `loadtest-`; remove them with `curl -X DELETE -H "X-Admin-Token: $TOKEN" <url>/api/admin/loadtest`. Don't run it against the live server on competition day.
+
 ## Admin (competition day)
 
 Set `ADMIN_TOKEN` (Render generates one; see the service's Environment tab).
@@ -182,16 +160,18 @@ curl -X DELETE -H "X-Admin-Token: $TOKEN" https://<host>/api/admin/runs/42
 curl -H "X-Admin-Token: $TOKEN" https://<host>/api/admin/export.csv -o rounds.csv
 ```
 
-Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box and returns to the menu after 45 s).
+Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box, skips the quick check and returns to the menu after 45 s).
 
-Debug a single mini-game: open `/?admin=1` for the picker. Choose a location, then tap any mini-game to play it immediately - lives, score, coins and the leaderboard are left untouched, and each round returns you to the picker. The "Admin" button also appears on the menu.
+Mini-game tester: `/?admin=1` (pick a location, tap any mini-game; lives, score, coins and the leaderboard are untouched).
+
+Judge's tour: `/?judge=1`. Booth keys: `A` toggles attract mode, `N` shows the next stats panel (hazards, Town Battle, learning).
 
 ## Add a new mini-game
 
 1. Add an object to `GAMES` in `web/js/games.js` (see the comment at the top of the file).
-2. Add its tip and source to `LESSONS` and a label to `GAME_LABELS` in `web/js/lessons.js`.
-3. Add its id to `GAME_IDS` in `server/src/scoring.js` (a test checks they match).
-4. Add its id to a location's `games` list in `web/js/locations.js`.
+2. Add its tip and source to `LESSONS`, a label to `GAME_LABELS` and an icon to `GAME_ICONS` in `web/js/lessons.js`.
+3. Add its id to `REGULAR` in `web/js/daily.js` (the server imports it; a test checks it matches the lessons).
+4. Add it to at least one location's `games` list in `web/js/locations.js`, and optionally a fail cartoon in `web/js/fails.js`.
 5. Add a win strategy to `scripts/smoke_test.py`, bump `CACHE` in `web/sw.js`.
 
 ## Project structure
@@ -200,16 +180,17 @@ Debug a single mini-game: open `/?admin=1` for the picker. Choose a location, th
 web/                 the game (also the Android app's content)
   index.html         screens
   booth.html         big-screen leaderboard + live analytics + QR
-  js/games.js        the 14 mini-games
-  js/fails.js        comic failure animation for each mini-game
-  js/locations.js    the 8 journey locations + card art and mini-game backdrops
+  js/games.js        the 17 mini-games + 2 bosses
   js/lessons.js      tips + official sources (edit wording here)
-  js/main.js         engine: rounds, timer, scoring, screens
+  js/main.js         engine: modes, rounds, timer, scoring, screens
+  js/locations.js    the 8 Journey stops: card art and round backdrops
+  js/characters.js   the 7 Territory Characters + coins
+  js/fails.js        a looping fail cartoon for each mini-game
+  js/fx.js           in-game fail animations, confetti, toasts
+  js/sound.js        sound effects + the soundtrack
   js/api.js          leaderboard client with offline outbox
-  js/art.js          all characters and items, drawn as SVG in code
-  js/characters.js   the 7 Territory Characters + the coin profile
-  js/sound.js        sound effects + the looping soundtrack
-  audio/             bundled soundtrack (Clockwork_Catastrophe.mp3)
+  js/art.js          the player, items and props, drawn as SVG in code
+  audio/             the soundtrack
   sw.js              offline cache
 server/              Express API + SQLite
 android/             Capacitor Android project
@@ -230,6 +211,7 @@ docs/DEMO.md         submission checklist and demo-day plan
 - NT Health, *Murray Valley encephalitis public health alert* (mosquito protection) - https://health.nt.gov.au/news/2023/murray-valley-encephalitis-public-health-alert2
 - Cancer Council, *Slip, slop, slap, seek, slide* - https://www.cancercouncil.com.au/cancer-prevention/sun-protection/preventing-skin-cancer/slip-slop-slap-seek-slide/
 - SecureNT, *Emergency plan: evacuate or stay* (cyclone shelter) - https://securent.nt.gov.au/prepare-for-an-emergency/weather-events/cyclones/emergency-plan-evacuate-or-stay
+- RACV, *Safe driving tips during dust storms* - https://www.racv.com.au/about-racv/newsroom/dust-storm-driving-tips.html
 
 This game is a learning tool, not medical advice. In an emergency call 000.
 

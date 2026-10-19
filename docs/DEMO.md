@@ -36,16 +36,20 @@
 
 **Title:** Top End Survivor
 
-**Summary:** A web and Android micro-game that teaches Northern Territory safety (crocodiles, stingers, cyclones, floods, heat, snakes, bushfire) in five-second challenges. Every mini-game is based on official NT advice and links to its source. It works offline for remote communities, syncs a live leaderboard, and turns gameplay into data: a booth dashboard shows which safety rules people get wrong most often.
+**Summary:** A web and Android micro-game that teaches Northern Territory safety (crocodiles, stingers, cyclones, floods, dust storms, heat, sun, mozzies, lightning, snakes, bushfire) in five-second challenges. Every mini-game is based on official advice and links to its source. Play Classic, the Daily Challenge, or a Journey from Darwin to Uluru with each region's own hazards and landscapes, and earn coins to unlock 7 cheeky Territory Characters. It works offline for remote communities, syncs a live leaderboard, and turns gameplay into data: a booth dashboard shows which safety rules people get wrong most often.
 
-**Tech:** Vanilla JavaScript PWA (no build step), SVG art drawn in code, service-worker offline cache, Node 22 + Express API, SQLite, server-side score validation, Capacitor Android app, GitHub Actions CI (API tests, headless browser test that plays all 10 games, APK build), Docker deploy.
+**Tech:** Vanilla JavaScript PWA (no build step), SVG art drawn in code, service-worker offline cache, Node 22 + Express API, SQLite, server-side score validation, Capacitor Android app, GitHub Actions CI (API tests, headless browser test that plays all 19 mini-games and every mode, 200-player load test, APK build), Docker deploy.
 
 **Links:** live game, booth screen, GitHub repo, APK, demo video.
 
 ## Booth setup (5 Nov)
 
 - **Attract mode is automatic:** after 45 s with no new players the booth shows a self-playing demo and a giant QR. Press `A` on the booth laptop to toggle it by hand.
+- **Journey for people who stay longer:** "How far can you get from Darwin? Nobody has reached Uluru yet today." Reaching Uluru unlocks a badge.
+- **Coins and characters:** tell players their coins are saved on their phone; the next character is only a game or two away, which brings them back.
 - **Push the Daily Challenge at the booth:** "Same 10 hazards for everyone today. Can you beat the top score?" Unlimited tries means people keep coming back to the stand during the day.
+- **Judge card:** print an A6 card with a QR to `https://<host>/?judge=1` ("Judges: 60-second tour") and leave it on the table.
+- **Before the day:** run the load test against the deployed server, then `DELETE /api/admin/loadtest` and reset scores. Quote the numbers in the pitch.
 - **Android QR:** put the APK in `server/downloads/top-end-survivor.apk` (see the README in that folder) and a second QR appears on the booth screen.
 
 - Laptop or TV: open `https://<host>/booth` full screen (F11). It shows the QR, top 10 today, and the live "what's catching people out" chart.
@@ -58,10 +62,10 @@
 
 1. **Hook (15 s), Minh:** hand the judge a phone. "You've got five seconds. Don't get eaten."
 2. **Problem (20 s), Vy:** newcomers and tourists don't read safety PDFs; the Top End's hazards are seasonal and unfamiliar.
-3. **Solution (30 s), Vy:** ten mini-games, each one an official rule. Fail, and you learn the real rule with its source.
+3. **Solution (30 s), Vy:** 17 mini-games and 2 bosses, each one an official rule, on a road trip from Darwin to Uluru. Fail, and a cartoon of your character shows exactly what went wrong, then you learn the real rule with its source.
 4. **Tech (30 s), Hendrick:** one codebase for web, PWA and Android; offline first with a sync outbox; server re-scores every run so the leaderboard can't be faked; CI plays every game automatically.
 5. **Data (15 s), Hendrick:** point at the booth chart: "Right now 70% of people are failing the stinger question. That's the insight a health department would want."
-6. **Next (10 s), Vy:** more hazards (Irukandji, lightning, remote breakdowns), Aboriginal languages, partner with NT Gov / tourism.
+6. **Next (10 s), Vy:** more hazards (Irukandji, remote breakdowns, buffalo), more Journey stops (Tiwi Islands, Tennant Creek), Aboriginal languages, partner with NT Gov / tourism.
 
 Minh keeps the judge playing while Hendrick and Vy talk, and steps in with gameplay and testing answers.
 
@@ -70,7 +74,9 @@ Minh keeps the judge playing while Hendrick and Vy talk, and steps in with gamep
 Who answers first: accuracy and design questions, Vy; testing and difficulty, Minh; tech, scale, cheating and data, Hendrick.
 
 - *Is the advice accurate?* Every tip links to an official source; the Safety tips screen lists them all.
-- *How does it scale?* Stateless API behind a load balancer; SQLite can be swapped for Postgres in `server/src/db.js`; offline outbox smooths load spikes.
+- *Where is the music from?* It was AI-generated for the team by Minh; all art and characters are drawn in our own code.
+- *How does it scale?* We load-tested it: 500 simulated players, 3,000 requests, zero errors, 95% of requests under about 210 ms on a small 2-core machine. Stateless API, SQLite swappable for Postgres in `server/src/db.js`, offline outbox smooths spikes.
+- *Does it actually teach anything?* Show the booth's learning panel: survival rate the first time people see a hazard vs. later tries, and the optional before/after quick check.
 - *How do you stop cheating?* The server ignores the client score and recomputes it from per-round results, checks timing and the 3-life rule, and rate-limits writes.
 - *Privacy?* No accounts, no personal data. A random device id is used only to let you attach a name to your own run; the CSV export excludes it.
 - *Why not Unity/Flutter?* No build step means the whole team can edit content, the game loads instantly on slow connections, and the same files become the Android app.

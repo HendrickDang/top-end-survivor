@@ -16,14 +16,19 @@ export const BADGES = [
   { id: 'lightning', icon: '⛈️', name: 'Storm Smart', hint: `Survive ${NEED} storm rounds`, topic: 'lightning' },
   { id: 'mozzies', icon: '🦟', name: 'Mozzie Proof', hint: `Survive ${NEED} mozzie rounds`, topic: 'mozzies' },
   { id: 'sun', icon: '😎', name: 'Sun Smart', hint: `Survive ${NEED} sun rounds`, topic: 'sun' },
+  { id: 'roads', icon: '🚗', name: 'Road Ready', hint: `Survive ${NEED} dust storm rounds`, topic: 'roads' },
   { id: 'boss', icon: '👑', name: 'Boss Beater', hint: 'Beat a boss round (every 10th round)' },
   { id: 'daily3', icon: '📅', name: 'Daily Regular', hint: 'Play the Daily Challenge 3 days in a row' },
   { id: 'install', icon: '📲', name: 'Local', hint: 'Install the game on your phone' },
   { id: 'streak5', icon: '🎯', name: 'On a Roll', hint: 'Win 5 rounds in a row' },
   { id: 'all10', icon: '🗺️', name: 'Top End Tourist', hint: 'Survive all 10 different games in one run' },
+  { id: 'uluru', icon: '🪨', name: 'Red Centre', hint: 'Reach Uluru on the Journey' },
   { id: 'score1500', icon: '🏆', name: 'Top End Legend', hint: 'Score 1,500 in one run' },
   { id: 'comeback', icon: '❤️', name: 'Never Say Die', hint: 'Survive 5 rounds on your last life' },
-  { id: 'reader', icon: '📖', name: 'Read the Rules', hint: 'Open the Safety tips screen' }
+  { id: 'reader', icon: '📖', name: 'Read the Rules', hint: 'Open the Safety tips screen' },
+  { id: 'challenger', icon: '⚔️', name: 'Challenger', hint: 'Challenge a mate to beat your score' },
+  { id: 'town', icon: '📍', name: 'Local Hero', hint: 'Play for your town in the Town Battle' },
+  { id: 'brainy', icon: '🧠', name: 'Brainy', hint: 'Finish the quick safety check before and after a game' }
 ];
 
 function load() {
@@ -72,6 +77,13 @@ export function grantDailyStreak(days) {
 export function grantInstall() {
   const s = load(); const fresh = [];
   grant(s, 'install', fresh); save(s);
+  return fresh;
+}
+
+// Grant any one-off badge by id (challenger, town, brainy...). Returns newly unlocked badges.
+export function grant1(id) {
+  const s = load(); const fresh = [];
+  grant(s, id, fresh); save(s);
   return fresh;
 }
 

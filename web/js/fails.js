@@ -1,5 +1,5 @@
-// Funny failure animations: one bespoke, looping cartoon for each mini-game, shown on
-// the result card when the player loses that round. The victim wears the player's
+// Funny failure animations: one bespoke, looping cartoon for each mini-game (and both
+// bosses), shown on the result card when the player loses that round. The victim wears the player's
 // chosen character's colours, so it feels personal. All drawn in code, like the rest.
 import { NS } from './art.js';
 
@@ -50,8 +50,8 @@ const SCENES = {
 
   // 2. Swimming where the sign said no: launched out of the water.
   'swim-sign': (p) => rect(0, 0, W, 150, '#9bbf4a') + rect(0, 104, W, 46, '#2f7f8f') +
-    croc(128, 100, .9, 'f-chomp') +
-    victim({ x: 66, y: 74, s: .8, skin: p.skin, shirt: p.shirt, cls: 'f-launch', origin: '50% 100%' }) +
+    croc(142, 100, .9, 'f-chomp') +
+    victim({ x: 88, y: 74, s: .8, skin: p.skin, shirt: p.shirt, cls: 'f-launch', origin: '50% 100%' }) +
     `<g class="fv f-splash">${circle(112, 104, 10, '#fffaf0')}${circle(140, 114, 7, '#fffaf0')}</g>` +
     cap(60, 34, 'WOAH!', { size: 17, fill: '#c8412f' }) +
     cap(180, 130, 'no sign = no swim', { size: 10, fill: '#fffaf0', stroke: IN, sw: 2 }),
@@ -174,7 +174,49 @@ const SCENES = {
     `<g class="fv f-drift"><rect x="150" y="30" width="6" height="46" fill="#8a6a3a" stroke="${IN}" stroke-width="2"/><rect x="134" y="16" width="38" height="15" rx="3" fill="#ffd25e" stroke="${IN}" stroke-width="3"/></g>` +
     victim({ x: 92, y: 96, s: .85, skin: p.skin, shirt: p.shirt, cls: 'f-tumble', origin: '50% 50%' }) +
     `<g class="fv f-splash">${circle(66, 74, 9, '#fffaf0')}${circle(122, 66, 7, '#fffaf0')}</g>` +
-    cap(58, 34, 'SWEPT AWAY!', { size: 14, fill: '#c8412f' })
+    cap(58, 34, 'SWEPT AWAY!', { size: 14, fill: '#c8412f' }),
+
+  // 15. Stayed in the pool in a storm: zapped, hair standing on end.
+  'lightning-pool': (p) => rect(0, 0, W, 150, '#5b6c8f') + rect(0, 104, W, 46, '#8fd0e0') +
+    `<g class="fv f-bob">${circle(70, 26, 22, '#3b4660')}${circle(100, 20, 26, '#3b4660')}${circle(134, 28, 20, '#3b4660')}</g>` +
+    `<path class="fv f-flash" d="M108 36 l-14 30 h14 l-10 30 l28 -40 h-14 l10 -20 z" fill="#ffe066" stroke="${IN}" stroke-width="3" stroke-linejoin="round"/>` +
+    victim({ x: 96, y: 128, s: .8, skin: p.skin, shirt: p.shirt, cls: 'f-shake', origin: '50% 100%' }) +
+    `<g class="fv f-rise">${circle(84, 58, 6, '#cfd6dc')}${circle(100, 52, 8, '#cfd6dc')}${circle(114, 60, 5, '#cfd6dc')}</g>` +
+    cap(190, 46, 'ZAP!', { size: 20, fill: '#ffe066', stroke: IN }) +
+    cap(176, 142, 'out of the pool, inside!', { size: 10, fill: '#fffaf0', stroke: IN, sw: 2 }),
+
+  // 16. No repellent at dusk: the mozzies have a feast.
+  'mozzie-dusk': (p) => rect(0, 0, W, 150, '#f4a67a') + rect(0, 112, W, 38, '#6b7a3a') +
+    `<circle cx="198" cy="96" r="22" fill="#ffd25e" opacity=".9"/>` +
+    victim({ x: 96, y: 134, s: .85, skin: p.skin, shirt: p.shirt, cls: 'f-shake', origin: '50% 100%' }) +
+    `<g class="fv f-spin" style="transform-origin:50% 50%">${[[60, 40], [130, 46], [96, 24], [72, 84], [126, 86]].map(([x, y]) =>
+      `<g transform="translate(${x} ${y})"><ellipse rx="5" ry="3" fill="${IN}"/><path d="M-2 -2 l-5 -6 M2 -2 l5 -6" stroke="${IN}" stroke-width="1.5"/></g>`).join('')}</g>` +
+    `<g class="fv f-pulse" style="transform-origin:50% 50%">${circle(86, 70, 4, '#c8412f')}${circle(106, 62, 3.5, '#c8412f')}${circle(110, 84, 3.5, '#c8412f')}</g>` +
+    cap(186, 34, 'BZZZ!', { size: 18, fill: '#c8412f' }) +
+    cap(70, 146, 'cover up at dusk', { size: 10, fill: '#fffaf0', stroke: IN, sw: 2 }),
+
+  // 17. No slip, slop, slap: one lobster-red Territorian.
+  'sun-slip': (p) => rect(0, 0, W, 150, '#ffe9a8') + rect(0, 112, W, 38, '#f2d89b') +
+    `<g class="fv f-spin" style="transform-origin:50% 50%"><circle cx="196" cy="38" r="24" fill="#ffd25e" stroke="${IN}" stroke-width="3"/>
+       <path d="M196 8 v-6 M228 38 h6 M164 38 h-6 M196 70 v6 M219 15 l4 -4 M173 15 l-4 -4 M219 61 l4 4 M173 61 l-4 4" stroke="#e0892e" stroke-width="4" stroke-linecap="round"/></g>` +
+    victim({ x: 92, y: 136, s: .85, skin: '#e2725b', shirt: p.shirt, cls: 'f-wilt', origin: '50% 100%' }) +
+    `<g class="fv f-heat" style="transform-origin:50% 100%"><path d="M76 54 q6 -10 0 -20 M96 50 q6 -10 0 -20 M116 54 q6 -10 0 -20" stroke="#c8412f" stroke-width="4" fill="none" stroke-linecap="round"/></g>` +
+    cap(180, 100, 'LOBSTER MODE!', { size: 13, fill: '#c8412f' }) +
+    cap(70, 146, 'slip slop slap seek slide', { size: 10 }),
+
+  // Boss: Cyclone Night. Should have sheltered: round and round we go.
+  'boss-cyclone': (p) => rect(0, 0, W, 150, '#2b3a5b') +
+    `<path d="M120 75 m-50 0 a50 50 0 1 1 50 50 a32 32 0 1 1 -24 -30" stroke="#8fd0e0" stroke-width="7" fill="none" stroke-linecap="round" class="fv f-spin" style="transform-origin:50% 50%"/>` +
+    `<g class="fv f-tumble" style="transform-origin:50% 50%">${victim({ x: 120, y: 104, s: .7, skin: p.skin, shirt: p.shirt })}</g>` +
+    `<g class="fv f-fly"><rect x="30" y="100" width="26" height="18" rx="3" fill="#c8412f" stroke="${IN}" stroke-width="3"/></g>` +
+    cap(120, 24, 'SHOULD HAVE SHELTERED!', { size: 12, fill: '#ffe066', stroke: IN }),
+
+  // Boss: Croc Creek. The big one wins this time.
+  'boss-croc': (p) => rect(0, 0, W, 150, '#7fb8a8') + rect(0, 86, W, 64, '#2f7f8f') +
+    croc(168, 100, 1.2, 'f-chomp') +
+    victim({ x: 116, y: 88, s: .8, skin: p.skin, shirt: p.shirt, cls: 'f-launch', origin: '50% 100%' }) +
+    `<g class="fv f-splash">${circle(120, 102, 10, '#fffaf0')}${circle(146, 114, 8, '#fffaf0')}</g>` +
+    cap(172, 30, 'BIG CROC WINS!', { size: 15, fill: '#c8412f' })
 };
 
 // Render the fail cartoon for a mini-game, tinted with the player's character colours.

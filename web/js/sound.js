@@ -1,11 +1,4 @@
-<<<<<<< Updated upstream
-// Synthesised sound effects + a chiptune music loop (no audio files: works offline, no copyright issues).
-=======
-// Sound: short feedback effects + a looping soundtrack.
-// The effects are synthesised live with the Web Audio API (no files needed).
-// The soundtrack is a single bundled MP3, cached with the rest of the app by the
-// service worker, so it still plays offline.
->>>>>>> Stashed changes
+// Sound: synthesised effects (Web Audio, no files) + one looping soundtrack (web/audio/).
 let ctx = null;
 let master = null, musicBus = null, sfxBus = null;
 let muted = false;
@@ -15,29 +8,17 @@ function ac() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
-<<<<<<< Updated upstream
     ctx = new AC();
     master = ctx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(ctx.destination);
     musicBus = ctx.createGain(); musicBus.gain.value = 0.32; musicBus.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = 1; sfxBus.connect(master);
-=======
-    try { ctx = new AC(); } catch { return null; }
->>>>>>> Stashed changes
   }
-  // A browser may keep the context suspended until the player interacts.
-  if (ctx.state === 'suspended' && ctx.resume) Promise.resolve(ctx.resume()).catch(() => { /* blocked for now */ });
+  if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
 
-<<<<<<< Updated upstream
 function tone(freq, dur, { type = 'square', when = 0, vol = 0.08, slide = 0, bus } = {}) {
   const a = ac(); if (!a || muted) return;
-=======
-// ---------- one-shot effects ----------
-function tone(freq, dur, type = 'square', when = 0, vol = 0.08) {
-  if (muted) return;
-  const a = ac(); if (!a) return;
->>>>>>> Stashed changes
   const o = a.createOscillator(), gn = a.createGain();
   o.type = type;
   const t = a.currentTime + when;
@@ -92,63 +73,28 @@ export const sfx = {
     tick: () => tone(1200, .03, { vol: .03 })
 };
 
-// ---------- music: a cheerful 8-bar chiptune loop, tempo rises with the round ----------
-const N = (s) => 440 * Math.pow(2, (s - 9) / 12); // semitones from C4
-// C - Am - F - G progression, bouncy bass + lead
-const BASS = [0, 0, 7, 0, -3, -3, 4, -3, -7, -7, 0, -7, -5, -5, 2, -5].map(s => s - 12);
-const LEAD = [12, null, 16, 19, 16, null, 12, null, 9, 12, null, 16, 14, null, 11, null,
-  17, null, 16, 14, 12, null, 9, null, 11, 12, 14, null, 19, null, 17, 16];
-let musicOn = false, timer = 0, step = 0, nextTime = 0, tempo = 132;
-
-function schedule() {
-  const a = ctx; if (!a) return;
-  while (nextTime < a.currentTime + 0.15) {
-    const s16 = 60 / tempo / 4;
-    const bi = Math.floor(step / 2) % BASS.length;
-    if (step % 2 === 0) tone(N(BASS[bi]), s16 * 1.6, { type: 'triangle', when: nextTime - a.currentTime, vol: .22, bus: musicBus });
-    const li = step % LEAD.length;
-    if (LEAD[li] !== null && step % 1 === 0) tone(N(LEAD[li]), s16 * .9, { type: 'square', when: nextTime - a.currentTime, vol: .05, bus: musicBus });
-    if (step % 4 === 2) noise(.04, { when: nextTime - a.currentTime, vol: .05, filter: 7000, type: 'highpass' });
-    nextTime += s16;
-    step++;
-  }
-}
-
-export const music = {
-  start() {
-    if (!ac() || musicOn) return;
-    musicOn = true; step = 0; nextTime = ctx.currentTime + 0.05;
-    musicBus.gain.cancelScheduledValues(ctx.currentTime);
-    musicBus.gain.setValueAtTime(0.32, ctx.currentTime);
-    timer = setInterval(schedule, 50);
-  },
-  stop() { musicOn = false; clearInterval(timer); },
-  setTempo(bpm) { tempo = Math.max(100, Math.min(200, bpm)); },
-  duck(on) { if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? 0.1 : 0.32, ctx.currentTime, 0.05); }
-};
-
 // ---------- soundtrack ----------
-// One looping track, bundled in web/audio/ and precached by the service worker so
-// it plays offline. Levels are faded in and out rather than clipped, and the mute
-// toggle simply drives the same fade. The mood name is remembered so resume() can
-// pick the track back up after a hidden tab or a mute.
+// One looping track (web/audio/, AI-generated for the team), precached by the service worker
+// so it plays offline. Levels fade in and out rather than clipping. The game speeds the
+// track up a little as rounds get faster, and a lot for boss rounds.
 const TRACK = 'audio/Clockwork_Catastrophe.mp3';
-const MUSIC_VOL = 0.45;         // master volume once faded in (kept under the effects)
+const MUSIC_VOL = 0.45;   // kept under the sound effects
+const DUCK_VOL = 0.15;    // while a fail animation plays
 const FADE_MS = 600;
 
-let el = null;        // the looping <audio> element
-let wanted = null;    // mood the screens last asked for
-let fadeTimer = 0;
-let stopTimer = 0;
+let audioEl = null;       // the looping <audio> element
+let wanted = null;        // mood the screens last asked for ('menu' | 'play')
+let level = MUSIC_VOL;
+let fadeTimer = 0, stopTimer = 0;
 
 function track() {
-  if (el) return el;
+  if (audioEl) return audioEl;
   if (typeof Audio !== 'function') return null;
-  el = new Audio(TRACK);
-  el.loop = true;
-  el.preload = 'auto';
-  el.volume = 0;
-  return el;
+  audioEl = new Audio(TRACK);
+  audioEl.loop = true;
+  audioEl.preload = 'auto';
+  audioEl.volume = 0;
+  return audioEl;
 }
 
 function fadeTo(target, ms) {
@@ -165,40 +111,46 @@ function fadeTo(target, ms) {
 
 export const music = {
   // Play (or keep playing) the track. Safe to call on every screen change.
-  play(name) {
-    if (!name) return;
+  play(name = 'play') {
     wanted = name;
-    if (muted) return;                      // remember it, stay silent until unmuted
+    if (muted) return;                 // remember it, stay silent until unmuted
     const a = track(); if (!a) return;
     if (stopTimer) { clearTimeout(stopTimer); stopTimer = 0; }
     if (a.paused) {
       a.volume = 0;
-      // Browsers block playback until the player interacts; armAudio() retries on the
-      // first tap or key press.
-      const p = a.play();
+      const p = a.play();              // blocked until the first tap; armAudio() retries
       if (p && p.catch) p.catch(() => { /* blocked for now */ });
     }
-    fadeTo(MUSIC_VOL, FADE_MS);
+    level = MUSIC_VOL;
+    fadeTo(level, FADE_MS);
   },
-  // Fade out and pause but remember the mood, so resume() can pick the track back up.
+  start() { this.play('play'); },
+  // Fade out and pause, but remember the mood so resume() can pick it back up.
   stop() {
-    if (!el) return;
+    if (!audioEl) return;
     if (stopTimer) clearTimeout(stopTimer);
     fadeTo(0, 400);
-    stopTimer = setTimeout(() => { if (el) { el.pause(); el.volume = 0; } stopTimer = 0; }, 450);
+    stopTimer = setTimeout(() => { if (audioEl) { audioEl.pause(); audioEl.volume = 0; } stopTimer = 0; }, 450);
   },
-  resume() { if (wanted) this.play(wanted); }
+  resume() { if (wanted) this.play(wanted); },
+  // 132 bpm = normal speed; faster rounds nudge the track up, bosses push it hard.
+  setTempo(bpm) {
+    const a = track(); if (!a) return;
+    const rate = Math.max(1, Math.min(1.25, 1 + (bpm - 132) / 300));
+    try { a.preservesPitch = true; a.playbackRate = rate; } catch { /* old browser */ }
+  },
+  duck(on) {
+    if (!audioEl || muted || audioEl.paused) return;
+    level = on ? DUCK_VOL : MUSIC_VOL;
+    fadeTo(level, 150);
+  }
 };
 
-// ---------- mute ----------
 export function toggleMute() {
   muted = !muted;
   try { localStorage.setItem('tes_muted', muted ? '1' : '0'); } catch { /* ignore */ }
-<<<<<<< Updated upstream
   if (master && ctx) master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.02);
-=======
   if (muted) music.stop(); else music.resume();
->>>>>>> Stashed changes
   return muted;
 }
 export const isMuted = () => muted;

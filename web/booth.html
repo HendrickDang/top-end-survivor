@@ -71,6 +71,26 @@
     .apkqr { display: none; align-items: center; gap: .8vw; background: #fffaf0; border: 3px solid var(--ink); border-radius: 12px; padding: .4vw .8vw; font-size: 1.1vw; font-weight: 700; }
     .apkqr img { width: 5vw; height: 5vw; }
     .apkqr.show { display: flex; }
+    .card.rot { position: relative; }
+    .panel-v { display: none; flex-direction: column; min-height: 0; flex: 1; }
+    .panel-v.show { display: flex; animation: fadein .5s ease; }
+    .pdots { position: absolute; top: 1.2vw; right: 1.4vw; display: flex; gap: .4vw; }
+    .pdots i { width: .8vw; height: .8vw; border-radius: 50%; background: #ecd6a8; border: 2px solid var(--ink); }
+    .pdots i.on { background: var(--ochre); }
+    .townwrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1vw; flex: 1; min-height: 0; align-items: start; }
+    #ntmap { width: 100%; max-height: 66vh; }
+    .tlist { list-style: none; margin: 0; padding: 0; counter-reset: t; font-size: 1.25vw; }
+    .tlist li { counter-increment: t; display: grid; grid-template-columns: 1.8vw 1fr auto; gap: .4vw; padding: .25vw 0; border-bottom: 2px dashed #ecd6a8; align-items: baseline; }
+    .tlist li::before { content: counter(t); font-weight: 800; }
+    .tlist li b { font-weight: 800; }
+    .tlist li small { grid-column: 2 / 4; font-size: .9vw; opacity: .7; margin-top: -.3vw; }
+    .learn-big { display: flex; flex-direction: column; gap: 1.2vw; }
+    .lrow { background: var(--white); border: 3px solid var(--ink); border-radius: 16px; padding: 1vw 1.2vw; }
+    .lrow .lab { font-size: 1.25vw; font-weight: 700; }
+    .lrow .vals { display: flex; align-items: center; gap: 1vw; font-size: 3.4vw; font-weight: 800; line-height: 1.1; }
+    .lrow .vals .arrow { color: var(--ochre); }
+    .lrow .vals .up { color: var(--leaf); }
+    .lrow small { display: block; font-size: 1vw; opacity: .7; }
     .status { position: fixed; bottom: 6.6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
   </style>
 </head>
@@ -91,7 +111,9 @@
       <p class="empty" id="board-empty">No scores yet. Who's first?</p>
     </section>
 
-    <section class="card">
+    <section class="card rot">
+      <div class="pdots" id="pdots"><i class="on"></i><i></i><i></i></div>
+      <div class="panel-v show" data-panel="hazards">
       <h2>What's catching people out today</h2>
       <div class="kpis">
         <div class="kpi"><b id="k-players">0</b><span>players</span></div>
@@ -101,6 +123,20 @@
       </div>
       <div class="bars" id="bars"></div>
       <p class="note">% of attempts failed, live from every game played today. Each mistake teaches an official NT safety rule.</p>
+      </div>
+      <div class="panel-v" data-panel="towns">
+        <h2>📍 Town Battle</h2>
+        <div class="townwrap">
+          <svg id="ntmap" viewBox="0 0 560 900" aria-label="Map of the Northern Territory with town scores"></svg>
+          <ol class="tlist" id="tlist"></ol>
+        </div>
+        <p class="note">Each player's best score today counts for their town. Pick yours on the game's menu!</p>
+      </div>
+      <div class="panel-v" data-panel="learning">
+        <h2>🧠 Is it teaching people?</h2>
+        <div class="learn-big" id="learn-big"></div>
+        <p class="note">Live from every round played today. "Quick check" is an optional 3-question quiz before and after a game.</p>
+      </div>
     </section>
   </div>
   <div class="status" id="status"></div>
@@ -112,7 +148,7 @@
     <div class="phone"><iframe id="demo" title="Game demo" tabindex="-1"></iframe></div>
     <div class="attract-copy">
       <h2>Can you survive<br><span>the Top End?</span></h2>
-      <p>13 deadly-funny Top End hazards. A few seconds each. Real NT safety rules.</p>
+      <p>17 deadly-funny Top End hazards on a road trip from Darwin to Uluru. A few seconds each. Real NT safety rules.</p>
       <div class="attract-qr"><img id="attract-qr" alt="QR code to play"><b>Scan to play<br>on your phone 📱</b></div>
       <p id="attract-challenge" style="margin-top:1.5vw"></p>
     </div>
@@ -120,6 +156,66 @@
 
   <script type="module">
     import { GAME_LABELS } from './js/lessons.js';
+    import { TOWNS, townName } from './js/towns.js';
+
+    // ---- rotating stats panels: hazards -> town battle -> learning ----
+    const PANELS = ['hazards', 'towns', 'learning'];
+    let panel = 0;
+    function showPanel(i) {
+      panel = (i + PANELS.length) % PANELS.length;
+      document.querySelectorAll('.panel-v').forEach(p => p.classList.toggle('show', p.dataset.panel === PANELS[panel]));
+      document.querySelectorAll('#pdots i').forEach((d, k) => d.classList.toggle('on', k === panel));
+    }
+    setInterval(() => showPanel(panel + 1), Number(new URLSearchParams(location.search).get('rotate') || 12) * 1000);
+    addEventListener('keydown', (e) => { if (e.key === 'n') showPanel(panel + 1); });
+
+    // NT outline (lon, lat), simplified.
+    const COAST = [[129, -26], [129, -15], [129.7, -14.8], [130.1, -13.4], [130.3, -12.9], [130.7, -12.4], [131.1, -12.2], [131.5, -12.0],
+      [132.0, -11.6], [132.6, -11.4], [132.9, -11.9], [133.5, -11.8], [134.2, -12.0], [135.0, -12.2], [135.8, -11.95], [136.6, -12.0],
+      [136.95, -12.35], [136.5, -13.2], [135.9, -13.6], [135.5, -14.6], [135.8, -15.1], [136.6, -15.8], [137.4, -16.3], [138, -16.8], [138, -26]];
+    const px = ([lon, lat]) => [((lon - 128.6) / 9.8) * 560, ((lat + 11.0) / -15.4) * 900];
+    // The three Darwin-area towns are only a few km apart, so their dots are nudged apart (stylised map).
+    const NUDGE = { darwin: [-24, -12], palmerston: [24, 2], litchfield: [-2, 34] };
+    const short = (id) => townName(id).split(' &')[0];
+    function drawMap(entries) {
+      const svg = document.getElementById('ntmap');
+      const max = Math.max(1, ...entries.map(e => e.points));
+      const rank = Object.fromEntries(entries.map((e, i) => [e.town, i + 1]));
+      const by = Object.fromEntries(entries.map(e => [e.town, e]));
+      let out = `<path d="M${COAST.map(px).map(p => p.map(v => v.toFixed(1)).join(' ')).join(' L')} Z" fill="#e9c58a" stroke="#1d1a16" stroke-width="5" stroke-linejoin="round"/>`;
+      out += `<text x="280" y="560" text-anchor="middle" font-size="44" font-weight="800" fill="rgba(29,26,22,.18)">NORTHERN</text><text x="280" y="610" text-anchor="middle" font-size="44" font-weight="800" fill="rgba(29,26,22,.18)">TERRITORY</text>`;
+      // draw low-ranked first so the leader sits on top
+      const mapped = TOWNS.filter(t => t.lon).sort((a, b) => (rank[b.id] || 99) - (rank[a.id] || 99));
+      for (const t of mapped) {
+        let [x, y] = px([t.lon, t.lat]);
+        const [nx, ny] = NUDGE[t.id] || [0, 0]; x += nx; y += ny;
+        const e = by[t.id], r = e ? 18 + 18 * Math.sqrt(e.points / max) : 9;
+        const first = rank[t.id] === 1;
+        out += `<circle cx="${x}" cy="${y}" r="${r}" fill="${first ? '#c8412f' : e ? '#e0892e' : '#fffaf0'}" stroke="#1d1a16" stroke-width="4"/>`;
+        if (e) out += `<text x="${x}" y="${y + 10}" text-anchor="middle" font-size="28" font-weight="800" fill="#fffaf0">${rank[t.id]}</text>`;
+        if (first) out += `<text x="${x}" y="${y - r - 4}" text-anchor="middle" font-size="40">👑</text>`;
+      }
+      svg.innerHTML = out;
+      document.getElementById('tlist').innerHTML = entries.slice(0, 7).map(e =>
+        `<li><span>${short(e.town)}</span><b>${e.points}</b><small>${e.players} player${e.players > 1 ? 's' : ''} · best ${e.best}</small></li>`).join('') ||
+        '<li style="list-style:none"><span>No towns yet. Pick yours in the game!</span></li>';
+    }
+
+    const pc = (x) => x == null ? '-' : Math.round(x * 100) + '%';
+    function drawLearning(st) {
+      const l = st.learning || {}, q = st.quiz || {};
+      const up = (a, b) => a != null && b != null && b > a ? 'up' : '';
+      document.getElementById('learn-big').innerHTML = `
+        <div class="lrow"><div class="lab">Survival rate on a hazard: first time seen → later tries</div>
+          <div class="vals"><span>${pc(l.firstTry)}</span><span class="arrow">→</span><span class="${up(l.firstTry, l.laterTries)}">${pc(l.laterTries)}</span></div>
+          <small>${l.nFirst || 0} first tries, ${l.nLater || 0} later tries</small></div>
+        <div class="lrow"><div class="lab">Quick safety check: before → after one game</div>
+          <div class="vals"><span>${pc(q.preAvg)}</span><span class="arrow">→</span><span class="${up(q.preAvg, q.postAvg)}">${pc(q.postAvg)}</span></div>
+          <small>${q.n || 0} players took both checks</small></div>
+        <div class="lrow"><div class="lab">Came back for another go</div>
+          <div class="vals"><span>${pc(st.replayRate)}</span></div>
+          <small>${st.challenges || 0} mate challenges played today</small></div>`;
+    }
     const $ = (s) => document.querySelector(s);
     const params = new URLSearchParams(location.search);
     const api = params.get('api') || '';
@@ -135,6 +231,7 @@
       'cyclone-kit': 'got blown away by a cyclone', 'flood-road': 'got washed away at a floodway',
       'heat-drink': 'got cooked like a snag', 'snake-bite': 'botched the snake bite first aid', 'bushfire-leave': 'left the bushfire too late',
       'lightning-pool': 'got frazzled by lightning', 'mozzie-dusk': 'got eaten alive by mozzies', 'sun-slip': 'went full lobster in the sun',
+      'croc-trap': 'messed with a croc trap', 'rock-hole': "got croc'd in a rock hole", 'dust-storm': 'drove blind into a dust storm', 'flash-flood': 'got swept down a dry creek bed',
       'boss-cyclone': 'lost to the Cyclone Night boss', 'boss-croc': 'lost to the Croc Creek boss'
     };
 
@@ -194,11 +291,14 @@
 
     async function refresh() {
       try {
-        const [lb, st, fd] = await Promise.all([
+        const [lb, st, fd, tw] = await Promise.all([
           fetch(`${api}/api/leaderboard?period=today&limit=10`).then(r => r.json()),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
-          fetch(`${api}/api/feed?limit=12`).then(r => r.json())
+          fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
+          fetch(`${api}/api/towns?period=today`).then(r => r.json())
         ]);
+        drawMap(tw.entries);
+        drawLearning(st);
         const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
         if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
         $('#challenge').innerHTML = lb.entries[0]
@@ -209,7 +309,7 @@
           if (lastFeed) { lastActivity = Date.now(); setAttract(false); }
           if (lastFeed && soundOn && sfx) sfx.chomp();
           lastFeed = feedKey;
-          const items = fd.entries.map(e => `<span>💀 <b>${esc(e.name || 'A mystery player')}</b> ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)</span>`);
+          const items = fd.entries.map(e => `<span>💀 <b>${esc(e.name || 'A mystery player')}</b>${e.town ? ' from ' + esc(townName(e.town).split(' &')[0]) : ''} ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)${e.challengeOf ? ' ⚔️' : ''}</span>`);
           const tr = $('#ticker');
           tr.innerHTML = items.join('');
           tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');

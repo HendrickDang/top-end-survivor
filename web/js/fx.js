@@ -248,6 +248,16 @@ Object.assign(FAILS, {
     bigWord(svg, 'ITCHY!', '#f28ab2', 120);
     return 'buzz';
   },
+  async dusted(svg) {
+    for (let i = 0; i < 16; i++) {
+      const c = el('circle', { cx: Math.random() * W, cy: 60 + Math.random() * 400, r: 30 + Math.random() * 40, fill: ['#c9a25a', '#b5894a', '#d9b878'][i % 3] });
+      svg.appendChild(c);
+      anim(c, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(2.4)', opacity: .95 }], { duration: 650, delay: i * 30 });
+    }
+    await wait(380);
+    bigWord(svg, 'DUSTED!', '#fffaf0', 110);
+    return 'whoosh';
+  },
   async sunburnt(svg) {
     const red = el('rect', { x: 0, y: 0, width: W, height: H, fill: '#e2553f', opacity: 0 });
     svg.appendChild(red);
@@ -265,7 +275,8 @@ const FAIL_FOR = {
   'cyclone-kit': 'blowaway', 'flood-road': 'float', 'heat-drink': 'cooked',
   'snake-bite': 'dizzy', 'bushfire-leave': 'smoke',
   'lightning-pool': 'struck', 'mozzie-dusk': 'bitten', 'sun-slip': 'sunburnt',
-  'boss-cyclone': 'blowaway', 'boss-croc': 'chomp'
+  'boss-cyclone': 'blowaway', 'boss-croc': 'chomp',
+  'croc-trap': 'chomp', 'rock-hole': 'chomp', 'dust-storm': 'dusted', 'flash-flood': 'float'
 };
 
 // Plays the cartoon fail for a game. Returns the name of the matching sound effect.
@@ -286,7 +297,19 @@ export const FAIL_TITLES = {
   smoke: ['Smoked out!', 'Too slow, mate!', 'Should have left!'],
   struck: ['Frazzled!', 'Zapped from above!', 'Shocking, mate!'],
   bitten: ['Eaten alive!', 'Itchy, mate!', 'Mozzie buffet!'],
-  sunburnt: ['Lobster mode!', 'Burnt to a crisp!', 'Ouch, sunburn!']
+  sunburnt: ['Lobster mode!', 'Burnt to a crisp!', 'Ouch, sunburn!'],
+  dusted: ['Dusted!', 'Lost in the dust!', 'Can\'t see a thing!']
 };
 export const WIN_TITLES = ['Too easy!', 'Crocwise!', 'Legend!', 'Bonza!', 'Ripper!', 'Spot on, mate!'];
 export const failKind = (gameId) => FAIL_FOR[gameId] || 'chomp';
+
+// Small pop-up message at the top of the screen (badge unlocked, link copied...).
+export function toast(html, ms = 2600) {
+  const app = document.getElementById('app');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = html;
+  app.appendChild(t);
+  setTimeout(() => t.classList.add('out'), ms);
+  setTimeout(() => t.remove(), ms + 400);
+}

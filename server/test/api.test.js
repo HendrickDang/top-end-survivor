@@ -4,6 +4,7 @@ import { openDb, makeRepo } from '../src/db.js';
 import { createApp } from '../src/app.js';
 import { GAME_IDS, REGULAR, scoreOf, cleanName, validateRun, dailySequence, darwinDay } from '../src/scoring.js';
 import { LESSONS } from '../../web/js/lessons.js';
+import { LOCATIONS, locationAt, journeyStop } from '../../web/js/locations.js';
 
 let server, base;
 const CLIENT = 'test-client-123456';
@@ -123,10 +124,76 @@ test('daily challenge: same sequence for everyone, validated by the server', asy
   assert.ok(!classic.entries.some(e => e.name === 'DailyDan'));
 });
 
+test('journey: every stop uses real hazards, runs follow the route, shared board with classic', async () => {
+  for (const loc of LOCATIONS) assert.ok(loc.games.length >= 3 && loc.games.every(g => REGULAR.includes(g)), loc.id);
+  assert.equal(journeyStop(1), 0);
+  assert.equal(journeyStop(5), 0);
+  assert.equal(journeyStop(6), 1);
+  assert.equal(locationAt(journeyStop(41)).id, 'darwin'); // round 41 = back to Darwin after Uluru
+  // 7 rounds: 5 in Darwin, then 2 in Kakadu, 3 losses
+  const route = [0, 0, 0, 0, 0, 1, 1];
+  const oks = [true, false, true, false, true, true, false];
+  const results = route.map((stop, i) => ({ g: LOCATIONS[stop].games[i % LOCATIONS[stop].games.length], ok: oks[i], ms: 2000 }));
+  const res = await post('/api/runs', { clientId: CLIENT, mode: 'journey', results, durationMs: 40000, name: 'JourneyJo' });
+  assert.equal(res.status, 201);
+  assert.equal((await res.json()).score, scoreOf(results));
+  // a Kakadu-only hazard in Darwin is rejected
+  const wrong = results.map(r => ({ ...r }));
+  wrong[0].g = 'croc-trap';
+  assert.ok(!LOCATIONS[0].games.includes('croc-trap'));
+  assert.equal((await post('/api/runs', { clientId: CLIENT, mode: 'journey', results: wrong, durationMs: 40000 })).status, 400);
+  // bosses never appear on the Journey
+  const boss = results.map(r => ({ ...r })); boss[2].g = 'boss-croc';
+  assert.equal((await post('/api/runs', { clientId: CLIENT, mode: 'journey', results: boss, durationMs: 40000 })).status, 400);
+  const board = await (await fetch(base + '/api/leaderboard?period=today')).json();
+  assert.ok(board.entries.some(e => e.name === 'JourneyJo'));
+  const st = await (await fetch(base + '/api/stats')).json();
+  assert.ok(st.journeyPlayers >= 1);
+});
+
 test('stats include replay rate for the booth', async () => {
   const st = await (await fetch(base + '/api/stats')).json();
   assert.ok(st.replayRate > 0 && st.replayRate <= 1);
   assert.ok(st.dailyPlayers >= 1);
+});
+
+test('challenge a mate: link details, challenger results', async () => {
+  const mine = await (await post('/api/runs', makeRun(4, { name: 'Hendrick' }))).json();
+  const ch = await (await fetch(`${base}/api/challenge/${mine.id}`)).json();
+  assert.equal(ch.name, 'Hendrick');
+  assert.equal(ch.score, mine.score);
+  // a mate on another device accepts and beats it
+  const mate = { ...makeRun(6), clientId: 'mate-device-0001', challengeOf: mine.id, name: 'Thomas' };
+  assert.equal((await post('/api/runs', mate)).status, 201);
+  const r = await (await fetch(`${base}/api/challenges/results?client=${CLIENT}`)).json();
+  assert.equal(r.entries[0].challenger, 'Thomas');
+  assert.equal(r.entries[0].beatYou, true);
+  assert.equal((await fetch(`${base}/api/challenge/999999`)).status, 404);
+});
+
+test('town battle counts each player once with their best score', async () => {
+  for (const [client, wins] of [['town-a-000001', 2], ['town-a-000001', 5], ['town-b-000002', 3]]) {
+    assert.equal((await post('/api/runs', { ...makeRun(wins), clientId: client, town: 'palmerston' })).status, 201);
+  }
+  assert.equal((await post('/api/runs', { ...makeRun(1), clientId: 'town-c-000003', town: 'atlantis' })).status, 400);
+  const t = await (await fetch(base + '/api/towns')).json();
+  const p = t.entries.find(e => e.town === 'palmerston');
+  assert.equal(p.players, 2);
+  assert.equal(p.points, scoreOf(makeRun(5).results) + scoreOf(makeRun(3).results));
+});
+
+test('quick safety check: before then after, learning shown in stats', async () => {
+  const qids = ['q-croc-fish', 'q-stinger', 'q-flood'];
+  assert.equal((await post('/api/quiz', { clientId: 'quiz-device-01', qids, post: 3 })).status, 400); // no "after" without "before"
+  assert.equal((await post('/api/quiz', { clientId: 'quiz-device-01', qids, pre: 1 })).status, 200);
+  assert.equal((await post('/api/quiz', { clientId: 'quiz-device-01', qids, post: 3 })).status, 200);
+  assert.equal((await post('/api/quiz', { clientId: 'quiz-device-02', qids: ['nope', 'q-stinger', 'q-flood'], pre: 1 })).status, 400);
+  const st = await (await fetch(base + '/api/stats')).json();
+  assert.equal(st.quiz.n, 1);
+  assert.equal(st.quiz.preAvg, 0.333);
+  assert.equal(st.quiz.postAvg, 1);
+  assert.ok(st.learning.nFirst > 0);
+  assert.ok(st.challenges >= 1);
 });
 
 test('blocks rude names', () => {

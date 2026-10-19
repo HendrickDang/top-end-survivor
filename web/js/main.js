@@ -1,35 +1,31 @@
 // Game engine: screens, round loop, scoring, offline leaderboard sync.
 import { GAMES } from './games.js';
-<<<<<<< Updated upstream
 import { LESSONS, SOURCES, GAME_LABELS, GAME_ICONS } from './lessons.js';
 import { REGULAR, DAILY_ROUNDS, dailySequence, darwinDay, prevDay, isBoss, isBossRound, classicBossFor } from './daily.js';
 import { inSeason, inSeasonGames } from './season.js';
-import { scene, mascotSVG, heartSVG, iconFor, VIEW } from './art.js';
+import { scene, mascotSVG, heartSVG, coinSVG, lockSVG, iconFor, VIEW, NS } from './art.js';
+import { CHARACTERS, characterSVG, profile } from './characters.js';
+import { failScene } from './fails.js';
+import { LOCATIONS, LOCATION_COUNT, locationAt, locationArt, locationBackdrop, homeLocationFor } from './locations.js';
 import { sfx, music, toggleMute, isMuted } from './sound.js';
 import { shake, confetti, floatText, playFail, failKind, FAIL_TITLES, WIN_TITLES } from './fx.js';
 import * as badges from './badges.js';
 import { shareCard } from './share.js';
-=======
-import { LESSONS, SOURCES, GAME_LABELS } from './lessons.js';
-import { scene, mascotSVG, heartSVG, soundSVG, coinSVG, lockSVG, iconFor, VIEW, NS } from './art.js';
-import { CHARACTERS, characterSVG, profile } from './characters.js';
-import { failScene } from './fails.js';
-import { LOCATIONS, LOCATION_COUNT, locationAt, locationArt, locationBackdrop } from './locations.js';
-import { sfx, music, toggleMute, isMuted } from './sound.js';
->>>>>>> Stashed changes
 import * as api from './api.js';
+import * as social from './social.js';
+import * as quiz from './quizui.js';
+import { initWardrobe, renderWardrobe, applyLook } from './wardrobeui.js';
+import { initJudge, openJudge } from './judge.js';
+import { gearFor } from './wardrobe.js';
+import { townName } from './towns.js';
 
 const $ = (s) => document.querySelector(s);
 const MAX_LIVES = 3;
-<<<<<<< Updated upstream
 const PARAMS = new URLSearchParams(location.search);
 const KIOSK = PARAMS.has('kiosk');
 const DEMO = PARAMS.has('demo'); // self-playing attract mode for the booth screen
-=======
-const KIOSK = new URLSearchParams(location.search).has('kiosk');
-const ADMIN = new URLSearchParams(location.search).has('admin');   // ?admin=1 for the debug picker
-const COINS_PER_POINT_DIVISOR = 10;   // 1 coin per 10 points scored
->>>>>>> Stashed changes
+const ADMIN = PARAMS.has('admin'); // ?admin=1: mini-game tester for the team
+const COINS_PER_POINT_DIVISOR = 10; // 1 coin per 10 points scored
 
 // Difficulty: rounds get shorter, down to a floor.
 export const roundSeconds = (round) => Math.max(2.6, 5.5 - 0.2 * (round - 1));
@@ -40,31 +36,24 @@ export const streakBonus = (streak) => (streak >= 3 ? Math.min(streak - 2, 5) * 
 // Beating a boss round is worth an extra 200. Must match the server.
 export const BOSS_BONUS = 200;
 
-<<<<<<< Updated upstream
-const state = { mode: 'classic', dailyDay: null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0, bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], ctx: null };
+const state = {
+  mode: 'classic', dailyDay: null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0, bag: [], last: null,
+  runLocalId: null, streak: 0, newBadges: [], ctx: null,
+  // Journey mode: where we are on the road trip
+  locationIndex: 0, roundInLocation: 0, pendingIntro: true, furthest: 0
+};
+// Admin tester (?admin=1): play one chosen mini-game; lives, score, coins and the leaderboard are untouched.
+let forcedGame = null, adminMode = false, adminLocationIndex = 0;
 const byId = (id) => GAMES.find(g => g.id === id);
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } }
 };
-=======
-const state = {
-  round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: 0,
-  last: null, runLocalId: null,
-  locationIndex: 0, roundInLocation: 0, pendingIntro: true, furthest: 0
-};
-
-// Admin / debug (see the "admin" screen): play one chosen mini-game in a chosen
-// location, without touching lives, score, coins or the leaderboard.
-let forcedGame = null;        // when set, nextGame() plays exactly this mini-game
-let adminMode = false;        // true while testing a single admin-picked round
-let adminLocationIndex = 0;   // the location whose backdrop is previewed
->>>>>>> Stashed changes
 
 // ---------- screens ----------
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-  if (id === 'screen-menu') { renderBest(); renderBadgeCount(); renderMenuExtras(); }
+  if (id === 'screen-menu') { renderBest(); renderBadgeCount(); renderMenuExtras(); renderCoins(); renderMenuAvatar(); renderJourney(); social.renderChallengeResults(); }
 }
 
 function renderLives() {
@@ -83,7 +72,7 @@ function renderBest() {
   $('#best-score').textContent = best ? `Your best: ${best}` : '';
 }
 
-// ---------- journey: locations ----------
+// ---------- Journey: Darwin to Uluru, 5 rounds per stop ----------
 function loadFurthest() {
   try { state.furthest = Math.min(LOCATION_COUNT - 1, Math.max(0, Number(localStorage.getItem('tes_location') || 0) | 0)); }
   catch { state.furthest = 0; }
@@ -91,21 +80,22 @@ function loadFurthest() {
 }
 
 function saveFurthest(index) {
-  if (index <= state.furthest) return;
-  state.furthest = index;
-  try { localStorage.setItem('tes_location', String(index)); } catch { /* ignore */ }
+  const i = Math.min(index, LOCATION_COUNT - 1);
+  if (i <= state.furthest || DEMO) return;
+  state.furthest = i;
+  try { localStorage.setItem('tes_location', String(i)); } catch { /* ignore */ }
 }
 
 function renderJourney() {
   $('#menu-journey').textContent = state.furthest > 0
-    ? `Furthest stop: ${locationAt(state.furthest).name}`
-    : 'Your trip starts in Darwin.';
+    ? `Furthest: ${locationAt(state.furthest).name}`
+    : 'Darwin to Uluru, 8 stops';
 }
 
 function renderHudLocation() {
   const loc = locationAt(state.locationIndex);
   $('#hud-location').textContent = loc.name;
-  $('#hud-step').textContent = `${Math.min(state.roundInLocation + 1, loc.rounds)}/${loc.rounds}`;
+  $('#hud-step').textContent = `${Math.min(Math.max(state.roundInLocation, 1), loc.rounds)}/${loc.rounds}`;
 }
 
 let introTimer = 0;
@@ -114,7 +104,9 @@ function showLocationIntro(loc, done) {
   box.querySelector('.loc-art').innerHTML = locationArt(loc.id);
   box.querySelector('.loc-name').textContent = loc.name;
   box.querySelector('.loc-blurb').textContent = loc.blurb;
+  box.querySelector('.loc-kicker').textContent = state.locationIndex >= LOCATION_COUNT ? 'Lap 2! Now arriving' : `Stop ${state.locationIndex % LOCATION_COUNT + 1} of ${LOCATION_COUNT} · Now arriving`;
   box.classList.add('show');
+  sfx.coin();
   const finish = () => {
     clearTimeout(introTimer);
     introTimer = 0;
@@ -123,25 +115,40 @@ function showLocationIntro(loc, done) {
     done();
   };
   clearTimeout(introTimer);
-  introTimer = setTimeout(finish, 2000);
+  introTimer = setTimeout(finish, 2200);
   box.addEventListener('pointerdown', finish);
 }
 
 function advanceLocation() {
-  const next = (state.locationIndex + 1) % LOCATION_COUNT;   // wraps back to Darwin after Uluru
-  saveFurthest(next);
-  state.locationIndex = next;
+  // Counts on past Uluru (wraps back to Darwin), so a great run can do a second lap.
+  state.locationIndex++;
+  saveFurthest(state.locationIndex);
+  if (locationAt(state.locationIndex).id === 'uluru' && !DEMO) {
+    const fresh = badges.grant1('uluru');
+    state.newBadges.push(...fresh);
+    if (fresh.length) social.celebrate(fresh);
+  }
   state.roundInLocation = 0;
   state.pendingIntro = true;
+  state.bag = [];
   playRound();
 }
 
 // ---------- game flow ----------
 function nextGame() {
   // Test hook: force a specific game (used by scripts/smoke_test.py).
-<<<<<<< Updated upstream
   if (window.__TES_FORCE__) return byId(window.__TES_FORCE__);
+  if (forcedGame) return byId(forcedGame);
   if (state.mode === 'daily') return byId(dailySequence(state.dailyDay)[state.round - 1]);
+  if (state.mode === 'journey') {
+    // Every hazard at this stop once (shuffled), then round again.
+    if (!state.bag.length) {
+      state.bag = locationAt(state.locationIndex).games.map(byId).filter(Boolean).sort(() => Math.random() - 0.5);
+      if (state.bag[0] === state.last && state.bag.length > 1) state.bag.push(state.bag.shift());
+    }
+    state.last = state.bag.shift();
+    return state.last;
+  }
   if (isBossRound(state.round)) return byId(classicBossFor(state.round));
   if (!state.bag.length) {
     // Every hazard once per bag, plus an extra copy of whatever is in season right now.
@@ -150,77 +157,74 @@ function nextGame() {
     if (state.bag[0] === state.last && state.bag.length > 1) state.bag.push(state.bag.shift());
   }
   state.last = state.bag.shift();
-=======
-  if (window.__TES_FORCE__) return GAMES.find(g => g.id === window.__TES_FORCE__);
-  // Admin picker: play the chosen mini-game.
-  if (forcedGame) return GAMES.find(g => g.id === forcedGame);
-  const here = locationAt(state.locationIndex).games.map(id => GAMES.find(g => g.id === id)).filter(Boolean);
-  const pool = here.filter(g => g !== state.last);
-  const list = pool.length ? pool : here;
-  state.last = list[Math.floor(Math.random() * list.length)];
->>>>>>> Stashed changes
   return state.last;
 }
 
-function startGame(mode = 'classic') {
+function startGame(mode = 'classic', challenge = null) {
   sfx.unlock();
-<<<<<<< Updated upstream
   if (typeof mode !== 'string') mode = 'classic';
-  Object.assign(state, { mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [] });
-=======
-  music.play('play');
+  // First game on this device: offer the optional 3-question safety check (once, skippable).
+  if (!DEMO && quiz.shouldOffer()) { quiz.offer(() => startGame(mode, challenge)); return; }
+  state.challenge = challenge || null;
+  social.startRun(state.challenge);
   forcedGame = null;
   adminMode = false;
   Object.assign(state, {
-    round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
-    last: null, runLocalId: null,
+    mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [],
+    startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [],
     locationIndex: 0, roundInLocation: 0, pendingIntro: true
   });
->>>>>>> Stashed changes
+  resetHud();
+  if (!DEMO) music.play('play');
+  playRound();
+}
+
+function resetHud() {
   $('#hud-score').textContent = '0';
   renderStreak();
   renderLives();
   music.setTempo(132);
-  if (!DEMO) music.start();
-  document.body.classList.toggle('daily-mode', mode === 'daily');
-  playRound();
+  document.body.classList.toggle('daily-mode', state.mode === 'daily');
+  document.body.classList.toggle('journey-mode', state.mode === 'journey' || adminMode);
 }
 
 function playRound() {
-  const loc = locationAt(state.locationIndex);
-  if (state.roundInLocation >= loc.rounds) return advanceLocation();
-  // The "now arriving" card. Skipped when a specific game is forced (smoke test).
-  if (state.pendingIntro && !window.__TES_SKIP_INTRO__) {
+  if (state.mode === 'journey' && !adminMode) {
+    const loc = locationAt(state.locationIndex);
+    if (state.roundInLocation >= loc.rounds) { advanceLocation(); return; }
+    // "Now arriving" card at each new stop (the smoke test can skip it).
+    if (state.pendingIntro && !window.__TES_SKIP_INTRO__) {
+      state.pendingIntro = false;
+      $('#stage').innerHTML = '';
+      $('#banner').classList.remove('show');
+      $('#timer-bar').style.transform = 'scaleX(1)';
+      $('#hud-round').textContent = state.round + 1;
+      renderHudLocation();
+      show('screen-game');
+      showLocationIntro(loc, runRound);
+      return;
+    }
     state.pendingIntro = false;
-    show('screen-game');            // the card lives on the game screen
-    renderHudLocation();
-    showLocationIntro(loc, runRound);
-    return;
   }
-  state.pendingIntro = false;
   runRound();
 }
 
-// Draw the location's landscape as the bottom layer of a round's scene. The game art
-// is appended afterwards, so it always sits on top of the backdrop.
+// Draw a location's landscape as the bottom layer of a round's scene; the game art goes on top.
 function addLocationBackdrop(svg, id) {
-  const doc = new DOMParser().parseFromString(
-    `<svg xmlns="${NS}">${locationBackdrop(id)}</svg>`, 'image/svg+xml');
+  const doc = new DOMParser().parseFromString(`<svg xmlns="${NS}">${locationBackdrop(id)}</svg>`, 'image/svg+xml');
   const node = doc.documentElement.firstChild;
   if (node) svg.appendChild(document.importNode(node, true));
 }
 
 function runRound() {
   state.round++;
-<<<<<<< Updated upstream
   $('#hud-round').textContent = state.round;
   music.duck(false);
-=======
-  state.roundInLocation++;
-  renderHudLocation();
-  const loc = locationAt(state.locationIndex);
->>>>>>> Stashed changes
   const game = nextGame();
+  // Journey rounds use the stop you are at; Classic and Daily rounds use the hazard's home location.
+  const journey = state.mode === 'journey' || adminMode;
+  if (journey) { state.roundInLocation++; renderHudLocation(); }
+  const loc = journey ? locationAt(state.locationIndex) : homeLocationFor(game.id);
   music.setTempo(game.boss ? 190 : 132 + state.round * 4);
   const seconds = game.seconds || roundSeconds(state.round);
   const stage = $('#stage');
@@ -229,7 +233,7 @@ function runRound() {
   show('screen-game');
 
   const svg = scene(game.bg);
-  addLocationBackdrop(svg, loc.id);
+  if (!game.boss && !game.ownBackdrop) addLocationBackdrop(svg, loc.id); // bosses and a few games paint their own sky
   stage.appendChild(svg);
 
   let finished = false, raf = 0, started = 0;
@@ -286,13 +290,9 @@ function runRound() {
       // e.g. a person whose origin is at the feet).
       const hit = document.createElementNS(svg.namespaceURI, hitBox ? 'ellipse' : 'circle');
       if (hitBox) {
-        hit.setAttribute('cx', hitBox.x || 0);
-        hit.setAttribute('cy', hitBox.y || 0);
-        hit.setAttribute('rx', hitBox.rx || 42);
-        hit.setAttribute('ry', hitBox.ry || 42);
-      } else {
-        hit.setAttribute('r', 42);
-      }
+        hit.setAttribute('cx', hitBox.x || 0); hit.setAttribute('cy', hitBox.y || 0);
+        hit.setAttribute('rx', hitBox.rx || 42); hit.setAttribute('ry', hitBox.ry || 42);
+      } else hit.setAttribute('r', 42);
       hit.setAttribute('fill', 'transparent');
       node.insertBefore(hit, node.firstChild);
       node.addEventListener('pointerdown', (e) => {
@@ -366,7 +366,6 @@ function runRound() {
   raf = requestAnimationFrame(loop);
 }
 
-<<<<<<< Updated upstream
 function renderStreak() {
   const el = $('#hud-streak');
   if (!el) return;
@@ -375,10 +374,11 @@ function renderStreak() {
 }
 
 async function endRound(game, ok, ms) {
-  // Record the result immediately (the animations below are only cosmetic).
-  state.results.push({ g: game.id, ok, ms: Math.round(ms) });
   const stage = $('#stage');
   const svg = stage.querySelector('svg');
+  if (adminMode) return endAdminRound(game, ok, svg);
+  // Record the result immediately (the animations below are only cosmetic).
+  state.results.push({ g: game.id, ok, ms: Math.round(ms) });
   let bonus = 0;
   if (ok) {
     state.streak++;
@@ -399,6 +399,7 @@ async function endRound(game, ok, ms) {
   $('#hud-score').textContent = state.score;
   renderLives();
   renderStreak();
+  if (ok) social.onScore(state);
 
   if (ok) await wait(550);
   else {
@@ -406,111 +407,83 @@ async function endRound(game, ok, ms) {
     (sfx[snd] || sfx.lose)();
     await wait(1100);
   }
-=======
-function endRound(game, ok, ms) {
-  if (adminMode) {
-    // Debug round: don't spend lives, add score or queue a leaderboard run.
-    if (ok) sfx.win();
-    else { sfx.lose(); navigator.vibrate?.(120); }
-  } else {
-    state.results.push({ g: game.id, ok, ms: Math.round(ms) });
-    if (ok) {
-      state.score += pointsFor(state.round);
-      sfx.win();
-    } else {
-      state.lives--;
-      sfx.lose();
-      navigator.vibrate?.(120);
-    }
-    $('#hud-score').textContent = state.score;
-    renderLives();
-  }
->>>>>>> Stashed changes
 
-  const lesson = LESSONS[game.id];
-  const c = profile.character;
-  const card = $('#result-card');
-  card.className = 'result-card ' + (ok ? 'win' : 'lose');
-<<<<<<< Updated upstream
-  $('#result-face').innerHTML = mascotSVG(ok ? 'happy' : 'sad');
-  $('#result-title').textContent = ok ? pick(WIN_TITLES) : pick(FAIL_TITLES[failKind(game.id)]);
+  showResultCard(game, ok);
   $('#result-streak').textContent = ok && game.boss ? `👑 Boss beaten! +${bonus} bonus`
     : ok && bonus ? `🔥 ${state.streak} in a row! +${bonus} bonus` : '';
-  $('#result-tip').textContent = ok ? lesson.win : (state.ctx?.failTip || lesson.fail);
-=======
-  // Win: the character celebrates. Fail: a bespoke comic animation for that mini-game.
-  const face = $('#result-face');
-  face.classList.toggle('scene', !ok);
-  face.innerHTML = ok ? characterSVG(c.id, 'win') : failScene(game.id, c);
-  $('#result-title').textContent = ok ? c.winLine : c.failLine;
-  $('#result-tip').textContent = ok ? lesson.win : lesson.fail;
->>>>>>> Stashed changes
-  show('screen-result');
 
   const dailyDone = state.mode === 'daily' && state.round >= DAILY_ROUNDS;
   setTimeout(() => {
-<<<<<<< Updated upstream
     if (state.lives <= 0 || dailyDone) gameOver();
-=======
-    if (adminMode) { showAdmin(); return; }
-    if (state.lives <= 0) gameOver();
->>>>>>> Stashed changes
     else playRound();
   }, ok ? 1500 : 2300);
 }
 
-<<<<<<< Updated upstream
+// Win: your character celebrates. Fail: a looping cartoon of that hazard, starring your character.
+function showResultCard(game, ok) {
+  const lesson = LESSONS[game.id];
+  const c = profile.character;
+  $('#result-card').className = 'result-card ' + (ok ? 'win' : 'lose');
+  const face = $('#result-face');
+  face.classList.toggle('scene', !ok);
+  face.innerHTML = ok ? characterSVG(c.id, 'win') : failScene(game.id, c);
+  $('#result-title').textContent = ok ? (Math.random() < 0.4 ? c.winLine : pick(WIN_TITLES)) : pick(FAIL_TITLES[failKind(game.id)]);
+  $('#result-tip').textContent = ok ? lesson.win : (state.ctx?.failTip || lesson.fail);
+  show('screen-result');
+}
+
+async function endAdminRound(game, ok, svg) {
+  if (ok) { sfx.win(); confetti(45); await wait(550); }
+  else { const snd = await playFail(game.id, svg); (sfx[snd] || sfx.lose)(); await wait(900); }
+  showResultCard(game, ok);
+  $('#result-streak').textContent = '🛠️ Admin test round: nothing was saved';
+  setTimeout(showAdmin, ok ? 1500 : 2300);
+}
+
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-=======
->>>>>>> Stashed changes
 function gameOver() {
-  music.stop();
+  music.setTempo(132);
+  if (!DEMO) music.play('menu');
   sfx.over();
-<<<<<<< Updated upstream
   if (DEMO) { show('screen-over'); $('#over-score').textContent = state.score; setTimeout(() => startGame('classic'), 3500); return; }
-=======
-  music.play('menu');
->>>>>>> Stashed changes
   const durationMs = Math.round(performance.now() - state.startedAt);
   state.runLocalId = api.queueRun({
     mode: state.mode,
     day: state.dailyDay || undefined,
     results: state.results.map(({ g, ok, ms }) => ({ g, ok, ms })),
     durationMs,
+    town: social.getTown() || undefined,
+    challengeOf: state.challenge?.id || undefined,
     appVersion: window.TES_CONFIG?.APP_VERSION
   });
   api.flush();
 
   try {
     const best = Number(localStorage.getItem('tes_best') || 0);
-    if (state.mode === 'classic' && state.score > best) localStorage.setItem('tes_best', String(state.score));
+    if (state.mode !== 'daily' && state.score > best) localStorage.setItem('tes_best', String(state.score));
   } catch { /* ignore */ }
 
-  state.newBadges = badges.evaluateRun(state.results, state.score);
+  state.newBadges.push(...badges.evaluateRun(state.results, state.score));
   if (state.mode === 'daily') state.newBadges.push(...recordDaily());
   renderNewBadges();
   renderDailyResult();
   renderWeakSpot();
+  social.renderOverChallenge(state);
+  quiz.renderOverQuiz();
+  renderOverTown();
+  $('#challenge-link').hidden = true;
   $('#over-score').textContent = state.score;
-
-  // Coins: 1 per 10 points scored this run.
-  const earned = Math.floor(state.score / COINS_PER_POINT_DIVISOR);
-  profile.addCoins(earned);
-  $('#over-char').innerHTML = characterSVG(profile.selected, 'fail');
-  $('#over-coins').innerHTML = `${coinSVG()}<span>+${earned} coin${earned === 1 ? '' : 's'} · ${profile.coins} total</span>`;
-  renderCoins();
-
+  renderOverCoins();
   const survived = state.results.filter(r => r.ok).length;
-<<<<<<< Updated upstream
+  const stop = locationAt(state.locationIndex);
   $('#over-rounds').textContent = state.mode === 'daily'
     ? `Daily Challenge: you survived ${survived} of ${DAILY_ROUNDS} hazards.`
-    : `You survived ${survived} of ${state.results.length} rounds.`;
+    : state.mode === 'journey'
+      ? `You made it to ${stop.name}${state.locationIndex >= LOCATION_COUNT ? ' (lap 2!)' : ` (stop ${state.locationIndex + 1} of ${LOCATION_COUNT})`} and survived ${survived} of ${state.results.length} rounds.`
+      : `You survived ${survived} of ${state.results.length} rounds.`;
   $('#over-title').textContent = state.mode === 'daily' && state.lives > 0 ? 'Daily complete!' : 'Game over';
-=======
-  $('#over-rounds').textContent = `You made it to ${locationAt(state.locationIndex).name} - survived ${survived} of ${state.results.length} rounds.`;
->>>>>>> Stashed changes
 
   const failed = [...new Set(state.results.filter(r => !r.ok).map(r => r.g))];
   $('#over-lessons').innerHTML = failed.map(id => {
@@ -559,8 +532,10 @@ function renderNewBadges() {
   const box = $('#over-badges');
   if (!state.newBadges.length) { box.innerHTML = ''; box.hidden = true; return; }
   box.hidden = false;
+  const gear = gearFor(state.newBadges.map(b => b.id));
   box.innerHTML = '<b>New badge' + (state.newBadges.length > 1 ? 's' : '') + '!</b>' +
-    state.newBadges.map(b => `<span class="medal pop-in"><i>${b.icon}</i>${escapeHtml(b.name)}</span>`).join('');
+    state.newBadges.map(b => `<span class="medal pop-in"><i>${b.icon}</i>${escapeHtml(b.name)}</span>`).join('') +
+    (gear.length ? `<small class="gear-note">👕 New gear unlocked: ${gear.map(g => escapeHtml(g.name)).join(', ')}. Check the Wardrobe!</small>` : '');
   setTimeout(() => { sfx.badge(); confetti(80, { x: .5, y: .2 }); }, 400);
 }
 
@@ -735,15 +710,29 @@ function demoBot(ctx, isFinished) {
   setTimeout(act, 900 + Math.random() * 1300);
 }
 
+function renderOverTown() {
+  const box = $('#over-town');
+  if (KIOSK) { box.hidden = true; return; }
+  const t = social.getTown();
+  box.hidden = false;
+  box.innerHTML = t
+    ? `📍 Your score counts for <b>${escapeHtml(townName(t))}</b> in the Town Battle. <button class="linkish" id="over-town-change">Change</button>`
+    : `📍 <b>Which town are you playing for?</b> <button class="btn btn-small" id="over-town-pick">Pick my town</button>`;
+  const pickTown = () => social.openTownPicker((id) => { api.setRunTown(state.runLocalId, id); api.flush(); renderOverTown(); });
+  $('#over-town-change')?.addEventListener('click', pickTown);
+  $('#over-town-pick')?.addEventListener('click', pickTown);
+}
+
 // ---------- leaderboard ----------
 async function showBoard(period = 'today') {
   show('screen-board');
-  document.querySelectorAll('#screen-board .tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
   const list = $('#board-list'), msg = $('#board-msg');
   list.innerHTML = '';
   msg.textContent = 'Loading...';
   try {
     await api.flush();
+    if (period === 'towns') { await social.renderTownsBoard(list, msg); return; }
     const data = await api.getLeaderboard(period);
     list.innerHTML = data.entries.map(e =>
       `<li class="${e.mine ? 'me' : ''}"><span class="n">${escapeHtml(e.name)}</span><span class="s">${e.score}</span></li>`).join('');
@@ -770,7 +759,7 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ---------- characters & coins ----------
+// ---------- Territory Characters and coins ----------
 function renderCoins() {
   $('#menu-coins').innerHTML = `${coinSVG()}<span>${profile.coins}</span>`;
   const ic = $('#shop-coin-ic'); if (ic) ic.innerHTML = coinSVG();
@@ -779,6 +768,22 @@ function renderCoins() {
 
 function renderMenuAvatar() {
   $('#menu-mascot').innerHTML = characterSVG(profile.selected, 'idle');
+}
+
+// Coins: 1 per 10 points, every mode. Shows how close the next character is.
+function renderOverCoins() {
+  $('#over-char').innerHTML = characterSVG(profile.selected, state.lives > 0 ? 'win' : 'fail');
+  const box = $('#over-coins');
+  if (DEMO) { box.innerHTML = ''; return; }
+  const earned = Math.floor(state.score / COINS_PER_POINT_DIVISOR);
+  profile.addCoins(earned);
+  const next = CHARACTERS.find(c => !profile.owns(c.id));
+  const goal = !next ? 'You own every character!'
+    : profile.coins >= next.price ? `Enough to unlock ${next.name}! Open Characters.`
+      : `${next.price - profile.coins} more to unlock ${next.name}.`;
+  box.innerHTML = `${coinSVG()}<span>+${earned} coin${earned === 1 ? '' : 's'} · ${profile.coins} total</span><small>${escapeHtml(goal)}</small>`;
+  box.classList.toggle('can-buy', !!next && profile.coins >= next.price);
+  renderCoins();
 }
 
 function renderCharacters(msg = '') {
@@ -792,7 +797,7 @@ function renderCharacters(msg = '') {
     card.type = 'button';
     card.className = 'char-card ' + (owned ? 'owned' : 'locked') + (selected ? ' selected' : '');
     card.innerHTML = `
-      ${selected ? '<span class="badge">Playing</span>' : owned ? '<span class="badge">Owned</span>' : ''}
+      ${selected ? '<span class="own-tag">Playing</span>' : owned ? '<span class="own-tag">Owned</span>' : ''}
       <div class="pic">${characterSVG(c.id, 'idle')}</div>
       <h4>${escapeHtml(c.name)}</h4>
       <span class="tag">${escapeHtml(c.tagline)}</span>
@@ -809,18 +814,22 @@ function onCharacterClick(c) {
   if (profile.owns(c.id)) {
     if (profile.selected === c.id) { renderCharacters(`Already playing as ${c.name}.`); return; }
     profile.select(c.id);
-    sfx.tap();
+    applyLook();
+    sfx.pop();
     renderCharacters(`Now playing as ${c.name}.`);
     renderMenuAvatar();
     return;
   }
   const res = profile.buy(c.id);
   if (!res.ok) {
-    sfx.lose();
-    renderCharacters(`Not enough coins for ${c.name} - you need ${c.price - profile.coins} more.`);
+    sfx.boing();
+    renderCharacters(`Not enough coins for ${c.name}: you need ${c.price - profile.coins} more.`);
     return;
   }
-  sfx.win();
+  applyLook();
+  sfx.badge();
+  confetti(90, { x: .5, y: .3 });
+  renderCoins();
   renderCharacters(`Unlocked ${c.name}! They're now your character.`);
   renderMenuAvatar();
 }
@@ -832,22 +841,20 @@ function showCharacters() {
   renderCharacters();
 }
 
-// ---------- admin / debug ----------
-// Enabled with ?admin=1 (see the "admin" screen in index.html). Handy for testing a
-// single mini-game: pick a location for the backdrop, then tap any mini-game to play
-// it straight away. Lives, score, coins and the leaderboard are not touched.
+// ---------- admin tester (?admin=1) ----------
+// Pick a location for the backdrop, then tap any mini-game to play it straight away.
 function playAdminGame(gameId) {
   sfx.unlock();
   music.play('play');
   forcedGame = gameId;
   adminMode = true;
   Object.assign(state, {
-    round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
-    last: null, runLocalId: null,
+    mode: 'classic', dailyDay: null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
+    bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], challenge: null,
     locationIndex: adminLocationIndex, roundInLocation: 0, pendingIntro: false
   });
-  $('#hud-score').textContent = '0';
-  renderLives();
+  social.startRun(null);
+  resetHud();
   runRound();
 }
 
@@ -862,8 +869,7 @@ function renderAdmin() {
     b.addEventListener('click', () => { adminLocationIndex = i; renderAdmin(); });
     locRow.appendChild(b);
   });
-
-  // The current location's mini-games are listed first, then the rest.
+  // This location's mini-games first, then the rest (bosses last).
   const here = locationAt(adminLocationIndex).games;
   const ordered = [...GAMES.filter(g => here.includes(g.id)), ...GAMES.filter(g => !here.includes(g.id))];
   const grid = $('#admin-games');
@@ -872,7 +878,7 @@ function renderAdmin() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'admin-game' + (here.includes(gme.id) ? ' here' : '');
-    b.innerHTML = `<b>${escapeHtml(GAME_LABELS[gme.id] || gme.id)}</b>
+    b.innerHTML = `<b>${escapeHtml((GAME_ICONS[gme.id] || '') + ' ' + (GAME_LABELS[gme.id] || gme.id))}</b>
       <span class="ag-prompt">${escapeHtml(gme.prompt)}</span>
       <span class="ag-id">${escapeHtml(gme.id)}</span>`;
     b.addEventListener('click', () => playAdminGame(gme.id));
@@ -881,6 +887,8 @@ function renderAdmin() {
 }
 
 function showAdmin() {
+  adminMode = false;
+  forcedGame = null;
   show('screen-admin');
   renderAdmin();
 }
@@ -890,28 +898,18 @@ function playRandomHere() {
   playAdminGame(here[Math.floor(Math.random() * here.length)]);
 }
 
-// ---------- sound ----------
-function renderSound() {
-  const on = !isMuted();
-  document.querySelectorAll('[data-sound-toggle]').forEach(b => {
-    b.classList.toggle('off', !on);
-    b.setAttribute('aria-pressed', String(on));
-    b.setAttribute('aria-label', on ? 'Turn sound off' : 'Turn sound on');
-    b.innerHTML = soundSVG(on);
-  });
-}
-
-// Browsers block audio until the player interacts, so the effects context and the
-// soundtrack both wait for the first tap or key press (music.play() is retried).
+// ---------- audio ----------
+// Browsers block audio until the player interacts, so the effects and the soundtrack
+// both wait for the first tap or key press.
 function armAudio() {
   const go = () => {
     sfx.unlock();
-    music.play('menu');
-    window.removeEventListener('pointerdown', go);
-    window.removeEventListener('keydown', go);
+    if (!document.querySelector('#screen-game.active')) music.play('menu');
+    window.removeEventListener('pointerdown', go, true);
+    window.removeEventListener('keydown', go, true);
   };
-  window.addEventListener('pointerdown', go);
-  window.addEventListener('keydown', go);
+  window.addEventListener('pointerdown', go, true);
+  window.addEventListener('keydown', go, true);
 }
 
 // ---------- network status ----------
@@ -936,12 +934,13 @@ function init() {
   loadFurthest();
   renderMenuAvatar();
   renderCoins();
-  renderBest();
   renderJourney();
+  renderBest();
   renderLearn();
-<<<<<<< Updated upstream
   $('#btn-play').addEventListener('click', () => startGame('classic'));
   $('#btn-daily').addEventListener('click', () => startGame('daily'));
+  $('#btn-journey').addEventListener('click', () => startGame('journey'));
+  $('#btn-chars').addEventListener('click', showCharacters);
   $('#btn-again').addEventListener('click', () => startGame(state.mode));
   $('#btn-share-daily').addEventListener('click', shareDaily);
   document.querySelectorAll('[data-install]').forEach(b => b.addEventListener('click', doInstall));
@@ -951,7 +950,7 @@ function init() {
   if (isStandalone() && !DEMO) badges.grantInstall();
   renderMenuExtras();
   renderInstall();
-  $('#btn-over-menu').addEventListener('click', () => { renderBest(); renderBadgeCount(); show('screen-menu'); });
+  $('#btn-over-menu').addEventListener('click', () => show('screen-menu'));
   $('#btn-board').addEventListener('click', () => showBoard('today'));
   $('#btn-learn').addEventListener('click', () => {
     show('screen-learn');
@@ -959,46 +958,41 @@ function init() {
     if (fresh.length) { sfx.badge(); confetti(60, { x: .5, y: .15 }); }
   });
   $('#btn-badges').addEventListener('click', () => { renderBadges(); show('screen-badges'); });
+  $('#btn-wardrobe').addEventListener('click', () => { renderWardrobe(); show('screen-wardrobe'); });
+  $('#btn-challenge').addEventListener('click', () => social.sendChallenge(state));
+  const appCtx = {
+    show, startGame, escapeHtml, playUrl: playUrlSafe, isDemo: DEMO, kiosk: KIOSK,
+    celebrate: (fresh) => social.celebrate(fresh)
+  };
+  social.initSocial(appCtx);
+  quiz.initQuiz(appCtx);
+  initWardrobe(appCtx);
+  initJudge(appCtx);
+  social.loadIncoming(PARAMS);
+  social.renderChallengeResults();
   $('#btn-share').addEventListener('click', doShare);
   document.querySelectorAll('[data-mute]').forEach(b => b.addEventListener('click', (e) => {
     e.stopPropagation(); sfx.unlock(); toggleMute(); setMuteIcons();
   }));
   setMuteIcons();
   renderBadgeCount();
-=======
-  $('#btn-play').addEventListener('click', startGame);
-  $('#btn-again').addEventListener('click', startGame);
-  $('#btn-over-menu').addEventListener('click', () => { renderBest(); renderJourney(); show('screen-menu'); });
-  $('#btn-chars').addEventListener('click', showCharacters);
-  $('#btn-board').addEventListener('click', () => showBoard('today'));
-  $('#btn-learn').addEventListener('click', () => show('screen-learn'));
+  if (!DEMO) armAudio();
+  // Don't keep the music playing in a hidden tab; pick it back up on return.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) music.stop(); else if (!DEMO) music.resume(); });
   if (ADMIN) {
     const adminBtn = $('#btn-admin');
     adminBtn.hidden = false;
     adminBtn.addEventListener('click', showAdmin);
     $('#admin-random').addEventListener('click', playRandomHere);
-    $('#admin-play').addEventListener('click', startGame);
-    $('#admin-menu').addEventListener('click', () => { renderBest(); renderJourney(); show('screen-menu'); });
-    if (!KIOSK) showAdmin();   // ?admin=1 opens the picker straight away
+    $('#admin-play').addEventListener('click', () => startGame('journey'));
+    $('#admin-menu').addEventListener('click', () => show('screen-menu'));
   }
->>>>>>> Stashed changes
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('screen-menu')));
-  document.querySelectorAll('#screen-board .tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
   $('#submit-form').addEventListener('submit', submitName);
-  document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', () => {
-    toggleMute();
-    sfx.tap();
-    renderSound();
-  }));
   window.addEventListener('online', updateNet);
   window.addEventListener('offline', updateNet);
   updateNet();
-  // Don't keep the music playing in a hidden tab; pick the soundtrack back up on return.
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) music.stop(); else music.resume();
-  });
-  renderSound();
-  armAudio();
   // prevent pull-to-refresh / scroll during play
   $('#stage').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
@@ -1006,10 +1000,14 @@ function init() {
     navigator.serviceWorker.register('sw.js').catch(() => { /* not fatal */ });
   }
   // Test hook used by the automated smoke test (harmless in production).
-  window.__TES__ = { state, GAMES, roundSeconds, pointsFor, streakBonus, dailySequence, darwinDay, dailyShareText };
-  if (DEMO) {
+  window.__TES__ = { state, GAMES, roundSeconds, pointsFor, streakBonus, dailySequence, darwinDay, dailyShareText, startGame, profile, LOCATIONS };
+  if (ADMIN && !KIOSK && !DEMO) {
+    showAdmin();
+  } else if (DEMO) {
     document.body.classList.add('demo');
     setTimeout(() => startGame('classic'), 800);
+  } else if (PARAMS.has('judge')) {
+    openJudge();
   }
 }
 

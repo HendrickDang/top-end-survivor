@@ -39,6 +39,12 @@ export const SOURCES = {
     url: 'https://biomedicalsciences.unimelb.edu.au/departments/pharmacology/engage/avru/discover/first-aid/pressure-immobilisation-first-aid',
     summary: 'Call 000. Keep the person still and calm. Apply a firm pressure immobilisation bandage over the bite and up the whole limb, then splint it. Do not wash, cut or suck the bite, and do not use a tourniquet.'
   },
+  roads: {
+    title: 'Dust storms and outback roads',
+    org: 'RACV',
+    url: 'https://www.racv.com.au/about-racv/newsroom/dust-storm-driving-tips.html',
+    summary: 'Check roadreport.nt.gov.au before you travel and drive to the conditions. Caught in a dust storm? Slow down, turn on your headlights and hazard lights, pull over as soon as it is safe, and wait in the car until it passes.'
+  },
   lightning: {
     title: 'Storms and lightning',
     org: 'Swimming NT lightning policy',
@@ -62,12 +68,6 @@ export const SOURCES = {
     org: 'NT Police, Fire and Emergency Services',
     url: 'https://pfes.nt.gov.au/file/download/36012',
     summary: 'Leaving early is the safest choice. Decide your trigger to leave (for example, smoke in your area) before a fire starts, and have a backup plan.'
-  },
-  roads: {
-    title: 'Roads and roadsides',
-    org: 'Road Safety NT, NT Government',
-    url: 'https://roadsafety.nt.gov.au/safety-topics/roads-and-roadsides',
-    summary: 'Territory roads change fast. Check roadreport.nt.gov.au before you travel, drive to the conditions, and in a dust storm slow right down, put your lights on and pull over until it clears.'
   }
 };
 
@@ -83,25 +83,23 @@ export const GAME_LABELS = {
   'heat-drink': 'Staying hydrated in heat',
   'snake-bite': 'Snake bite first aid',
   'bushfire-leave': 'Leaving early in a bushfire',
-<<<<<<< Updated upstream
   'lightning-pool': 'Getting out of the pool in a storm',
   'mozzie-dusk': 'Mozzie protection at dusk',
   'sun-slip': 'Slip, slop, slap',
   'boss-cyclone': 'BOSS: Cyclone Night',
-  'boss-croc': 'BOSS: Croc Creek'
+  'boss-croc': 'BOSS: Croc Creek',
+  'croc-trap': 'Leaving croc traps to rangers',
+  'rock-hole': 'Swimming in a rock hole',
+  'dust-storm': 'Driving into a dust storm',
+  'flash-flood': 'Crossing a dry river bed'
 };
 
 // One emoji per game, used for the Daily Challenge share text.
 export const GAME_ICONS = {
   'croc-edge': '🐊', 'swim-sign': '🐊', 'croc-camp': '⛺', 'stinger-vinegar': '🪼', 'stinger-suit': '🪼',
   'cyclone-kit': '🌀', 'flood-road': '🚙', 'heat-drink': '💧', 'snake-bite': '🐍', 'bushfire-leave': '🔥',
-  'lightning-pool': '⛈️', 'mozzie-dusk': '🦟', 'sun-slip': '😎', 'boss-cyclone': '👑', 'boss-croc': '👑'
-=======
-  'croc-trap': 'Trapping a problem croc',
-  'rock-hole': 'Swimming in a rock hole',
-  'dust-storm': 'Driving into a dust storm',
-  'flash-flood': 'Crossing a dry river bed'
->>>>>>> Stashed changes
+  'lightning-pool': '⛈️', 'mozzie-dusk': '🦟', 'sun-slip': '😎', 'boss-cyclone': '👑', 'boss-croc': '👑',
+  'croc-trap': '🪤', 'rock-hole': '🏞️', 'dust-storm': '🌪️', 'flash-flood': '🌊'
 };
 
 // One entry per mini-game id (see games.js).
@@ -116,16 +114,13 @@ export const LESSONS = {
   'heat-drink':  { source: 'heat',     win: 'Water, often, even before you feel thirsty.',                   fail: 'Cooked! Drink 2 to 3 L of water a day and skip sugary drinks.' },
   'snake-bite':  { source: 'snake',    win: 'Firm bandage up the whole limb, keep still, call 000.',         fail: 'No cutting, sucking or tourniquets. Bandage the whole limb and call 000.' },
   'bushfire-leave': { source: 'bushfire', win: 'Leaving early is the safest choice.',                       fail: 'Don\'t wait for flames. Leaving early is the safest choice.' },
-<<<<<<< Updated upstream
   'lightning-pool': { source: 'lightning', win: 'Storm close? Everyone out of the water and indoors.',                fail: 'Frazzled! Leave the water as soon as a storm is close, and wait 30 minutes after the last thunder.' },
   'mozzie-dusk':    { source: 'mozzies',   win: 'Repellent plus long, light sleeves at dusk and dawn.',                 fail: 'Eaten alive! Mozzies love dusk: use repellent and cover up.' },
   'sun-slip':       { source: 'sun',       win: 'Slip, slop, slap. Sun sorted!',                                        fail: 'Lobster mode! Slip on a shirt, slop on SPF50+ and slap on a hat.' },
   'boss-cyclone':   { source: 'cyclone',   win: 'Cyclone Night survived! Strongest room, away from windows, stay in during the eye.', fail: 'Shelter in the strongest room, away from windows, and stay inside when the eye goes over.' },
-  'boss-croc':      { source: 'crocwise',  win: 'Croc Creek survived! You are properly Crocwise.',                       fail: 'Stay out of unsigned water, stand 5 m back, and never go in after a lure.' }
-=======
-  'croc-trap':   { source: 'crocwise', win: 'Nice timing! Rangers trap problem crocs - report sightings and stay back from the water.', fail: 'Missed it! Never swim or fish where a croc has been seen. That is ranger business.' },
-  'rock-hole':   { source: 'crocwise', win: 'Everyone out! Crocs move into waterholes after the wet.',       fail: 'Too slow! Never swim in a rock hole or waterhole. Crocs can be in any Top End water.' },
-  'dust-storm':  { source: 'roads',    win: 'Pulled over, lights on. Wait out a dust storm off the road.',   fail: 'Never drive blind into dust. Slow down, lights on, pull right off the road.' },
-  'flash-flood': { source: 'flood',    win: 'Back on the bank. A dry river bed can flood in minutes.',       fail: 'Swept away! Never camp or walk in a dry river bed. Flash floods come with no warning.' }
->>>>>>> Stashed changes
+  'boss-croc':      { source: 'crocwise',  win: 'Croc Creek survived! You are properly Crocwise.',                       fail: 'Stay out of unsigned water, stand 5 m back, and never go in after a lure.' },
+  'croc-trap':   { source: 'crocwise', win: 'Nice timing! Leave it to the rangers: report croc sightings and never touch a croc trap.', fail: 'Missed it! Where a croc has been seen, stay out of the water and stand well back from the edge.' },
+  'rock-hole':   { source: 'crocwise', win: 'Everyone out! Crocs can move into waterholes after the wet.',   fail: 'Too slow! Only swim where a sign says it is a swimming area: crocs can turn up in any Top End waterhole.' },
+  'dust-storm':  { source: 'roads',    win: 'Pulled over, lights on. Wait out a dust storm in the car.',      fail: 'Never drive blind into dust. Slow down, lights and hazards on, pull over and wait.' },
+  'flash-flood': { source: 'flood',    win: 'Back on the bank. A dry river bed can flood in minutes.',          fail: 'Swept away! Never camp in a dry river bed. Floodwater can arrive with little warning.' }
 };

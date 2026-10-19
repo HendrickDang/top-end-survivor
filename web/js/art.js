@@ -35,33 +35,134 @@ export function text(x, y, str, opts = {}) {
 }
 
 const INK = '#1d1a16';
-const SKIN = ['#8d5524', '#c68642', '#e0ac69', '#f1c27d', '#5c3a1e'];
+export const SKIN = ['#5c3a1e', '#8d5524', '#c68642', '#e0ac69', '#f1c27d'];
 
-// A cheerful bush-hat explorer. Origin at feet centre.
-export function person({ x = 0, y = 0, s = 1, shirt = '#e0892e', skin, mood = 'happy', hat = true } = {}) {
-  const sk = skin || SKIN[Math.floor(Math.random() * SKIN.length)];
+// The player's chosen look (set from wardrobeui.js). Every person() in the games wears it.
+// skin is an index into SKIN or a colour; shirt 'own' means the character's own shirt colour.
+let OUTFIT = { skin: null, hat: 'bush', shirt: 'own', specs: 'none', ownShirt: '#e0892e' };
+export function setOutfit(o) { OUTFIT = { ...OUTFIT, ...o }; }
+
+const SHIRTS = {
+  orange: { fill: '#e0892e' }, blue: { fill: '#2f7fd0' }, green: { fill: '#4f8a3c' },
+  stinger: { fill: '#2f7fd0', legs: '#2f7fd0', sleeves: '#2f7fd0' },
+  hivis: { fill: '#e8ff3a', stripes: '#c9c9c9' },
+  lifesaver: { fill: '#c8412f', half: '#ffd25e' },
+  firstaid: { fill: '#fffaf0', cross: '#c8412f' },
+  longs: { fill: '#f3efe2', sleeves: '#f3efe2', legs: '#d9cfb3' },
+  territory: { fill: '#e0892e', band: '#1d1a16' },
+  hawaii: { fill: '#17a2a2', dots: '#ffd25e' },
+  racing: { fill: '#1d1a16', stripes: '#ffd25e' },
+  gold: { fill: '#e6b422', shine: '#fff2b0' },
+  cooling: { fill: '#9fd8ef', drop: '#2f7fd0' }
+};
+
+function shirtParts(kind, colorOverride) {
+  const sh = SHIRTS[kind] || { fill: colorOverride || '#e0892e' };
+  const p = [];
+  if (sh.sleeves) {
+    p.push(el('rect', { x: -26, y: -48, width: 10, height: 26, rx: 5, fill: sh.sleeves, stroke: INK, 'stroke-width': 3 }));
+    p.push(el('rect', { x: 16, y: -48, width: 10, height: 26, rx: 5, fill: sh.sleeves, stroke: INK, 'stroke-width': 3 }));
+  }
+  p.push(el('rect', { x: -17, y: -50, width: 34, height: 32, rx: 12, fill: sh.fill, stroke: INK, 'stroke-width': 3 }));
+  if (sh.stripes) p.push(el('path', { d: 'M-15 -40 h30 M-15 -30 h30', stroke: sh.stripes, 'stroke-width': 4 }));
+  if (sh.half) p.push(el('path', { d: 'M0 -48.5 h5 a10.5 10.5 0 0 1 10.5 10.5 v8 a10.5 10.5 0 0 1 -10.5 10.5 h-5 z', fill: sh.half }));
+  if (sh.cross) p.push(el('path', { d: 'M-3 -42 h6 v5 h5 v6 h-5 v5 h-6 v-5 h-5 v-6 h5 z', fill: sh.cross }));
+  if (sh.band) p.push(el('rect', { x: -15.5, y: -38, width: 31, height: 7, fill: sh.band }));
+  if (sh.dots) [[-8, -42], [7, -40], [-2, -30], [9, -27], [-10, -26]].forEach(([cx, cy]) => p.push(el('circle', { cx, cy, r: 2.6, fill: sh.dots })));
+  if (sh.shine) p.push(el('path', { d: 'M-10 -44 l6 0 l-8 18 l-6 0 z', fill: sh.shine, opacity: .8 }));
+  if (sh.drop) p.push(el('path', { d: 'M0 -44 q7 9 0 14 q-7 -5 0 -14 z', fill: sh.drop }));
+  return { parts: p, legs: sh.legs };
+}
+
+function hatParts(kind) {
+  const H = {
+    none: () => [],
+    bush: () => [
+      el('ellipse', { cx: 0, cy: -82, rx: 27, ry: 6, fill: '#8a6a3a', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M-15 -82 q2 -16 15 -16 q13 0 15 16 z', fill: '#a7834b', stroke: INK, 'stroke-width': 3 }),
+      el('rect', { x: -14, y: -87, width: 28, height: 4, fill: '#5a3d1e' })],
+    cap: () => [
+      el('path', { d: 'M-17 -80 q0 -18 17 -18 q17 0 17 18 z', fill: '#c8412f', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M8 -81 h24 q2 5 -4 6 h-20 z', fill: '#c8412f', stroke: INK, 'stroke-width': 3 })],
+    croc: () => [
+      el('path', { d: 'M-19 -78 q0 -22 19 -22 q19 0 19 22 z', fill: '#4f7a33', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M15 -86 h22 q4 6 -2 10 h-20 z', fill: '#5d8c3d', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M18 -78 l3 4 l3 -4 l3 4 l3 -4 l3 4', stroke: '#fffaf0', 'stroke-width': 2, fill: 'none' }),
+      el('circle', { cx: -7, cy: -98, r: 5, fill: '#ffe066', stroke: INK, 'stroke-width': 2 }),
+      el('circle', { cx: 7, cy: -98, r: 5, fill: '#ffe066', stroke: INK, 'stroke-width': 2 }),
+      el('rect', { x: -8, y: -101, width: 2, height: 6, fill: INK }), el('rect', { x: 6, y: -101, width: 2, height: 6, fill: INK })],
+    crown: () => [
+      el('path', { d: 'M-16 -82 l-3 -20 l10 8 l9 -14 l9 14 l10 -8 l-3 20 z', fill: '#ffd25e', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+      el('circle', { cx: 0, cy: -90, r: 3, fill: '#c8412f' })],
+    hardhat: () => [
+      el('path', { d: 'M-18 -80 q0 -20 18 -20 q18 0 18 20 z', fill: '#ffd25e', stroke: INK, 'stroke-width': 3 }),
+      el('rect', { x: -24, y: -82, width: 48, height: 6, rx: 3, fill: '#ffd25e', stroke: INK, 'stroke-width': 3 }),
+      el('rect', { x: -3, y: -100, width: 6, height: 18, fill: '#e8b830' })],
+    firehelmet: () => [
+      el('path', { d: 'M-18 -80 q0 -22 18 -22 q18 0 18 22 z', fill: '#c8412f', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M-26 -80 h52 q-2 6 -10 6 h-32 q-8 0 -10 -6 z', fill: '#c8412f', stroke: INK, 'stroke-width': 3 }),
+      el('rect', { x: -6, y: -96, width: 12, height: 10, rx: 2, fill: '#ffd25e', stroke: INK, 'stroke-width': 2 })],
+    legionnaire: () => [
+      el('path', { d: 'M-18 -78 q0 -20 18 -20 q18 0 18 20 z', fill: '#f3efe2', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M-19 -80 v24 q-6 -4 -8 -10 z M19 -80 v24 q6 -4 8 -10 z', fill: '#f3efe2', stroke: INK, 'stroke-width': 2 }),
+      el('path', { d: 'M8 -80 h20 q1 5 -4 6 h-16 z', fill: '#f3efe2', stroke: INK, 'stroke-width': 3 })],
+    party: () => [
+      el('path', { d: 'M-12 -84 L0 -116 L12 -84 z', fill: '#f28ab2', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+      el('path', { d: 'M-8 -94 l16 0 M-4 -104 l8 0', stroke: '#ffd25e', 'stroke-width': 3 }),
+      el('circle', { cx: 0, cy: -118, r: 4, fill: '#ffd25e', stroke: INK, 'stroke-width': 2 })],
+    grad: () => [
+      el('path', { d: 'M-15 -80 q0 -12 15 -12 q15 0 15 12 z', fill: '#1d1a16' }),
+      el('path', { d: 'M-30 -94 L0 -104 L30 -94 L0 -84 z', fill: '#1d1a16', stroke: INK, 'stroke-width': 2 }),
+      el('path', { d: 'M0 -94 L24 -92 V-78', stroke: '#ffd25e', 'stroke-width': 2.5, fill: 'none' }),
+      el('circle', { cx: 24, cy: -76, r: 3, fill: '#ffd25e' })],
+    explorer: () => [
+      el('ellipse', { cx: 0, cy: -82, rx: 30, ry: 7, fill: '#5a3d1e', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M-16 -82 q0 -20 16 -20 q16 0 16 20 z', fill: '#6b4a2b', stroke: INK, 'stroke-width': 3 }),
+      el('path', { d: 'M-16 -86 h32', stroke: '#c8412f', 'stroke-width': 4 }),
+      el('path', { d: 'M10 -88 l8 -14 l2 14 z', fill: '#c8412f', stroke: INK, 'stroke-width': 1.5 })]
+  };
+  return (H[kind] || H.bush)();
+}
+
+function specsParts(kind) {
+  if (kind === 'sunnies') return [
+    el('rect', { x: -14, y: -76, width: 12, height: 9, rx: 3, fill: INK }), el('rect', { x: 2, y: -76, width: 12, height: 9, rx: 3, fill: INK }),
+    el('path', { d: 'M-2 -73 h4', stroke: INK, 'stroke-width': 2 })];
+  if (kind === 'nerd') return [
+    el('circle', { cx: -7, cy: -71, r: 6.5, fill: 'rgba(255,255,255,.35)', stroke: INK, 'stroke-width': 2.5 }),
+    el('circle', { cx: 7, cy: -71, r: 6.5, fill: 'rgba(255,255,255,.35)', stroke: INK, 'stroke-width': 2.5 }),
+    el('path', { d: 'M-1 -71 h2', stroke: INK, 'stroke-width': 2.5 })];
+  if (kind === 'heart') return [
+    el('path', { d: 'M-7 -66 l-7 -7 a3.6 3.6 0 0 1 7 -4 a3.6 3.6 0 0 1 7 4 z', fill: '#f28ab2', stroke: INK, 'stroke-width': 2 }),
+    el('path', { d: 'M7 -66 l-7 -7 a3.6 3.6 0 0 1 7 -4 a3.6 3.6 0 0 1 7 4 z', fill: '#f28ab2', stroke: INK, 'stroke-width': 2 })];
+  return [];
+}
+
+// A cheerful explorer wearing the player's outfit. Origin at feet centre.
+// Pass outfit: {...} to draw a specific look (used by the wardrobe previews).
+export function person({ x = 0, y = 0, s = 1, shirt, skin, mood = 'happy', hat = true, outfit } = {}) {
+  const o = { ...OUTFIT, ...(outfit || {}) };
+  const sk = skin || (typeof o.skin === 'string' ? o.skin : o.skin != null ? SKIN[o.skin] : SKIN[Math.floor(Math.random() * SKIN.length)]);
   const mouth = mood === 'happy'
     ? el('path', { d: 'M-7 -62 q7 7 14 0', stroke: INK, 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' })
     : mood === 'scared'
       ? el('ellipse', { cx: 0, cy: -60, rx: 5, ry: 7, fill: INK })
       : el('path', { d: 'M-7 -58 q7 -7 14 0', stroke: INK, 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' });
+  const top = shirtParts(o.shirt, o.shirt === 'own' ? (o.ownShirt || shirt) : shirt);
+  const legs = top.legs || '#3b4a6b';
+  const showEyes = o.specs !== 'sunnies';
   const parts = [
     el('ellipse', { cx: 0, cy: 0, rx: 22, ry: 5, fill: 'rgba(0,0,0,.18)' }),
-    el('rect', { x: -12, y: -22, width: 9, height: 22, rx: 4, fill: '#3b4a6b', stroke: INK, 'stroke-width': 3 }),
-    el('rect', { x: 3, y: -22, width: 9, height: 22, rx: 4, fill: '#3b4a6b', stroke: INK, 'stroke-width': 3 }),
-    el('rect', { x: -17, y: -50, width: 34, height: 32, rx: 12, fill: shirt, stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: -12, y: -22, width: 9, height: 22, rx: 4, fill: legs, stroke: INK, 'stroke-width': 3 }),
+    el('rect', { x: 3, y: -22, width: 9, height: 22, rx: 4, fill: legs, stroke: INK, 'stroke-width': 3 }),
+    ...top.parts,
     el('circle', { cx: 0, cy: -68, r: 18, fill: sk, stroke: INK, 'stroke-width': 3 }),
-    el('circle', { cx: -6, cy: -71, r: 2.8, fill: INK }),
-    el('circle', { cx: 6, cy: -71, r: 2.8, fill: INK }),
-    mouth
-  ];
-  if (hat) {
-    parts.push(
-      el('ellipse', { cx: 0, cy: -82, rx: 27, ry: 6, fill: '#8a6a3a', stroke: INK, 'stroke-width': 3 }),
-      el('path', { d: 'M-15 -82 q2 -16 15 -16 q13 0 15 16 z', fill: '#a7834b', stroke: INK, 'stroke-width': 3 }),
-      el('rect', { x: -14, y: -87, width: 28, height: 4, fill: '#5a3d1e' })
-    );
-  }
+    showEyes ? el('circle', { cx: -6, cy: -71, r: 2.8, fill: INK }) : null,
+    showEyes ? el('circle', { cx: 6, cy: -71, r: 2.8, fill: INK }) : null,
+    mouth,
+    ...specsParts(o.specs),
+    ...(hat ? hatParts(o.hat) : [])
+  ].filter(Boolean);
   return g(parts, { transform: `translate(${x} ${y}) scale(${s})` });
 }
 
@@ -330,15 +431,11 @@ export function iconFor(key) {
     flood: () => wrap('<path d="M-22 6 q11 -8 22 0 t22 0 M-22 16 q11 -8 22 0 t22 0" stroke="#2f7fd0" stroke-width="5" fill="none"/><path d="M-14 -4 h28 l-4 -12 h-20 z" fill="#c8412f" stroke="#1d1a16" stroke-width="3"/>', '#f6e7c8'),
     heat: () => { tmp.innerHTML = ''; tmp.appendChild(items.water()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     snake: () => { tmp.innerHTML = ''; tmp.appendChild(items.bandage()); return wrap(`<g transform="scale(.8)">${tmp.innerHTML}</g>`, '#e7f3d6'); },
-<<<<<<< Updated upstream
+    roads: () => wrap('<path d="M0 -26 L16 26 L-16 26 z" fill="#6d6d6d" stroke="#1d1a16" stroke-width="3"/><path d="M0 -12 v8 M0 6 v8" stroke="#ffe9a8" stroke-width="4" stroke-linecap="round"/>', '#f0d9a8'),
     lightning: () => { tmp.innerHTML = ''; tmp.appendChild(items.bolt()); return wrap(`<g transform="scale(.6)">${tmp.innerHTML}</g>`, '#4b5363'); },
     mozzies: () => { tmp.innerHTML = ''; tmp.appendChild(items.mozzie()); return wrap(`<g transform="scale(1.6)">${tmp.innerHTML}</g>`, '#e3d4f0'); },
     sun: () => { tmp.innerHTML = ''; tmp.appendChild(items.hat()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
     bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8')
-=======
-    bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8'),
-    roads: () => wrap('<path d="M0 -26 L16 26 L-16 26 z" fill="#6d6d6d" stroke="#1d1a16" stroke-width="3"/><path d="M0 -12 v8 M0 6 v8" stroke="#ffe9a8" stroke-width="4" stroke-linecap="round"/>', '#f0d9a8')
->>>>>>> Stashed changes
   };
   return (pick[key] || pick.crocwise)();
 }
