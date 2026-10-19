@@ -41,7 +41,7 @@ async function request(path, opts = {}) {
 export function queueRun(run) {
   const outbox = load(KEY_OUTBOX, []);
   const localId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  outbox.push({ localId, ...run, clientId: clientId(), name: null, serverId: null, nameSent: false });
+  outbox.push({ localId, ...run, clientId: clientId(), name: null, serverId: null, nameSent: false, townSent: true });
   save(KEY_OUTBOX, outbox.slice(-50));
   return localId;
 }
@@ -51,6 +51,14 @@ export function setRunName(localId, name) {
   const r = outbox.find(x => x.localId === localId);
   if (r) { r.name = name; r.nameSent = false; save(KEY_OUTBOX, outbox); }
 }
+
+export function setRunTown(localId, town) {
+  const outbox = load(KEY_OUTBOX, []);
+  const r = outbox.find(x => x.localId === localId);
+  if (r && r.town !== town) { r.town = town; r.townSent = !r.serverId; save(KEY_OUTBOX, outbox); }
+}
+
+const needsWork = (r) => !r.dead && (!r.serverId || (r.name && !r.nameSent) || (r.town && r.townSent === false));
 
 // Try to send everything in the outbox. Safe to call any time.
 let flushing = null;
@@ -67,15 +75,23 @@ export function flush() {
             body: JSON.stringify({
               clientId: r.clientId, results: r.results, durationMs: r.durationMs,
               mode: r.mode || 'classic', day: r.day,
+              town: r.town || undefined, challengeOf: r.challengeOf || undefined,
               name: r.name || undefined, appVersion: r.appVersion
             })
           });
-          r.serverId = res.id; r.score = res.score; r.nameSent = !!r.name; changed = true;
-        } else if (r.name && !r.nameSent) {
+          r.serverId = res.id; r.score = res.score; r.nameSent = !!r.name; r.townSent = true; changed = true;
+        }
+        if (r.serverId && r.name && !r.nameSent) {
           await request(`/api/runs/${r.serverId}/name`, {
             method: 'POST', body: JSON.stringify({ name: r.name, clientId: r.clientId })
           });
           r.nameSent = true; changed = true;
+        }
+        if (r.serverId && r.town && r.townSent === false) {
+          await request(`/api/runs/${r.serverId}/town`, {
+            method: 'POST', body: JSON.stringify({ town: r.town, clientId: r.clientId })
+          });
+          r.townSent = true; changed = true;
         }
       } catch (e) {
         if (e.status && e.status >= 400 && e.status < 500) { r.dead = true; r.error = e.message; changed = true; }
@@ -93,12 +109,13 @@ export function flush() {
         serverId: f.serverId || p.serverId,
         score: p.score ?? f.score,
         nameSent: f.nameSent || (p.nameSent && p.name === f.name),
+        townSent: f.townSent === false && p.townSent && p.town === f.town ? true : f.townSent,
         dead: f.dead || p.dead,
         error: f.error || p.error
       };
     });
-    const pending = fresh.filter(r => !r.dead && (!r.serverId || (r.name && !r.nameSent)));
-    const sent = fresh.filter(r => !r.dead && r.serverId && (!r.name || r.nameSent)).slice(-5);
+    const pending = fresh.filter(needsWork);
+    const sent = fresh.filter(r => !r.dead && !needsWork(r)).slice(-5);
     const dead = fresh.filter(r => r.dead).slice(-3);
     save(KEY_OUTBOX, [...dead, ...sent, ...pending]);
     return fresh;
@@ -110,10 +127,31 @@ export function runStatus(localId) {
   const r = load(KEY_OUTBOX, []).find(x => x.localId === localId);
   if (!r) return { state: 'unknown' };
   if (r.dead) return { state: 'rejected', error: r.error };
-  if (r.serverId && (!r.name || r.nameSent)) return { state: 'sent', serverId: r.serverId };
-  return { state: 'queued' };
+  if (r.serverId && !needsWork(r)) return { state: 'sent', serverId: r.serverId };
+  return { state: 'queued', serverId: r.serverId || null };
+}
+
+// Optional quick safety check results: tiny queue so they survive being offline.
+const KEY_QUIZ = 'tes_quiz_outbox_v1';
+export function queueQuiz(payload) {
+  const q = load(KEY_QUIZ, []);
+  q.push({ ...payload, clientId: clientId() });
+  save(KEY_QUIZ, q.slice(-4));
+  flushQuiz();
+}
+export async function flushQuiz() {
+  const q = load(KEY_QUIZ, []);
+  const left = [];
+  for (const item of q) {
+    try { await request('/api/quiz', { method: 'POST', body: JSON.stringify(item) }); }
+    catch (e) { if (!(e.status >= 400 && e.status < 500)) left.push(item); }
+  }
+  save(KEY_QUIZ, left);
 }
 
 export const getLeaderboard = (period = 'today', limit = 20) => request(`/api/leaderboard?period=${period}&limit=${limit}&client=${encodeURIComponent(clientId())}`);
-export const getStats = () => request('/api/stats');
+export const getStats = (period = 'today') => request(`/api/stats?period=${period}`);
+export const getTowns = (period = 'today') => request(`/api/towns?period=${period}`);
+export const getChallenge = (id) => request(`/api/challenge/${encodeURIComponent(id)}`);
+export const getChallengeResults = () => request(`/api/challenges/results?client=${encodeURIComponent(clientId())}`);
 export const ping = () => request('/api/health');

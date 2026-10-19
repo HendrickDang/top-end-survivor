@@ -26,6 +26,8 @@ jobs:
           (cd server && DB_PATH=/tmp/ci.sqlite PORT=8099 node index.js &)
           sleep 2
           python scripts/smoke_test.py http://localhost:8099 screenshots
+      - name: Load test (200 simulated players)
+        run: node scripts/load_test.mjs --url http://localhost:8099 --players 200 --concurrency 20
       - uses: actions/upload-artifact@v4
         if: always()
         with:

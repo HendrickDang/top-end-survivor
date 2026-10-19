@@ -1,0 +1,63 @@
+{
+  "when": "2026-10-18T02:32:08.146Z",
+  "where": "local server",
+  "players": 500,
+  "concurrency": 50,
+  "requests": 3000,
+  "seconds": 8.2,
+  "requestsPerSecond": 368,
+  "p50ms": 121,
+  "p95ms": 208,
+  "p99ms": 335,
+  "errors": 0,
+  "byRequest": [
+    {
+      "request": "health",
+      "count": 500,
+      "p50": 123,
+      "p95": 197,
+      "p99": 313,
+      "max": 334
+    },
+    {
+      "request": "submit run",
+      "count": 500,
+      "p50": 125,
+      "p95": 352,
+      "p99": 1581,
+      "max": 1976
+    },
+    {
+      "request": "add name",
+      "count": 500,
+      "p50": 119,
+      "p95": 204,
+      "p99": 313,
+      "max": 353
+    },
+    {
+      "request": "leaderboard",
+      "count": 500,
+      "p50": 116,
+      "p95": 193,
+      "p99": 259,
+      "max": 327
+    },
+    {
+      "request": "town battle",
+      "count": 500,
+      "p50": 117,
+      "p95": 198,
+      "p99": 268,
+      "max": 307
+    },
+    {
+      "request": "stats",
+      "count": 500,
+      "p50": 127,
+      "p95": 207,
+      "p99": 309,
+      "max": 338
+    }
+  ]
+}

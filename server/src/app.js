@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import fs from 'node:fs';
-import { validateRun, cleanName, darwinDay } from './scoring.js';
+import { validateRun, validateQuiz, cleanName, darwinDay } from './scoring.js';
+import { TOWN_IDS } from '../../web/js/towns.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = path.resolve(__dirname, '../../web');
@@ -44,7 +45,7 @@ export function createApp(repo, opts = {}) {
     next();
   });
 
-  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? 40 });
+  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? (Number(process.env.WRITE_LIMIT) || 40) });
   const today = () => darwinDay(now());
 
   app.get('/api/health', (req, res) => res.json({ ok: true, day: today(), apk: fs.existsSync(APK_PATH) }));
@@ -64,6 +65,7 @@ export function createApp(repo, opts = {}) {
       if (c.error) return res.status(400).json({ error: c.error });
       name = c.name;
     }
+    if (v.run.challengeOf && !repo.getChallenge(v.run.challengeOf)) v.run.challengeOf = null;
     const id = repo.addRun(v.run, name, today());
     res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds });
   });
@@ -80,6 +82,17 @@ export function createApp(repo, opts = {}) {
     res.json({ id, name: c.name, score: run.score });
   });
 
+  // Set the town on a run you submitted (same device only).
+  app.post('/api/runs/:id/town', writeLimit, (req, res) => {
+    const id = Number(req.params.id);
+    const run = Number.isInteger(id) ? repo.getRun(id) : null;
+    if (!run) return res.status(404).json({ error: 'Run not found.' });
+    if (run.client_id !== req.body?.clientId) return res.status(403).json({ error: 'Not your run.' });
+    if (!TOWN_IDS.includes(req.body.town)) return res.status(400).json({ error: 'Unknown town.' });
+    repo.setTown(id, req.body.town);
+    res.json({ id, town: req.body.town });
+  });
+
   app.get('/api/leaderboard', (req, res) => {
     const period = ['all', 'daily'].includes(req.query.period) ? req.query.period : 'today';
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
@@ -93,6 +106,34 @@ export function createApp(repo, opts = {}) {
   app.get('/api/stats', (req, res) => {
     const period = req.query.period === 'all' ? 'all' : 'today';
     res.json({ period, day: today(), ...repo.stats({ day: period === 'today' ? today() : null }) });
+  });
+
+  // ---- Challenge a mate ----
+  app.get('/api/challenge/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const c = Number.isInteger(id) ? repo.getChallenge(id) : null;
+    if (!c) return res.status(404).json({ error: 'Challenge not found.' });
+    res.json({ id: c.id, name: c.name || 'A mate', score: c.score, rounds: c.rounds, mode: c.mode, day: c.day, today: today() });
+  });
+  app.get('/api/challenges/results', (req, res) => {
+    const client = typeof req.query.client === 'string' ? req.query.client : '';
+    if (client.length < 8) return res.status(400).json({ error: 'Invalid client id.' });
+    res.json({ entries: repo.challengeResults(client).map(e => ({ ...e, challenger: e.challenger || 'A mate' })) });
+  });
+
+  // ---- Town Battle ----
+  app.get('/api/towns', (req, res) => {
+    const period = req.query.period === 'all' ? 'all' : 'today';
+    res.json({ period, day: today(), entries: repo.towns({ day: period === 'all' ? null : today() }) });
+  });
+
+  // ---- Optional quick safety check ----
+  app.post('/api/quiz', writeLimit, (req, res) => {
+    const v = validateQuiz(req.body);
+    if (v.error) return res.status(400).json({ error: v.error });
+    const r = repo.saveQuiz({ ...v.quiz, day: today() });
+    if (r.error) return res.status(400).json(r);
+    res.json(r);
   });
 
   // Live "just died" feed for the booth screen.
@@ -118,6 +159,8 @@ export function createApp(repo, opts = {}) {
     next();
   };
   app.post('/api/admin/reset', requireAdmin, (req, res) => { repo.reset(); res.json({ ok: true }); });
+  // Remove the fake players created by scripts/load_test.mjs.
+  app.delete('/api/admin/loadtest', requireAdmin, (req, res) => res.json({ deleted: repo.deleteLoadTest() }));
   app.delete('/api/admin/runs/:id', requireAdmin, (req, res) => { repo.deleteRun(Number(req.params.id)); res.json({ ok: true }); });
   // Anonymised per-round data for analysis (no device ids).
   app.get('/api/admin/export.csv', requireAdmin, (req, res) => {
