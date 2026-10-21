@@ -258,6 +258,69 @@ function crocCampScene() {
   ]);
 }
 
+// A small house with a corrugated roof, used in the remote community scene.
+function communityHouse(x, y, s = 1, roof = '#8a5a3a') {
+  return g([
+    el('rect', { x: -42, y: -46, width: 84, height: 46, fill: '#f2d89b', stroke: '#1d1a16', 'stroke-width': 3 }),
+    el('path', { d: 'M-52 -46 L0 -80 L52 -46 z', fill: roof, stroke: '#1d1a16', 'stroke-width': 3 }),
+    el('rect', { x: -9, y: -25, width: 18, height: 25, fill: '#7a3b1e', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: 14, y: -35, width: 16, height: 13, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: -32, y: -35, width: 14, height: 12, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 })
+  ], { transform: `translate(${x} ${y}) scale(${s})` });
+}
+
+// A remote NT community on red dirt: houses, a water tower, power lines and a bushfire horizon.
+function remoteCommunity() {
+  return g([
+    // Hot, dusty sky (extends into the stage letterbox).
+    el('rect', { x: -200, y: -200, width: 760, height: 440, fill: '#f4c28a' }),
+    el('circle', { cx: 292, cy: 82, r: 38, fill: '#e0892e', opacity: .25 }),
+
+    // Distant scrub and red dirt.
+    el('path', {
+      d: 'M-20 238 Q30 214 82 230 Q124 202 172 224 Q220 204 270 226 Q320 202 380 224 L380 270 L-20 270 Z',
+      fill: '#7f8a4a'
+    }),
+    el('path', {
+      d: 'M-20 236 Q80 226 180 236 Q280 226 380 238 L380 700 L-20 700 Z',
+      fill: '#c9a25a'
+    }),
+
+    // Dirt road running into the community.
+    el('path', {
+      d: 'M112 700 Q150 550 184 440 Q204 358 214 242 L258 244 Q244 358 230 444 Q208 560 196 700 Z',
+      fill: '#b07a44', opacity: .7
+    }),
+    el('path', { d: 'M150 690 Q176 552 198 444 Q212 360 222 246', stroke: 'rgba(90,60,30,.35)', 'stroke-width': 4, fill: 'none' }),
+
+    // Ground texture.
+    el('ellipse', { cx: 66, cy: 380, rx: 88, ry: 28, fill: '#d9b97a', opacity: .5 }),
+    el('ellipse', { cx: 312, cy: 430, rx: 78, ry: 25, fill: '#b99c62', opacity: .4 }),
+    el('ellipse', { cx: 180, cy: 300, rx: 60, ry: 18, fill: '#d9b97a', opacity: .35 }),
+
+    // A smaller house further into the community.
+    communityHouse(228, 306, .58, '#8a5a3a'),
+
+    // Water tower.
+    g([
+      el('path', { d: 'M14 0 L8 -74 M42 0 L48 -74 M28 0 L28 -74 M10 -44 L46 -44', stroke: '#6b4a2b', 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round' }),
+      el('rect', { x: 2, y: -112, width: 52, height: 40, rx: 6, fill: '#cfd8d0', stroke: '#1d1a16', 'stroke-width': 3 }),
+      el('path', { d: 'M2 -108 h52', stroke: '#9aa79a', 'stroke-width': 4 }),
+      text(28, -86, 'WATER', { size: 10 })
+    ], { transform: 'translate(10 340) scale(.9)' }),
+
+    // Power poles with sagging lines.
+    el('path', { d: 'M166 300 v-80 M284 292 v-76', stroke: '#6b4a2b', 'stroke-width': 5, fill: 'none' }),
+    el('path', { d: 'M156 224 h20 M274 220 h20', stroke: '#6b4a2b', 'stroke-width': 5, fill: 'none' }),
+    el('path', { d: 'M166 220 Q225 246 284 216', stroke: 'rgba(40,35,30,.55)', 'stroke-width': 2, fill: 'none' }),
+
+    // Roadside scrub.
+    bush(332, 330, .6),
+    fern(72, 420, .9),
+    rock(328, 456, .55, '#b0a696')
+  ]);
+}
+
 function houseInside(calm = false) {
   return g([
     el('rect', { x: 30, y: 150, width: 300, height: 240, fill: '#e9dcc0', stroke: '#1d1a16', 'stroke-width': 4 }),
@@ -600,11 +663,9 @@ export const GAMES = [
 
   // 10. Smoke on the horizon: leave early.
   {
-    id: 'bushfire-leave', prompt: 'SMOKE!', bg: '#f4c28a',
+    id: 'bushfire-leave', prompt: 'SMOKE!', bg: '#f4c28a', ownBackdrop: true,
     setup(ctx) {
-      ctx.svg.append(
-        el('rect', { x: 0, y: 220, width: W, height: 260, fill: '#c9a25a' })
-      );
+      ctx.svg.append(remoteCommunity());
       const smoke = g([
         el('circle', { cx: 0, cy: 0, r: 30, fill: '#7d7268' }),
         el('circle', { cx: 25, cy: -30, r: 36, fill: '#8a7f75' }),
@@ -613,12 +674,8 @@ export const GAMES = [
       ]);
       const flames = el('path', { d: 'M-60 0 q10 -40 20 -10 q8 -50 22 -8 q10 -45 20 -4 q12 -36 20 -2 q8 -30 18 24 z', fill: '#e0892e', stroke: '#c8412f', 'stroke-width': 3 });
       ctx.svg.append(smoke, flames);
-      // house + car
-      ctx.svg.append(g([
-        el('rect', { x: -50, y: -50, width: 100, height: 60, fill: '#fffaf0', stroke: '#1d1a16', 'stroke-width': 3 }),
-        el('path', { d: 'M-62 -50 L0 -96 L62 -50 z', fill: '#c8412f', stroke: '#1d1a16', 'stroke-width': 3 }),
-        el('rect', { x: -12, y: -26, width: 24, height: 36, fill: '#7a3b1e', stroke: '#1d1a16', 'stroke-width': 2 })
-      ], { transform: 'translate(110 330)' }));
+      // The closest house, with the player outside.
+      ctx.svg.append(communityHouse(122, 330, 1.05, '#c8412f'));
       ctx.svg.append(person({ x: 240, y: 340, s: .9, mood: 'scared' }));
       ctx.onTick((p) => {
         place(smoke, 300 - p * 50, 200, 0.6 + p * 0.8);
