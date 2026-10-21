@@ -54,7 +54,7 @@
     .record h3 { margin: 0; font-size: 9vw; line-height: 1; color: #ffe9a8; text-shadow: 0 8px 0 var(--ink); }
     .record p { margin: 1vw 0 0; font-size: 4vw; font-weight: 800; text-shadow: 0 4px 0 var(--ink); }
     @keyframes rec { 0% { opacity: 0; transform: scale(.6); } 10% { opacity: 1; transform: scale(1.05); } 15% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
-    .snd { position: fixed; top: 1vw; right: 1vw; z-index: 11; font-size: 1.4vw; border: 3px solid var(--ink); border-radius: 12px; background: var(--white); padding: .3vw .8vw; cursor: pointer; font-family: inherit; font-weight: 700; }
+    .snd { position: fixed; top: .3vw; right: 1vw; z-index: 13; font-size: 1.05vw; border: 3px solid var(--ink); border-radius: 10px; background: var(--white); padding: .1vw .7vw; cursor: pointer; font-family: inherit; font-weight: 700; }
     canvas#conf { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 12; }
     .attract { position: fixed; inset: 0; z-index: 9; background: radial-gradient(circle at 30% 40%, #17524f, #0f3b3a 70%); display: none; align-items: center; justify-content: center; gap: 5vw; padding: 2vw 4vw 7vw; }
     .attract.show { display: flex; animation: fadein .6s ease; }
@@ -92,6 +92,68 @@
     .lrow .vals .up { color: var(--leaf); }
     .lrow small { display: block; font-size: 1vw; opacity: .7; }
     .status { position: fixed; bottom: 6.6vw; right: 1vw; font-size: .9vw; color: var(--white); opacity: .6; }
+    .voteqr { background: #e9e3fb; }
+    /* locals vs visitors */
+    .groups-head { margin: 0 0 1vw; font-size: 1.7vw; font-weight: 800; line-height: 1.15; }
+    .groups-head b { color: var(--red); }
+    .gcount { display: flex; gap: 1.2vw; font-size: 1.15vw; font-weight: 700; margin-bottom: .8vw; }
+    .gtable { display: flex; flex-direction: column; gap: .7vw; overflow: hidden; }
+    .grow { display: grid; grid-template-columns: 8vw 1fr; gap: .8vw; align-items: center; }
+    .grow .lab { font-size: 1.25vw; font-weight: 800; }
+    .gbars { display: flex; flex-direction: column; gap: .2vw; }
+    .gbar { display: grid; grid-template-columns: 1.6vw 1fr 3.4vw; gap: .4vw; align-items: center; font-size: 1vw; font-weight: 700; }
+    .gbar .track { height: .9vw; background: var(--white); border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; }
+    .gbar .fill { height: 100%; transition: width .8s ease; }
+    .gbar.local .fill { background: var(--leaf); } .gbar.new .fill { background: var(--ochre); } .gbar.visitor .fill { background: var(--red); }
+    .gbar .na { opacity: .45; }
+    /* Live Booth Battle */
+    .bbtn[hidden] { display: none; }
+    .bbtn { position: fixed; top: .3vw; right: 10vw; z-index: 13; font-size: 1.05vw; border: 3px solid var(--ink); border-radius: 10px; background: #c8412f; color: var(--white); padding: .1vw .8vw; cursor: pointer; font-family: inherit; font-weight: 800; }
+    .battle { position: fixed; inset: 0; z-index: 11; display: none; flex-direction: column; background: radial-gradient(circle at 50% 30%, #7a2a1f, #3a1410 75%); color: var(--white); padding: 2.5vw 3vw 3vw; }
+    .battle.show { display: flex; animation: fadein .4s ease; }
+    .battle h2 { font-size: 4.4vw; margin: 0; line-height: 1; text-shadow: 0 .4vw 0 var(--ink); }
+    .battle h2 span { color: #ffe9a8; }
+    .bview { display: none; flex: 1; min-height: 0; }
+    .battle[data-view="lobby"] .bv-lobby, .battle[data-view="count"] .bv-count, .battle[data-view="live"] .bv-live, .battle[data-view="done"] .bv-done { display: flex; }
+    .bv-lobby { gap: 3vw; align-items: center; }
+    .bjoin { width: 34vw; display: flex; flex-direction: column; align-items: center; gap: 1vw; text-align: center; }
+    .bjoin img { width: 26vw; height: 26vw; background: var(--white); border: .6vw solid var(--ink); border-radius: 1.4vw; padding: .6vw; image-rendering: pixelated; }
+    .bcode { font-size: 7.5vw; font-weight: 800; letter-spacing: 1.2vw; line-height: 1; color: #ffe9a8; text-shadow: 0 .5vw 0 var(--ink); }
+    .bjoin p { margin: 0; font-size: 1.6vw; font-weight: 700; }
+    .blobby { flex: 1; align-self: stretch; display: flex; flex-direction: column; gap: 1.2vw; min-height: 0; }
+    .blobby h3 { margin: 0; font-size: 2.6vw; }
+    .bplayers { display: flex; flex-wrap: wrap; gap: 1vw; align-content: flex-start; overflow: hidden; flex: 1; }
+    .bp { display: flex; align-items: center; gap: .5vw; background: var(--sand); color: var(--ink); border: .3vw solid var(--ink); border-radius: 99px; padding: .2vw 1.2vw .2vw .2vw; font-size: 1.7vw; font-weight: 800; animation: popin .5s cubic-bezier(.2,1.8,.4,1) backwards; }
+    .bp .av { width: 3.6vw; height: 3.6vw; }
+    @keyframes popin { from { transform: scale(0); } }
+    .bbuttons { display: flex; gap: 1vw; }
+    .bbuttons button { font-family: inherit; font-weight: 800; font-size: 2vw; border: .3vw solid var(--ink); border-radius: 1.2vw; padding: .6vw 2vw; cursor: pointer; box-shadow: 0 .5vw 0 var(--ink); }
+    .bstart { background: #ffd25e; } .bstart:disabled { opacity: .5; cursor: default; }
+    .bclose { background: var(--white); }
+    .bv-count { flex-direction: column; align-items: center; justify-content: center; gap: 2vw; }
+    .bnum { font-size: 22vw; font-weight: 800; line-height: 1; color: #ffe9a8; text-shadow: 0 1vw 0 var(--ink); }
+    .bhaz { display: flex; gap: 2vw; font-size: 5vw; }
+    .bv-live { flex-direction: column; gap: 1vw; min-height: 0; }
+    .bhead { display: flex; align-items: center; justify-content: space-between; font-size: 2vw; font-weight: 800; }
+    .blanes { display: flex; flex-direction: column; gap: .6vw; overflow: hidden; }
+    .lane { display: grid; grid-template-columns: 3.4vw 4.4vw 16vw 1fr 7vw; gap: .8vw; align-items: center; background: rgba(255,250,240,.1); border-radius: 1vw; padding: .3vw .8vw; font-size: 1.8vw; font-weight: 800; }
+    .lane.lead { background: rgba(255,210,94,.25); }
+    .lane .rk { text-align: center; }
+    .lane .av { width: 4.4vw; height: 4.4vw; }
+    .lane .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lane .cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5vw; }
+    .lane .cells i { height: 3vw; border-radius: .7vw; border: .25vw solid var(--ink); background: rgba(255,250,240,.2); font-style: normal; display: grid; place-items: center; font-size: 1.6vw; }
+    .lane .cells i.ok { background: var(--leaf); } .lane .cells i.bad { background: var(--red); }
+    .lane .sc { text-align: right; color: #ffe9a8; }
+    .bv-done { flex-direction: column; align-items: center; gap: 1.5vw; }
+    .bpodium { display: flex; align-items: flex-end; gap: 1.5vw; }
+    .bpod { width: 18vw; display: flex; flex-direction: column; align-items: center; background: var(--sand); color: var(--ink); border: .4vw solid var(--ink); border-radius: 1.5vw 1.5vw 0 0; padding: 1vw 1vw 1.5vw; }
+    .bpod .av { width: 12vw; height: 12vw; }
+    .bpod b { font-size: 2vw; text-align: center; line-height: 1.1; }
+    .bpod span { font-size: 2.6vw; font-weight: 800; color: var(--red); }
+    .bpod.p1 { padding-bottom: 6vw; background: #ffe9a8; } .bpod.p2 { padding-bottom: 3vw; }
+    .brest { display: flex; flex-wrap: wrap; gap: .6vw 2vw; justify-content: center; font-size: 1.5vw; font-weight: 700; max-width: 80vw; }
+    .char { width: 100%; height: 100%; display: block; overflow: visible; }
   </style>
 </head>
 <body>
@@ -102,6 +164,7 @@
       <p class="scan">Scan to play on your phone</p>
       <div class="challenge" id="challenge">Be the first on the board!</div>
       <div class="apkqr" id="apkqr"><img id="apkqr-img" alt="QR code to download the Android app"><span>🤖 Android app:<br>scan to download</span></div>
+      <div class="apkqr voteqr" id="voteqr"><img id="voteqr-img" alt="QR code to vote for Team CAP003"><span>🗳️ People's Choice:<br>vote for Team CAP003</span></div>
       <p class="url" id="url"></p>
     </section>
 
@@ -112,7 +175,7 @@
     </section>
 
     <section class="card rot">
-      <div class="pdots" id="pdots"><i class="on"></i><i></i><i></i></div>
+      <div class="pdots" id="pdots"><i class="on"></i><i></i><i></i><i></i></div>
       <div class="panel-v show" data-panel="hazards">
       <h2>What's catching people out today</h2>
       <div class="kpis">
@@ -137,12 +200,46 @@
         <div class="learn-big" id="learn-big"></div>
         <p class="note">Live from every round played today. "Quick check" is an optional 3-question quiz before and after a game.</p>
       </div>
+      <div class="panel-v" data-panel="groups">
+        <h2>🧳 Locals vs visitors</h2>
+        <p class="groups-head" id="groups-head"></p>
+        <div class="gcount" id="gcount"></div>
+        <div class="gtable" id="gtable"></div>
+        <p class="note">% of attempts failed today, by what players told us after their game: NT local, new to the NT, or visiting.</p>
+      </div>
     </section>
   </div>
   <div class="status" id="status"></div>
   <div class="ticker"><div class="lab">💥 JUST NOW</div><div class="track" id="ticker"><span>Scan the QR code and see how long you survive the Top End...</span></div></div>
   <div class="record" id="record"><h3>NEW #1!</h3><p id="record-who"></p></div>
   <button class="snd" id="snd">🔇 Sound off</button>
+  <button class="bbtn" id="bbtn" title="Start a Booth Battle (B)">⚔️ Booth Battle</button>
+  <div class="battle" id="battle" data-view="lobby" aria-live="polite">
+    <div class="bview bv-lobby">
+      <div class="bjoin">
+        <h2>⚔️ BOOTH <span>BATTLE</span></h2>
+        <img id="bqr" alt="QR code to join the battle">
+        <div class="bcode" id="bcode">----</div>
+        <p>Scan, or tap ⚔️ Booth Battle in the game and enter the code</p>
+      </div>
+      <div class="blobby">
+        <h3 id="bcount">Waiting for players...</h3>
+        <div class="bplayers" id="bplayers"></div>
+        <div class="bbuttons"><button class="bstart" id="bstart" disabled>▶ Start the battle (Enter)</button><button class="bclose" id="bclose">✕ Close (Esc)</button></div>
+      </div>
+    </div>
+    <div class="bview bv-count"><div class="bhaz" id="bhaz"></div><div class="bnum" id="bnum">3</div></div>
+    <div class="bview bv-live">
+      <div class="bhead"><h2>⚔️ BOOTH <span>BATTLE</span> <span id="bcode2"></span></h2><span id="bleft"></span></div>
+      <div class="blanes" id="blanes"></div>
+    </div>
+    <div class="bview bv-done">
+      <h2>🏆 <span>WINNERS</span></h2>
+      <div class="bpodium" id="bpodium"></div>
+      <div class="brest" id="brest"></div>
+      <div class="bbuttons"><button class="bstart" id="bagain">⚔️ New battle</button><button class="bclose" id="bclose2">✕ Close</button></div>
+    </div>
+  </div>
   <canvas id="conf"></canvas>
   <div class="attract" id="attract">
     <div class="phone"><iframe id="demo" title="Game demo" tabindex="-1"></iframe></div>
@@ -154,12 +251,15 @@
     </div>
   </div>
 
+  <script src="js/config.js"></script>
   <script type="module">
-    import { GAME_LABELS } from './js/lessons.js';
+    import { GAME_LABELS, GAME_ICONS } from './js/lessons.js';
     import { TOWNS, townName } from './js/towns.js';
+    import { WHO, TOPIC_LABELS } from './js/groups.js';
+    import { characterSVG } from './js/characters.js';
 
     // ---- rotating stats panels: hazards -> town battle -> learning ----
-    const PANELS = ['hazards', 'towns', 'learning'];
+    const PANELS = ['hazards', 'towns', 'learning', 'groups'];
     let panel = 0;
     function showPanel(i) {
       panel = (i + PANELS.length) % PANELS.length;
@@ -216,6 +316,30 @@
           <div class="vals"><span>${pc(st.replayRate)}</span></div>
           <small>${st.challenges || 0} mate challenges played today</small></div>`;
     }
+    // Locals vs visitors: which safety topics each group gets wrong.
+    function drawGroups(g) {
+      if (!g) return;
+      const MIN = 4; // attempts needed before a rate is shown
+      const r = (x) => (x && x.plays >= MIN ? x.failRate : null);
+      const COUNT = { local: 'locals', new: 'new to the NT', visitor: 'visitors' };
+      $('#gcount').innerHTML = WHO.map(w => `<span>${w.icon} ${g.players[w.id] || 0} ${COUNT[w.id]}</span>`).join('');
+      // headline: the biggest visitor vs local gap with enough data
+      let best = null;
+      for (const t of g.topics) {
+        const v = r(t.visitor), l = r(t.local);
+        if (v != null && l != null && v > l && (!best || v - l > best.v - best.l)) best = { t, v, l };
+      }
+      $('#groups-head').innerHTML = best
+        ? (best.l > 0 ? `Visitors fail <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds <b>${(best.v / best.l).toFixed(1)}×</b> as often as locals.`
+          : `Visitors fail <b>${Math.round(best.v * 100)}%</b> of <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds. Locals: none!`)
+        : 'Tap <b>Local</b>, <b>New</b> or <b>Visiting</b> after your game to fill this in!';
+      const rows = g.topics.filter(t => WHO.some(w => r(t[w.id]) != null)).slice(0, 6);
+      $('#gtable').innerHTML = rows.map(t => `<div class="grow"><div class="lab">${esc(TOPIC_LABELS[t.topic] || t.topic)}</div><div class="gbars">${WHO.map(w => {
+        const x = r(t[w.id]);
+        return `<div class="gbar ${w.id}"><span>${w.icon}</span><div class="track"><div class="fill" style="width:${x == null ? 0 : Math.round(x * 100)}%"></div></div><span class="${x == null ? 'na' : ''}">${x == null ? '-' : Math.round(x * 100) + '%'}</span></div>`;
+      }).join('')}</div></div>`).join('') || '<p class="empty">Waiting for answers...</p>';
+    }
+
     const $ = (s) => document.querySelector(s);
     const params = new URLSearchParams(location.search);
     const api = params.get('api') || '';
@@ -253,7 +377,7 @@
     }
     addEventListener('resize', fitDemo);
     addEventListener('keydown', (e) => { if (e.key === 'a') { lastActivity = attractOn ? Date.now() : 0; setAttract(!attractOn); } });
-    setInterval(() => { if (!attractOn && Date.now() - lastActivity > IDLE_MS) setAttract(true); }, 1000);
+    setInterval(() => { if (!attractOn && !bt && Date.now() - lastActivity > IDLE_MS) setAttract(true); }, 1000);
     $('#snd').onclick = async () => {
       soundOn = !soundOn;
       if (!sfx) ({ sfx } = await import('./js/sound.js'));
@@ -282,6 +406,27 @@
       if (soundOn && sfx) sfx.fanfare();
     }
 
+    // People's Choice: set VOTE_URL in js/config.js (or add ?vote=<link> to this page's address).
+    // On the day, open /booth?vote=<link>&token=<ADMIN_TOKEN> once: the link is saved on the server,
+    // so every phone and booth device shows it too. No code change needed.
+    let voteShown = '';
+    function showVote(url) {
+      if (!url || url === voteShown) return;
+      voteShown = url;
+      $('#voteqr-img').src = `${api}/api/qr.svg?url=${encodeURIComponent(url)}`;
+      $('#voteqr').classList.add('show');
+    }
+    const voteParam = /^https?:\/\//.test(params.get('vote') || '') ? params.get('vote') : '';
+    if (voteParam && params.get('token')) {
+      fetch(`${api}/api/admin/config`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': params.get('token') }, body: JSON.stringify({ voteUrl: voteParam }) })
+        .then(r => { $('#status').textContent = r.ok ? 'Vote link saved for every device' : 'Vote link NOT saved: check the admin token'; })
+        .catch(() => {});
+    }
+    showVote(voteParam || (window.TES_CONFIG && window.TES_CONFIG.VOTE_URL) || '');
+    const checkVote = () => fetch(`${api}/api/config`).then(r => r.json()).then(c => showVote(voteParam || c.voteUrl)).catch(() => {});
+    checkVote();
+    setInterval(checkVote, 30000);
+
     fetch(`${api}/api/health`).then(r => r.json()).then(h => {
       if (!h.apk) return;
       const apkUrl = (params.get('play') || location.origin + '/').replace(/\/$/, '') + '/app.apk';
@@ -299,6 +444,7 @@
         ]);
         drawMap(tw.entries);
         drawLearning(st);
+        drawGroups(st.groups);
         const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
         if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
         $('#challenge').innerHTML = lb.entries[0]
@@ -309,7 +455,9 @@
           if (lastFeed) { lastActivity = Date.now(); setAttract(false); }
           if (lastFeed && soundOn && sfx) sfx.chomp();
           lastFeed = feedKey;
-          const items = fd.entries.map(e => `<span>💀 <b>${esc(e.name || 'A mystery player')}</b>${e.town ? ' from ' + esc(townName(e.town).split(' &')[0]) : ''} ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)${e.challengeOf ? ' ⚔️' : ''}</span>`);
+          const items = fd.entries.map(e => e.mode === 'battle'
+            ? `<span>⚔️ <b>${esc(e.name || 'A mystery player')}</b> scored ${e.score} in a Booth Battle</span>`
+            : `<span>💀 <b>${esc(e.name || 'A mystery player')}</b>${e.town ? ' from ' + esc(townName(e.town).split(' &')[0]) : ''} ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)${e.challengeOf ? ' ⚔️' : ''}</span>`);
           const tr = $('#ticker');
           tr.innerHTML = items.join('');
           tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');
@@ -334,6 +482,110 @@
         $('#status').textContent = 'Reconnecting...';
       }
     }
+    // ---- Live Booth Battle (host) ----
+    let bt = null; // { code, hostKey, timer, offset, seen, celebrated, closeTimer }
+    const bview = (v) => { $('#battle').dataset.view = v; };
+    async function openBattle() {
+      if (bt) return;
+      setAttract(false);
+      bt = { seen: new Set(), offset: 0, celebrated: false };
+      $('#battle').classList.add('show');
+      $('#bbtn').hidden = true;
+      bview('lobby');
+      $('#bcode').textContent = '....';
+      $('#bplayers').innerHTML = '';
+      $('#bcount').textContent = 'Opening a battle...';
+      $('#bstart').disabled = true;
+      try {
+        const r = await fetch(`${api}/api/battles`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || 'Could not open a battle');
+        Object.assign(bt, { code: j.battle.code, hostKey: j.hostKey });
+        const joinUrl = playUrl.replace(/\/?$/, '/') + '?battle=' + j.battle.code;
+        $('#bqr').src = `${api}/api/qr.svg?url=${encodeURIComponent(joinUrl)}`;
+        $('#bcode').textContent = j.battle.code;
+        $('#bcode2').textContent = j.battle.code;
+        drawBattle(j.battle);
+        pollBattle();
+      } catch (e) {
+        $('#bcount').textContent = 'Could not open a battle: ' + e.message;
+      }
+    }
+    function closeBattle() {
+      if (!bt) return;
+      clearTimeout(bt.timer); clearTimeout(bt.closeTimer);
+      bt = null;
+      $('#battle').classList.remove('show');
+      $('#bbtn').hidden = false;
+      lastActivity = Date.now();
+    }
+    async function startBattle() {
+      if (!bt || !bt.code || $('#bstart').disabled) return;
+      $('#bstart').disabled = true;
+      const r = await fetch(`${api}/api/battles/${bt.code}/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hostKey: bt.hostKey }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) drawBattle(j.battle); else $('#bcount').textContent = j.error || 'Could not start';
+    }
+    function pollBattle() {
+      if (!bt) return;
+      const code = bt.code, t0 = Date.now();
+      fetch(`${api}/api/battles/${code}`).then(r => r.json()).then(j => {
+        if (!bt || bt.code !== code || !j.battle) return;
+        bt.offset = j.battle.now - (t0 + Date.now()) / 2;
+        drawBattle(j.battle);
+      }).catch(() => {}).finally(() => { if (bt && bt.code === code) bt.timer = setTimeout(pollBattle, 700); });
+    }
+    const avatar = (p, mood = 'idle') => `<span class="av">${characterSVG(p.character, mood)}</span>`;
+    function drawBattle(b) {
+      if (!bt) return;
+      const startIn = b.startsAt ? b.startsAt - (Date.now() + bt.offset) : 0;
+      if (b.status === 'lobby') {
+        bview('lobby');
+        const fresh = b.players.filter(p => !bt.seen.has(p.id));
+        fresh.forEach(p => bt.seen.add(p.id));
+        if (fresh.length) {
+          if (soundOn && sfx) sfx.pop();
+          $('#bplayers').insertAdjacentHTML('beforeend', fresh.map(p => `<span class="bp">${avatar(p)}${esc(p.name)}</span>`).join(''));
+        }
+        $('#bcount').textContent = b.players.length ? `${b.players.length} player${b.players.length > 1 ? 's' : ''} ready!` : 'Waiting for players...';
+        $('#bstart').disabled = !b.players.length;
+      } else if (b.status === 'live' && startIn > 0) {
+        bview('count');
+        $('#bhaz').innerHTML = b.games.map(g => `<span>${GAME_ICONS[g] || '❓'}</span>`).join('');
+        const n = String(Math.ceil(startIn / 1000));
+        if ($('#bnum').textContent !== n) { $('#bnum').textContent = n; if (soundOn && sfx) sfx.tick(); }
+      } else if (b.status === 'live') {
+        bview('live');
+        const left = Math.max(0, Math.ceil((b.endsAt - (Date.now() + bt.offset)) / 1000));
+        $('#bleft').textContent = `${b.players.filter(p => p.done).length}/${b.players.length} finished · ${left}s`;
+        $('#blanes').innerHTML = b.players.slice(0, 12).map((p, i) => `<div class="lane ${i === 0 && p.score > 0 ? 'lead' : ''}">
+          <span class="rk">${i === 0 && p.score > 0 ? '👑' : '#' + p.rank}</span>${avatar(p)}<span class="nm">${esc(p.name)}</span>
+          <span class="cells">${b.games.map((g, k) => `<i class="${k < p.marks.length ? (p.marks[k] ? 'ok' : 'bad') : ''}">${GAME_ICONS[g] || ''}</i>`).join('')}</span>
+          <span class="sc">${p.score}</span></div>`).join('');
+      } else if (b.status === 'done') {
+        bview('done');
+        if (bt.celebrated) return;
+        bt.celebrated = true;
+        clearTimeout(bt.timer); bt.timer = 0;
+        const top = b.players.slice(0, 3), order = [top[1], top[0], top[2]].filter(Boolean);
+        $('#bpodium').innerHTML = order.map(p => `<div class="bpod p${p.rank}">${avatar(p, 'win')}<b>${['🥇', '🥈', '🥉'][p.rank - 1]} ${esc(p.name)}</b><span>${p.score}</span></div>`).join('');
+        $('#brest').innerHTML = b.players.slice(3, 20).map(p => `<span>#${p.rank} ${esc(p.name)} ${p.score}</span>`).join('');
+        confetti();
+        if (soundOn && sfx) sfx.fanfare();
+        bt.closeTimer = setTimeout(closeBattle, 60000);
+      }
+    }
+    $('#bbtn').onclick = openBattle;
+    $('#bstart').onclick = startBattle;
+    $('#bclose').onclick = closeBattle;
+    $('#bclose2').onclick = closeBattle;
+    $('#bagain').onclick = () => { closeBattle(); openBattle(); };
+    addEventListener('keydown', (e) => {
+      if (e.key === 'b' && !bt) openBattle();
+      else if (e.key === 'Enter' && bt) startBattle();
+      else if (e.key === 'Escape' && bt) closeBattle();
+    });
+
     refresh();
     setInterval(refresh, 5000);
   </script>

@@ -4,8 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import fs from 'node:fs';
-import { validateRun, validateQuiz, cleanName, darwinDay } from './scoring.js';
+import crypto from 'node:crypto';
+import { validateRun, validateQuiz, cleanName, cleanClassName, darwinDay } from './scoring.js';
+import { createBattles } from './battles.js';
 import { TOWN_IDS } from '../../web/js/towns.js';
+import { WHO_IDS, CLASS_CODE_RE, BATTLE_CODE_RE } from '../../web/js/groups.js';
+import { CHARACTERS } from '../../web/js/characters.js';
+
+const sha256 = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+const sameHash = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+const CLASS_LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = path.resolve(__dirname, '../../web');
@@ -45,7 +53,11 @@ export function createApp(repo, opts = {}) {
     next();
   });
 
-  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? (Number(process.env.WRITE_LIMIT) || 40) });
+  // Per IP. At an event most phones share the venue Wi-Fi (one public IP), so keep this generous.
+  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? (Number(process.env.WRITE_LIMIT) || 300) });
+  // Booth Battles send a small update every round from every phone at once.
+  const battleLimit = rateLimit({ windowMs: 60_000, max: opts.battleLimit ?? (Number(process.env.BATTLE_LIMIT) || 1500) });
+  const battles = opts.battles || createBattles({ onFinish: (run, name) => repo.addRun(run, name, today()) });
   const today = () => darwinDay(now());
 
   app.get('/api/health', (req, res) => res.json({ ok: true, day: today(), apk: fs.existsSync(APK_PATH) }));
@@ -66,6 +78,7 @@ export function createApp(repo, opts = {}) {
       name = c.name;
     }
     if (v.run.challengeOf && !repo.getChallenge(v.run.challengeOf)) v.run.challengeOf = null;
+    if (v.run.classCode && !repo.getClass(v.run.classCode)) v.run.classCode = null;
     const id = repo.addRun(v.run, name, today());
     res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds });
   });
@@ -91,6 +104,17 @@ export function createApp(repo, opts = {}) {
     if (!TOWN_IDS.includes(req.body.town)) return res.status(400).json({ error: 'Unknown town.' });
     repo.setTown(id, req.body.town);
     res.json({ id, town: req.body.town });
+  });
+
+  // Locals vs visitors: set the group on a run you submitted (same device only).
+  app.post('/api/runs/:id/who', writeLimit, (req, res) => {
+    const id = Number(req.params.id);
+    const run = Number.isInteger(id) ? repo.getRun(id) : null;
+    if (!run) return res.status(404).json({ error: 'Run not found.' });
+    if (run.client_id !== req.body?.clientId) return res.status(403).json({ error: 'Not your run.' });
+    if (!WHO_IDS.includes(req.body.who)) return res.status(400).json({ error: 'Unknown group.' });
+    repo.setWho(id, req.body.who);
+    res.json({ id, who: req.body.who });
   });
 
   app.get('/api/leaderboard', (req, res) => {
@@ -131,9 +155,81 @@ export function createApp(repo, opts = {}) {
   app.post('/api/quiz', writeLimit, (req, res) => {
     const v = validateQuiz(req.body);
     if (v.error) return res.status(400).json({ error: v.error });
+    if (v.quiz.classCode && !repo.getClass(v.quiz.classCode)) v.quiz.classCode = null;
     const r = repo.saveQuiz({ ...v.quiz, day: today() });
     if (r.error) return res.status(400).json(r);
     res.json(r);
+  });
+
+  // Public settings for the game and booth screens.
+  app.get('/api/config', (req, res) => res.json({ voteUrl: repo.getSetting('voteUrl') || process.env.VOTE_URL || '' }));
+
+  // ---- Classroom mode ----
+  // A teacher creates a class and gets a join code for students plus a private key for the dashboard.
+  app.post('/api/classes', writeLimit, (req, res) => {
+    const c = cleanClassName(req.body?.name);
+    if (c.error) return res.status(400).json({ error: c.error });
+    let code = '';
+    for (let i = 0; i < 50 && (!code || repo.getClass(code)); i++) {
+      code = Array.from({ length: 5 }, () => CLASS_LETTERS[crypto.randomInt(CLASS_LETTERS.length)]).join('');
+    }
+    const key = crypto.randomBytes(16).toString('hex');
+    repo.createClass(code, c.name, sha256(key));
+    res.status(201).json({ code, key, name: c.name });
+  });
+  app.get('/api/classes/:code', (req, res) => {
+    const code = String(req.params.code).toUpperCase();
+    const c = CLASS_CODE_RE.test(code) ? repo.getClass(code) : null;
+    if (!c) return res.status(404).json({ error: 'No class with that code.' });
+    res.json({ code: c.code, name: c.name });
+  });
+  app.get('/api/classes/:code/report', (req, res) => {
+    const code = String(req.params.code).toUpperCase();
+    const c = CLASS_CODE_RE.test(code) ? repo.getClass(code) : null;
+    if (!c) return res.status(404).json({ error: 'No class with that code.' });
+    const key = req.get('X-Class-Key') || req.query.key || '';
+    if (!sameHash(sha256(key), c.key_hash)) return res.status(403).json({ error: 'Wrong teacher key.' });
+    res.json({ code: c.code, name: c.name, createdAt: c.created_at, ...repo.classReport(c.code) });
+  });
+
+  // ---- Live Booth Battle ----
+  const battleCode = (req) => { const c = String(req.params.code || '').toUpperCase(); return BATTLE_CODE_RE.test(c) ? c : null; };
+  const sendBattle = (res, r) => (r.error ? res.status(r.status || 400).json({ error: r.error }) : res.json(r));
+  app.post('/api/battles', writeLimit, (req, res) => {
+    const r = battles.create();
+    if (r.error) return res.status(503).json({ error: r.error });
+    res.status(201).json({ hostKey: r.hostKey, battle: battles.get(r.battle.code) });
+  });
+  // Phones and the booth poll this about once a second; reads are cheap, so no rate limit here.
+  app.get('/api/battles/:code', (req, res) => {
+    const code = battleCode(req);
+    const b = code && battles.get(code);
+    if (!b) return res.status(404).json({ error: 'No battle with that code.' });
+    res.json({ battle: b });
+  });
+  app.post('/api/battles/:code/join', battleLimit, (req, res) => {
+    const code = battleCode(req);
+    if (!code) return res.status(404).json({ error: 'No battle with that code.' });
+    const { clientId, character, who } = req.body || {};
+    if (typeof clientId !== 'string' || clientId.length < 8 || clientId.length > 64) return res.status(400).json({ error: 'Invalid client id.' });
+    const n = cleanName(req.body?.name);
+    if (n.error) return res.status(400).json({ error: n.error });
+    sendBattle(res, battles.join(code, {
+      clientId, name: n.name,
+      character: CHARACTERS.some(c => c.id === character) ? character : CHARACTERS[0].id,
+      who: WHO_IDS.includes(who) ? who : null
+    }));
+  });
+  app.post('/api/battles/:code/start', battleLimit, (req, res) => {
+    const code = battleCode(req);
+    if (!code) return res.status(404).json({ error: 'No battle with that code.' });
+    sendBattle(res, battles.start(code, String(req.body?.hostKey || '')));
+  });
+  app.post('/api/battles/:code/progress', battleLimit, (req, res) => {
+    const code = battleCode(req);
+    if (!code) return res.status(404).json({ error: 'No battle with that code.' });
+    const { playerId, clientId, results } = req.body || {};
+    sendBattle(res, battles.progress(code, { playerId: String(playerId || ''), clientId: String(clientId || ''), results }));
   });
 
   // Live "just died" feed for the booth screen.
@@ -158,6 +254,14 @@ export function createApp(repo, opts = {}) {
     if (req.get('X-Admin-Token') !== adminToken && req.query.token !== adminToken) return res.status(401).json({ error: 'Bad token.' });
     next();
   };
+  // People's Choice voting link. Set it on the day without changing code: either the VOTE_URL
+  // environment variable on the host, or POST here (the booth does it for you: /booth?vote=<link>&token=<ADMIN_TOKEN>).
+  app.post('/api/admin/config', requireAdmin, (req, res) => {
+    const v = typeof req.body?.voteUrl === 'string' ? req.body.voteUrl.trim() : '';
+    if (v && !(/^https?:\/\/\S+$/.test(v) && v.length <= 500)) return res.status(400).json({ error: 'The vote link must start with http:// or https://' });
+    repo.setSetting('voteUrl', v);
+    res.json({ voteUrl: v });
+  });
   app.post('/api/admin/reset', requireAdmin, (req, res) => { repo.reset(); res.json({ ok: true }); });
   // Remove the fake players created by scripts/load_test.mjs.
   app.delete('/api/admin/loadtest', requireAdmin, (req, res) => res.json({ deleted: repo.deleteLoadTest() }));
@@ -174,6 +278,7 @@ export function createApp(repo, opts = {}) {
   app.get(['/admin', '/debug'], (req, res) => res.redirect('/?admin=1'));
   app.get('/sw.js', (req, res) => { res.set('Cache-Control', 'no-cache'); res.sendFile(path.join(WEB_DIR, 'sw.js')); });
   app.get('/booth', (req, res) => res.sendFile(path.join(WEB_DIR, 'booth.html')));
+  app.get('/class', (req, res) => res.sendFile(path.join(WEB_DIR, 'class.html')));
   app.use(express.static(WEB_DIR, { maxAge: '1h', setHeaders: (res, p) => { if (p.endsWith('.html')) res.set('Cache-Control', 'no-cache'); } }));
 
   // eslint-disable-next-line no-unused-vars

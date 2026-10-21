@@ -33,6 +33,13 @@ function outfits() {
 // Three of the Territory Characters players unlock with coins.
 const characters = () => `<div class="judge-looks judge-chars">${['craig', 'cheryl', 'mick'].map(id => `<div>${characterSVG(id, 'idle')}</div>`).join('')}</div>`;
 
+// Locals vs visitors: overall fail rate for each group, once there is enough data.
+function groupKpi(g) {
+  const o = g && g.overall;
+  if (!o || !o.local || !o.visitor || o.local.plays < 5 || o.visitor.plays < 5) return '';
+  return `<div><b>${pct(o.visitor.failRate)} vs ${pct(o.local.failRate)}</b><span>rounds failed by visitors vs locals</span></div>`;
+}
+
 const STEPS = [
   {
     title: 'Top End Survivor',
@@ -60,8 +67,10 @@ const STEPS = [
             <div><b>${pct(l.firstTry)}</b><span>survive a hazard the first time they see it</span></div>
             <div><b>${pct(l.laterTries)}</b><span>survive it on later attempts</span></div>
             <div><b>${q.n ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : '-'}</b><span>optional safety check, before → after one game (${q.n || 0} players)</span></div>
+            ${groupKpi(st.groups)}
           </div>
-          <p class="small">Live from ${st.rounds} rounds played by ${st.players} players. Measured with no extra effort from players, plus an optional 3-question check.</p>`;
+          <p class="small">Live from ${st.rounds} rounds played by ${st.players} players. Measured with no extra effort from players, plus an optional 3-question check and an optional "local or visitor?" tap.</p>
+          <ul class="judge-list"><li>🏫 <b>Classroom mode:</b> a teacher gets a class code and a live report of the hazards their class misses, with before → after quiz scores (<a href="class.html" target="_blank" rel="noopener">try it</a>)</li></ul>`;
       } catch { return '<p>Live numbers appear here when the server is online.</p>'; }
     }
   },
@@ -75,13 +84,14 @@ const STEPS = [
       } catch { /* offline */ }
       return `<ul class="judge-list">
           <li>🗺️ <b>Journey:</b> a road trip from Darwin to Uluru, ${LOCATION_COUNT} stops, each with its own landscape and local hazards</li>
+          <li>⚔️ <b>Live Booth Battle:</b> everyone at the booth scans a code and races the same 5 hazards, live on the big screen</li>
           <li>📅 <b>Daily Challenge:</b> same hazards for everyone each day, emoji result to share, day streaks</li>
           <li>⚔️ <b>Challenge a mate:</b> a link that says "Beat my 820"</li>
           <li>📍 <b>Town Battle:</b> ${towns || 'towns compete on the booth map'}</li>
           <li>🪙 <b>Coins</b> from every game unlock 7 cheeky Territory Characters:</li>
         </ul>${characters()}
         <ul class="judge-list"><li>🏅 <b>${BADGES.length} badges</b> that unlock gear they wear in every mini-game:</li></ul>${outfits()}
-        <p class="small">Installable on any phone, plays fully offline, Android app via the same code.</p>`;
+        <p class="small">For everyone: a ghost hand shows first-timers how to play, Relaxed mode gives kids and older players more time and bigger text, and 🆘 Real help lists checked NT emergency numbers. Installable on any phone, plays fully offline, Android app from the same code.</p>`;
     }
   },
   {
@@ -98,7 +108,8 @@ const STEPS = [
       return `${load}<ul class="judge-list">
           <li>🛡️ Server re-scores every run from per-round results: the leaderboard can't be faked</li>
           <li>📶 Offline first: runs queue on the phone and sync later (remote NT has patchy signal)</li>
-          <li>🧪 18 API tests + a robot that plays all ${GAMES.length} games in a real browser on every push, then builds the Android app</li>
+          <li>🧪 25 API tests + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
+          <li>⚔️ Booth Battles run in memory with server-side scoring; finished races still feed the learning stats</li>
           <li>🧩 One codebase for web, installable app and Android; SQLite today, Postgres-ready</li>
         </ul>`;
     }

@@ -38,6 +38,16 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
 
+### Booth Battle, classrooms and help for everyone (v1.5)
+
+- **Live Booth Battle:** press `B` (or the ⚔️ button) on the booth screen. It shows a join QR and a 4-letter code; everyone who scans (or taps ⚔️ Booth Battle on the menu) appears in the lobby with their character. Press Enter and every phone counts down together, then plays the same 5 hazards. The big screen shows a live race (green and red squares per round) and a podium with confetti. No lives: everyone plays all 5, highest score wins. The server keeps score and saves every finished race for the learning stats.
+- **Locals vs visitors:** after a game, one optional tap: Local, New to the NT, or Visiting. The booth's new panel shows which safety topics each group gets wrong, with a headline like "Visitors fail croc rounds N× as often as locals", and the judge tour shows it too. On shared booth devices the answer is asked every game and never remembered.
+- **Gesture hints:** the first time someone meets a mini-game, a ghost hand shows the gesture (tap, keep tapping, drag, or pick a button) and the timer waits an extra second. Hints never show the answer, only how to play. On shared booth devices (`?kiosk=1`) and in Relaxed mode they show every run.
+- **Relaxed mode:** a menu toggle for kids, older players and anyone who wants it: 60% more time every round and bigger text. Relaxed scores stay off the leaderboards and Town Battle but still count in the learning stats.
+- **🆘 Real help:** one tap from the menu, Safety tips and game over: 000, NT Emergency Service 132 500, Poisons Information 13 11 26, healthdirect 1800 022 222, NT Police 131 444, urgent croc reporting lines for Darwin and Katherine, plus SecureNT, BOM, Road Report NT and the PFES incident map. Every number was checked against the official sites in October 2026.
+- **Classroom mode:** a teacher opens `/class`, names the class and gets a QR code and class code. Students join by scanning (no accounts). The teacher's live dashboard shows students, games, the hazards the class misses most (with the rule and the official source), quick check before → after, first try vs later tries, top scores, a print button and a 15-minute lesson plan. The teacher link (`/class#t=CODE.KEY`) opens the dashboard on another device; without the key nobody else can see the report.
+- **People's Choice and take it home:** when the committee gives you the voting link (even on the day), open `/booth?vote=<link>&token=<ADMIN_TOKEN>` once on the booth laptop. The link is saved on the server, so the booth shows a "Vote for Team CAP003" QR and every phone shows a vote button at game over, with no code change and no redeploy. (Alternatives: the `VOTE_URL` environment variable on Render, or `VOTE_URL` in `web/js/config.js`.) On shared booth devices the game over screen shows big "Take it home" and "Vote for us" QR codes, so people vote and install on their own phone.
+
 ### Road trip, characters and a soundtrack (v1.4)
 
 Minh's Journey, characters, fail cartoons and music, merged with everything from v1.3.
@@ -105,6 +115,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 ```
 
 - **No build step.** The game is plain HTML, CSS and ES modules, so anyone on the team can edit it.
+- **Rate limits.** Writes are limited per IP address (`WRITE_LIMIT`, default 300 a minute; Booth Battle updates `BATTLE_LIMIT`, default 1,500). At an event most phones share the venue Wi-Fi, so they all look like one IP: raise these if the booth gets very busy.
 - **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter.
 - **Offline first.** Finished runs go into a localStorage outbox and upload when online. The service worker caches the whole game.
 
@@ -162,6 +173,10 @@ curl -H "X-Admin-Token: $TOKEN" https://<host>/api/admin/export.csv -o rounds.cs
 
 Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box, skips the quick check and returns to the menu after 45 s).
 
+Booth Battle: on the booth screen press `B` (or click ⚔️ Booth Battle), wait for players, press Enter to start, Esc to close.
+
+Classroom dashboard: `/class`. People's Choice QR: open `/booth?vote=<link>&token=<ADMIN_TOKEN>` once (saved for every device), or `curl -X POST -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" -d '{"voteUrl":"<link>"}' https://<host>/api/admin/config`.
+
 Mini-game tester: `/admin` (or `/?admin=1`). Search any mini-game, pick a location for the backdrop, start a full Classic / Daily / Journey sandbox run, slow the round timer down, and turn on the debug overlay. Scores, lives, coins, badges and the leaderboard are untouched.
 
 Judge's tour: `/?judge=1`. Booth keys: `A` toggles attract mode, `N` shows the next stats panel (hazards, Town Battle, learning).
@@ -183,6 +198,10 @@ web/                 the game (also the Android app's content)
   js/games.js        the 17 mini-games + 2 bosses
   js/lessons.js      tips + official sources (edit wording here)
   js/main.js         engine: modes, rounds, timer, scoring, screens
+  js/battle.js       Booth Battle on the phone: join, lobby, countdown, podium
+  js/hints.js        first-time gesture hints for every mini-game
+  js/classroom.js    joining a class from a teacher's link
+  js/groups.js       locals vs visitors, topic names, class and battle codes (shared with the server)
   js/locations.js    the 8 Journey stops: card art and round backdrops
   js/characters.js   the 7 Territory Characters + coins
   js/fails.js        a looping fail cartoon for each mini-game
@@ -191,8 +210,9 @@ web/                 the game (also the Android app's content)
   js/api.js          leaderboard client with offline outbox
   js/art.js          the player, items and props, drawn as SVG in code
   audio/             the soundtrack
+  class.html         teacher dashboard for classroom mode
   sw.js              offline cache
-server/              Express API + SQLite
+server/              Express API + SQLite (src/battles.js: live Booth Battles, in memory)
 android/             Capacitor Android project
 scripts/             smoke test (plays every game), icon generator
 docs/DEMO.md         submission checklist and demo-day plan

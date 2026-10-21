@@ -44,6 +44,12 @@
 
 ## Booth setup (5 Nov)
 
+- **People's Choice:** when the committee gives you the voting link (even on the morning), open `https://<host>/booth?vote=<link>&token=<ADMIN_TOKEN>` on the booth laptop once. No code change: the link is saved on the server, and within 30 seconds the booth shows a "Vote for Team CAP003" QR; phones and shared devices show it at their next game over. The ADMIN_TOKEN is in Render > Environment: copy it into your phone notes before the day. If the server restarts (free plan), open that address again.
+- **Run Booth Battles in the 10:45 to 11:45 showcase:** press `B` on the booth laptop, invite everyone around the table to scan, press Enter. One battle takes about a minute: run one every few minutes so there is always a crowd and a podium on the big screen.
+- **Shared phones and tablets:** open `/?kiosk=1` on them. Every visitor gets the gesture hints, the "local or visitor?" question, and big "Take it home" and "Vote for us" QR codes at game over.
+- **Kids or older visitors:** turn on 🐢 Relaxed mode on the menu (slower rounds, bigger text).
+- **Busy Wi-Fi:** if lots of phones share the venue Wi-Fi, set `WRITE_LIMIT=1000` on Render the day before.
+
 - **Attract mode is automatic:** after 45 s with no new players the booth shows a self-playing demo and a giant QR. Press `A` on the booth laptop to toggle it by hand.
 - **Journey for people who stay longer:** "How far can you get from Darwin? Nobody has reached Uluru yet today." Reaching Uluru unlocks a badge.
 - **Coins and characters:** tell players their coins are saved on their phone; the next character is only a game or two away, which brings them back.
@@ -77,6 +83,8 @@ Who answers first: accuracy and design questions, Vy; testing and difficulty, Mi
 - *Where is the music from?* It was AI-generated for the team by Minh; all art and characters are drawn in our own code.
 - *How does it scale?* We load-tested it: 500 simulated players, 3,000 requests, zero errors, 95% of requests under about 210 ms on a small 2-core machine. Stateless API, SQLite swappable for Postgres in `server/src/db.js`, offline outbox smooths spikes.
 - *Does it actually teach anything?* Show the booth's learning panel: survival rate the first time people see a hazard vs. later tries, and the optional before/after quick check.
+- *Who would use this after the competition?* NT schools (open `/class` and show the teacher dashboard), and agencies: the "locals vs visitors" panel shows which rules newcomers and tourists miss, which is what NT Government and Tourism NT campaigns need to know.
+- *Is it accessible?* Gesture hints for first-timers, Relaxed mode (more time, bigger text), big touch targets, reduced-motion support, and a Real help screen with checked emergency numbers.
 - *How do you stop cheating?* The server ignores the client score and recomputes it from per-round results, checks timing and the 3-life rule, and rate-limits writes.
 - *Privacy?* No accounts, no personal data. A random device id is used only to let you attach a name to your own run; the CSV export excludes it.
 - *Why not Unity/Flutter?* No build step means the whole team can edit content, the game loads instantly on slow connections, and the same files become the Android app.

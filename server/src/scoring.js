@@ -5,6 +5,7 @@ import { REGULAR, BOSSES, DAILY_ROUNDS, dailySequence, darwinDay, prevDay, isBos
 import { TOWN_IDS } from '../../web/js/towns.js';
 import { QUESTION_IDS, QUIZ_LEN } from '../../web/js/quiz.js';
 import { locationAt, journeyStop } from '../../web/js/locations.js';
+import { WHO_IDS, CLASS_CODE_RE } from '../../web/js/groups.js';
 
 // Game ids and the Daily Challenge order come from the web app, so the two can never drift apart.
 export const GAME_IDS = [...REGULAR, ...BOSSES];
@@ -31,14 +32,27 @@ const NAME_RE = /^[A-Za-z0-9 _-]{2,16}$/;
 // Small blocklist for a public booth screen. Matching ignores spaces, digits-as-letters and case.
 const BLOCK = ['fuck', 'shit', 'cunt', 'bitch', 'dick', 'cock', 'pussy', 'slut', 'whore', 'nigg', 'fag', 'rape', 'nazi', 'hitler', 'wank', 'twat', 'bastard', 'retard', 'penis', 'vagina', 'boob', 'porn', 'sex'];
 
+export function isRude(text) {
+  const flat = String(text).toLowerCase()
+    .replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't')
+    .replace(/[^a-z]/g, '');
+  return BLOCK.some(w => flat.includes(w));
+}
+
 export function cleanName(raw) {
   if (typeof raw !== 'string') return { error: 'Name is required.' };
   const name = raw.trim().replace(/\s+/g, ' ');
   if (!NAME_RE.test(name)) return { error: 'Use 2 to 16 letters, numbers, spaces, - or _.' };
-  const flat = name.toLowerCase()
-    .replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't')
-    .replace(/[^a-z]/g, '');
-  if (BLOCK.some(w => flat.includes(w))) return { error: 'Please pick a friendlier name.' };
+  if (isRude(name)) return { error: 'Please pick a friendlier name.' };
+  return { name };
+}
+
+// Classroom names, e.g. "Year 7 Casuarina (Ms Lee)".
+export function cleanClassName(raw) {
+  if (typeof raw !== 'string') return { error: 'Class name is required.' };
+  const name = raw.trim().replace(/\s+/g, ' ');
+  if (!/^[A-Za-z0-9 .,'&()\/-]{2,40}$/.test(name)) return { error: 'Use 2 to 40 letters, numbers and spaces.' };
+  if (isRude(name)) return { error: 'Please pick a friendlier name.' };
   return { name };
 }
 
@@ -76,6 +90,8 @@ export function validateRun(body, { today = darwinDay() } = {}) {
   if (!Number.isFinite(durationMs) || durationMs < results.length * 1500 || durationMs > 4 * 3600 * 1000) return { error: 'Invalid duration.' };
   if (body.town != null && !TOWN_IDS.includes(body.town)) return { error: 'Unknown town.' };
   if (body.challengeOf != null && !(Number.isInteger(body.challengeOf) && body.challengeOf > 0)) return { error: 'Invalid challenge.' };
+  if (body.who != null && !WHO_IDS.includes(body.who)) return { error: 'Invalid player group.' };
+  if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
   return {
     run: {
       clientId,
@@ -88,17 +104,35 @@ export function validateRun(body, { today = darwinDay() } = {}) {
       wins: results.length - losses,
       appVersion: typeof body.appVersion === 'string' ? body.appVersion.slice(0, 20) : null,
       town: body.town || null,
-      challengeOf: body.challengeOf || null
+      challengeOf: body.challengeOf || null,
+      // Relaxed mode (slower timer): counted for learning stats, kept off the leaderboards.
+      relaxed: body.relaxed === true,
+      who: body.who || null,
+      classCode: body.classCode || null
     }
   };
+}
+
+// Booth Battle: everyone plays the same hazards in the same order, no lives. Results arrive
+// round by round, so this checks a (possibly partial) list against the battle's games.
+export function validateBattleResults(results, games) {
+  if (!Array.isArray(results) || results.length < 1 || results.length > games.length) return { error: 'Invalid results.' };
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (!r || r.g !== games[i] || typeof r.ok !== 'boolean') return { error: 'Results do not match the battle.' };
+    if (!Number.isFinite(r.ms) || r.ms < 0 || r.ms > 20000) return { error: 'Invalid round time.' };
+    if (r.ok && r.ms < 120) return { error: 'Round too fast.' };
+  }
+  return { results: results.map(r => ({ g: r.g, ok: r.ok, ms: Math.round(r.ms) })) };
 }
 
 export function validateQuiz(body) {
   if (!body || typeof body !== 'object') return { error: 'Invalid body.' };
   const { clientId, qids, pre, post } = body;
+  if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
   if (typeof clientId !== 'string' || clientId.length < 8 || clientId.length > 64) return { error: 'Invalid client id.' };
   if (!Array.isArray(qids) || qids.length !== QUIZ_LEN || new Set(qids).size !== QUIZ_LEN || !qids.every(q => QUESTION_IDS.includes(q))) return { error: 'Invalid questions.' };
   const okScore = (v) => v == null || (Number.isInteger(v) && v >= 0 && v <= QUIZ_LEN);
   if (!okScore(pre) || !okScore(post) || (pre == null && post == null)) return { error: 'Invalid score.' };
-  return { quiz: { clientId, qids, pre: pre ?? null, post: post ?? null } };
+  return { quiz: { clientId, qids, pre: pre ?? null, post: post ?? null, classCode: body.classCode || null } };
 }

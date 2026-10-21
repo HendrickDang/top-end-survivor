@@ -5,6 +5,7 @@ import { createApp } from '../src/app.js';
 import { GAME_IDS, REGULAR, scoreOf, cleanName, validateRun, dailySequence, darwinDay } from '../src/scoring.js';
 import { LESSONS } from '../../web/js/lessons.js';
 import { LOCATIONS, locationAt, journeyStop } from '../../web/js/locations.js';
+import { createBattles, BATTLE_ROUNDS } from '../src/battles.js';
 
 let server, base;
 const CLIENT = 'test-client-123456';
@@ -196,6 +197,138 @@ test('quick safety check: before then after, learning shown in stats', async () 
   assert.ok(st.challenges >= 1);
 });
 
+test('relaxed mode runs count for learning but stay off the boards', async () => {
+  const res = await post('/api/runs', { ...makeRun(6), clientId: 'relaxed-device-01', relaxed: true, name: 'SlowAndSteady' });
+  assert.equal(res.status, 201);
+  const board = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();
+  assert.ok(!board.entries.some(e => e.name === 'SlowAndSteady'));
+  const st = await (await fetch(base + '/api/stats')).json();
+  assert.ok(st.runs >= 1);
+});
+
+test('locals vs visitors: group on the run or added later, split by topic in stats', async () => {
+  // visitors miss croc rounds, locals don't
+  const crocRun = (client, okCroc, extra = {}) => {
+    const results = [
+      { g: 'croc-edge', ok: okCroc, ms: 2000 }, { g: 'swim-sign', ok: okCroc, ms: 2000 },
+      { g: 'heat-drink', ok: true, ms: 5000 }, { g: 'flood-road', ok: false, ms: 3000 }
+    ];
+    while (results.filter(r => !r.ok).length < 3) results.push({ g: 'snake-bite', ok: false, ms: 3000 });
+    return { clientId: client, results, durationMs: results.length * 4000, ...extra };
+  };
+  assert.equal((await post('/api/runs', crocRun('who-local-0001', true, { who: 'local' }))).status, 201);
+  assert.equal((await post('/api/runs', crocRun('who-visit-0001', false, { who: 'visitor' }))).status, 201);
+  assert.equal((await post('/api/runs', crocRun('who-bad-00001', true, { who: 'alien' }))).status, 400);
+  // the group can be added after the game, by the same device only
+  const later = await (await post('/api/runs', crocRun('who-new-00001', false))).json();
+  assert.equal((await post(`/api/runs/${later.id}/who`, { clientId: 'someone-else-01', who: 'new' })).status, 403);
+  assert.equal((await post(`/api/runs/${later.id}/who`, { clientId: 'who-new-00001', who: 'new' })).status, 200);
+  const st = await (await fetch(base + '/api/stats')).json();
+  const g = st.groups;
+  assert.equal(g.players.local, 1);
+  assert.equal(g.players.visitor, 1);
+  assert.equal(g.players.new, 1);
+  const croc = g.topics.find(t => t.topic === 'crocwise');
+  assert.equal(croc.local.failRate, 0);
+  assert.equal(croc.visitor.failRate, 1);
+  assert.equal(g.topics[0].topic, 'crocwise'); // biggest visitor-vs-local gap first
+});
+
+test('classroom mode: teacher code, students join, private report', async () => {
+  assert.equal((await post('/api/classes', { name: 'x' })).status, 400);
+  const c = await (await post('/api/classes', { name: 'Year 7 Casuarina' })).json();
+  assert.match(c.code, /^[A-HJKMNP-Z2-9]{5}$/);
+  assert.ok(c.key.length >= 32);
+  const info = await (await fetch(`${base}/api/classes/${c.code.toLowerCase()}`)).json();
+  assert.equal(info.name, 'Year 7 Casuarina');
+  assert.equal(info.key, undefined);
+  assert.equal((await fetch(`${base}/api/classes/ZZZZZ`)).status, 404);
+  // two students play, one takes the quick check
+  assert.equal((await post('/api/runs', { ...makeRun(4), clientId: 'student-0000001', classCode: c.code, name: 'Kai' })).status, 201);
+  assert.equal((await post('/api/runs', { ...makeRun(2), clientId: 'student-0000002', classCode: c.code })).status, 201);
+  assert.equal((await post('/api/runs', { ...makeRun(2), clientId: 'student-0000003', classCode: 'bad!' })).status, 400);
+  const qids = ['q-croc-fish', 'q-stinger', 'q-flood'];
+  await post('/api/quiz', { clientId: 'student-0000001', qids, pre: 1, classCode: c.code });
+  await post('/api/quiz', { clientId: 'student-0000001', qids, post: 3, classCode: c.code });
+  // the report needs the teacher key
+  assert.equal((await fetch(`${base}/api/classes/${c.code}/report`)).status, 403);
+  assert.equal((await fetch(`${base}/api/classes/${c.code}/report?key=nope`)).status, 403);
+  const r = await (await fetch(`${base}/api/classes/${c.code}/report`, { headers: { 'X-Class-Key': c.key } })).json();
+  assert.equal(r.players, 2);
+  assert.equal(r.runs, 2);
+  assert.equal(r.top[0].name, 'Kai');
+  assert.ok(r.games.length > 0);
+  assert.equal(r.quiz.n, 1);
+  assert.equal(r.quiz.postAvg, 1);
+});
+
+test('booth battle: join, start, race, podium, saved for stats', async () => {
+  let clock = 1_000_000;
+  const repo = makeRepo(openDb(':memory:'));
+  const battles = createBattles({ now: () => clock, onFinish: (run, name) => repo.addRun(run, name, '2026-11-05') });
+  const app = createApp(repo, { battles, writeLimit: 1000 });
+  const srv = app.listen(0);
+  await new Promise(r => srv.once('listening', r));
+  const b2 = `http://127.0.0.1:${srv.address().port}`;
+  const p2 = (path, body) => fetch(b2 + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try {
+    const created = await (await p2('/api/battles', {})).json();
+    const { code } = created.battle;
+    assert.match(code, /^[A-HJKMNP-Z]{4}$/);
+    assert.equal(created.battle.games.length, BATTLE_ROUNDS);
+    assert.ok(created.battle.games.every(g => REGULAR.includes(g)));
+    assert.equal(new Set(created.battle.games).size, BATTLE_ROUNDS);
+    // nobody can start an empty battle, and only the booth can start it
+    assert.equal((await p2(`/api/battles/${code}/start`, { hostKey: created.hostKey })).status, 409);
+    const a = await (await p2(`/api/battles/${code}/join`, { clientId: 'battle-phone-01', name: 'Ava', character: 'craig', who: 'visitor' })).json();
+    const b = await (await p2(`/api/battles/${code}/join`, { clientId: 'battle-phone-02', name: 'Ben', character: 'nobody' })).json();
+    assert.equal((await p2(`/api/battles/${code}/join`, { clientId: 'battle-phone-03', name: 'sh1t' })).status, 400);
+    assert.equal(b.battle.players.find(p => p.name === 'Ben').character, 'barry');
+    assert.equal((await p2(`/api/battles/${code}/start`, { hostKey: 'wrong' })).status, 403);
+    const games = created.battle.games;
+    const res = (oks) => oks.map((ok, i) => ({ g: games[i], ok, ms: 1500 }));
+    assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true]) })).status, 409);
+    const started = await (await p2(`/api/battles/${code}/start`, { hostKey: created.hostKey })).json();
+    assert.equal(started.battle.status, 'live');
+    // late joiners wait for the next battle
+    assert.equal((await p2(`/api/battles/${code}/join`, { clientId: 'battle-phone-09', name: 'Late' })).status, 409);
+    clock = started.battle.startsAt + 100;
+    // wrong order or someone else's player id is rejected
+    const wrong = res([true]); wrong[0].g = games[1];
+    assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: wrong })).status, 400);
+    assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-02', results: res([true]) })).status, 403);
+    // Ava wins every round, Ben misses one
+    await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true, true]) });
+    let live = (await (await fetch(`${b2}/api/battles/${code}`)).json()).battle;
+    assert.equal(live.players[0].name, 'Ava');
+    assert.equal(live.players[0].round, 2);
+    // results can't be rewritten
+    assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([false, true, true]) })).status, 400);
+    await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true, true, true, true, true]) });
+    const last = await (await p2(`/api/battles/${code}/progress`, { playerId: b.playerId, clientId: 'battle-phone-02', results: res([true, false, true, true, true]) })).json();
+    assert.equal(last.battle.status, 'done');
+    assert.deepEqual(last.battle.players.map(p => p.name), ['Ava', 'Ben']);
+    assert.equal(last.battle.players[0].score, scoreOf(res([true, true, true, true, true])));
+    // both runs were saved: they count in the learning stats but not on the leaderboard
+    const st = repo.stats({});
+    assert.equal(st.battlePlayers, 2);
+    assert.equal(st.groups.players.visitor, 1);
+    assert.equal(repo.leaderboard({}).length, 0);
+    assert.equal((await fetch(`${b2}/api/battles/QQQQ`)).status, 404);
+  } finally { srv.close(); battles.stop(); }
+});
+
+test('booth battle: ends after the time limit even if a phone wanders off', () => {
+  let clock = 0;
+  const battles = createBattles({ now: () => clock });
+  const { battle, hostKey } = battles.create();
+  battles.join(battle.code, { clientId: 'wander-phone-1', name: 'Zed', character: 'barry' });
+  battles.start(battle.code, hostKey);
+  clock += 4000 + 91_000;
+  assert.equal(battles.get(battle.code).status, 'done');
+  battles.stop();
+});
+
 test('blocks rude names', () => {
   assert.ok(cleanName('sh1t head').error);
   assert.ok(cleanName('a').error);
@@ -220,6 +353,14 @@ test('qr code and static game are served', async () => {
   const admin = await fetch(base + '/admin', { redirect: 'manual' });
   assert.equal(admin.status, 302);
   assert.equal(admin.headers.get('location'), '/?admin=1');
+});
+
+test('people\'s choice link can be set on the day without code changes', async () => {
+  assert.equal((await (await fetch(base + '/api/config')).json()).voteUrl, '');
+  assert.equal((await post('/api/admin/config', { voteUrl: 'https://forms.example.com/vote' })).status, 401);
+  assert.equal((await post('/api/admin/config', { voteUrl: 'javascript:alert(1)' }, { 'X-Admin-Token': 'secret' })).status, 400);
+  assert.equal((await post('/api/admin/config', { voteUrl: 'https://forms.example.com/vote' }, { 'X-Admin-Token': 'secret' })).status, 200);
+  assert.equal((await (await fetch(base + '/api/config')).json()).voteUrl, 'https://forms.example.com/vote');
 });
 
 test('admin endpoints need the token', async () => {

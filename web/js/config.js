@@ -10,7 +10,10 @@ window.TES_CONFIG = {
   ANDROID_API_BASE: 'https://top-end-survivor.onrender.com',
   // Public link to the game (used on the share card QR). Leave '' to use this page's address.
   PUBLIC_URL: '',
-  APP_VERSION: '1.4.0'
+  // People's Choice voting link from the IT Code Fair committee. When set, the booth screen shows a
+  // "Vote for us" QR and the game-over screen shows a vote button. Leave '' until you have it.
+  VOTE_URL: '',
+  APP_VERSION: '1.5.0'
 };
 (function () {
   try {

@@ -18,6 +18,11 @@ import { initWardrobe, renderWardrobe, applyLook } from './wardrobeui.js';
 import { initJudge, openJudge } from './judge.js';
 import { gearFor } from './wardrobe.js';
 import { townName } from './towns.js';
+import * as battle from './battle.js';
+import * as hints from './hints.js';
+import { initClassroom, joinFromUrl } from './classroom.js';
+import { WHO, whoLabel } from './groups.js';
+import { toast } from './fx.js';
 
 const $ = (s) => document.querySelector(s);
 const MAX_LIVES = 3;
@@ -26,6 +31,8 @@ const KIOSK = PARAMS.has('kiosk');
 const DEMO = PARAMS.has('demo'); // self-playing attract mode for the booth screen
 const ADMIN = PARAMS.has('admin'); // ?admin=1: mini-game tester for the team
 const COINS_PER_POINT_DIVISOR = 10; // 1 coin per 10 points scored
+const RELAXED_SLOWER = 1.6;         // relaxed mode: 60% more time every round
+const BATTLE_ROUNDS = 5;
 
 // Difficulty: rounds get shorter, down to a floor.
 export const roundSeconds = (round) => Math.max(2.6, 5.5 - 0.2 * (round - 1));
@@ -51,6 +58,21 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } }
 };
+
+// ---------- relaxed mode & locals vs visitors ----------
+const isRelaxed = () => store.get('tes_relaxed', false) === true;
+// Battles are a race, so everyone plays at normal speed there.
+const relaxedNow = () => isRelaxed() && state.mode !== 'battle';
+function renderRelaxed() {
+  const on = isRelaxed();
+  document.body.classList.toggle('relaxed', on);
+  const chip = $('#relaxed-chip');
+  chip.setAttribute('aria-pressed', String(on));
+  chip.innerHTML = on ? '🐢 Relaxed mode: <b>on</b> · slower, bigger text' : '🐢 Relaxed mode: off';
+}
+// On a shared booth device every player is different, so the answer is never remembered there.
+let kioskWho = null;
+const getWho = () => (KIOSK ? kioskWho : store.get('tes_who', null));
 
 // ---------- screens ----------
 function show(id) {
@@ -141,6 +163,7 @@ function nextGame() {
   // Test hook: force a specific game (used by scripts/smoke_test.py).
   if (window.__TES_FORCE__) return byId(window.__TES_FORCE__);
   if (forcedGame) return byId(forcedGame);
+  if (state.mode === 'battle') return byId(state.battle.games[state.round - 1]);
   if (state.mode === 'daily') return byId(dailySequence(state.dailyDay)[state.round - 1]);
   if (state.mode === 'journey') {
     // Every hazard at this stop once (shuffled), then round again.
@@ -162,12 +185,16 @@ function nextGame() {
   return state.last;
 }
 
-function startGame(mode = 'classic', challenge = null) {
+function startGame(mode = 'classic', challenge = null, battleInfo = null) {
   sfx.unlock();
   if (typeof mode !== 'string') mode = 'classic';
   // First game on this device: offer the optional 3-question safety check (once, skippable).
-  if (!DEMO && quiz.shouldOffer()) { quiz.offer(() => startGame(mode, challenge)); return; }
+  // Never in a Booth Battle: the countdown waits for nobody.
+  if (!DEMO && mode !== 'battle' && quiz.shouldOffer()) { quiz.offer(() => startGame(mode, challenge)); return; }
   state.challenge = challenge || null;
+  state.battle = mode === 'battle' ? battleInfo : null;
+  kioskWho = null; // shared device: a new run is (probably) a new person
+  hints.resetRun();
   social.startRun(state.challenge);
   forcedGame = null;
   adminMode = false;
@@ -188,6 +215,7 @@ function resetHud() {
   music.setTempo(132);
   document.body.classList.toggle('daily-mode', state.mode === 'daily');
   document.body.classList.toggle('journey-mode', state.mode === 'journey' || (adminMode && state.mode === 'test'));
+  document.body.classList.toggle('battle-mode', state.mode === 'battle');
 }
 
 function playRound() {
@@ -231,7 +259,7 @@ function renderDebugHud(game, loc, seconds) {
 
 function runRound() {
   state.round++;
-  $('#hud-round').textContent = state.round;
+  $('#hud-round').textContent = state.mode === 'battle' ? `${state.round}/${BATTLE_ROUNDS}` : state.round;
   music.duck(false);
   const game = nextGame();
   // Journey rounds use the stop you are at; Classic and Daily rounds use the hazard's home location.
@@ -240,7 +268,7 @@ function runRound() {
   if (journey) { state.roundInLocation++; renderHudLocation(); }
   const loc = journey || sandboxTest ? locationAt(state.locationIndex) : homeLocationFor(game.id);
   music.setTempo(game.boss ? 190 : 132 + state.round * 4);
-  const seconds = (game.seconds || roundSeconds(state.round)) * (adminMode ? adminTimerScale : 1);
+  const seconds = (game.seconds || roundSeconds(state.round)) * (adminMode ? adminTimerScale : 1) * (relaxedNow() ? RELAXED_SLOWER : 1);
   renderDebugHud(game, loc, seconds);
   const stage = $('#stage');
   stage.innerHTML = '';
@@ -344,6 +372,8 @@ function runRound() {
   state.ctx = ctx;
   game.setup(ctx);
   if (DEMO) demoBot(ctx, () => finished);
+  // First time meeting this game? A ghost hand shows how to play it (and the timer waits a moment).
+  const hintGrace = !DEMO && hints.needHint(game.id, { perRun: KIOSK || relaxedNow() }) ? hints.showHint(ctx, game.id) : 0;
 
   // banner
   const banner = $('#banner');
@@ -357,7 +387,7 @@ function runRound() {
   const bar = $('#timer-bar');
   bar.style.transform = 'scaleX(1)';
   bar.classList.remove('urgent');
-  const grace = 350;
+  const grace = 350 + hintGrace;
   let last = performance.now();
   const loop = (now) => {
     if (finished) return;
@@ -405,7 +435,7 @@ async function endRound(game, ok, ms) {
     state.streak >= 3 ? sfx.streak(state.streak) : sfx.win();
   } else {
     state.streak = 0;
-    state.lives--;
+    if (state.mode !== 'battle') state.lives--; // a battle has no lives: everyone plays all 5
     if (!DEMO && !adminMode) { const f = store.get('tes_fails', {}); f[game.id] = (f[game.id] || 0) + 1; store.set('tes_fails', f); }
     navigator.vibrate?.([80, 40, 120]);
     shake(stage, 12);
@@ -415,6 +445,7 @@ async function endRound(game, ok, ms) {
   renderLives();
   renderStreak();
   if (ok) social.onScore(state);
+  if (state.mode === 'battle') battle.sendProgress(state.results); // the booth screen shows the race live
 
   if (ok) await wait(550);
   else {
@@ -428,8 +459,10 @@ async function endRound(game, ok, ms) {
     : ok && bonus ? `🔥 ${state.streak} in a row! +${bonus} bonus` : '';
 
   const dailyDone = state.mode === 'daily' && state.round >= DAILY_ROUNDS;
+  const battleDone = state.mode === 'battle' && state.round >= BATTLE_ROUNDS;
   setTimeout(() => {
-    if (state.lives <= 0 || dailyDone) gameOver();
+    if (battleDone) battleOver();
+    else if (state.lives <= 0 || dailyDone) gameOver();
     else playRound();
   }, ok ? 1500 : 2300);
 }
@@ -475,8 +508,11 @@ function gameOver() {
     day: state.dailyDay || undefined,
     results: state.results.map(({ g, ok, ms }) => ({ g, ok, ms })),
     durationMs,
-    town: social.getTown() || undefined,
+    town: (!relaxedNow() && social.getTown()) || undefined,
     challengeOf: state.challenge?.id || undefined,
+    relaxed: relaxedNow() || undefined,
+    who: getWho() || undefined,
+    classCode: api.myClass()?.code || undefined,
     appVersion: window.TES_CONFIG?.APP_VERSION
   });
   api.flush();
@@ -494,6 +530,12 @@ function gameOver() {
   social.renderOverChallenge(state);
   quiz.renderOverQuiz();
   renderOverTown();
+  renderOverWho();
+  renderOverHome();
+  const relaxed = relaxedNow();
+  $('#over-relaxed').hidden = !relaxed;
+  $('#submit-form').hidden = relaxed;
+  $('#btn-challenge').hidden = relaxed;
   $('#challenge-link').hidden = true;
   $('#over-score').textContent = state.score;
   renderOverCoins();
@@ -731,9 +773,62 @@ function demoBot(ctx, isFinished) {
   setTimeout(act, 900 + Math.random() * 1300);
 }
 
+// Booth Battle finished on this phone: coins and badges, then the live podium.
+function battleOver() {
+  music.setTempo(132);
+  music.play('menu');
+  if (!DEMO) {
+    profile.addCoins(Math.floor(state.score / COINS_PER_POINT_DIVISOR));
+    renderCoins();
+    social.celebrate(badges.evaluateRun(state.results, state.score));
+  }
+  battle.finish(state);
+}
+
+// Locals vs visitors: one optional tap. It helps show which rules newcomers to the NT miss.
+function renderOverWho() {
+  const box = $('#over-who');
+  const who = getWho();
+  box.hidden = false;
+  if (who) {
+    box.innerHTML = `<span>🙌 Thanks! Counted as <b>${escapeHtml(whoLabel(who))}</b>. ${KIOSK ? '' : '<button class="linkish" id="who-change">Change</button>'}</span>`;
+    $('#who-change')?.addEventListener('click', () => { store.set('tes_who', null); renderOverWho(); });
+    return;
+  }
+  box.innerHTML = `<b>👋 Quick one, are you...</b><div class="who-row">${WHO.map(w =>
+    `<button class="btn btn-small" data-who="${w.id}">${w.icon} ${escapeHtml(w.label)}</button>`).join('')}</div>
+    <small>Optional. It shows which safety rules visitors and newcomers miss most.</small>`;
+  box.querySelectorAll('[data-who]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.who;
+    if (KIOSK) kioskWho = id; else store.set('tes_who', id);
+    api.setRunWho(state.runLocalId, id);
+    api.flush();
+    sfx.pop();
+    renderOverWho();
+  }));
+}
+
+// Shared booth devices: a big QR so people can take the game home (and vote on their own phone).
+function renderOverHome(refetch = true) {
+  const cfg = window.TES_CONFIG || {};
+  // Pick up a vote link set on the server since this page loaded.
+  if (refetch && !PARAMS.get('vote')) api.getConfig().then(c => { if (c.voteUrl && c.voteUrl !== cfg.VOTE_URL) { cfg.VOTE_URL = c.voteUrl; renderOverHome(false); } }).catch(() => {});
+  const voteUrl = cfg.VOTE_URL || '';
+  const vote = $('#btn-vote');
+  vote.hidden = !voteUrl || KIOSK;
+  if (voteUrl) vote.href = voteUrl;
+  const box = $('#over-home');
+  box.hidden = !KIOSK;
+  if (!KIOSK) return;
+  const qr = (url) => `${cfg.API_BASE || ''}/api/qr.svg?url=${encodeURIComponent(url)}`;
+  $('#home-qr').src = qr(playUrlSafe());
+  $('#vote-qr-box').hidden = !voteUrl;
+  if (voteUrl) $('#vote-qr').src = qr(voteUrl);
+}
+
 function renderOverTown() {
   const box = $('#over-town');
-  if (KIOSK) { box.hidden = true; return; }
+  if (KIOSK || relaxedNow()) { box.hidden = true; return; }
   const t = social.getTown();
   box.hidden = false;
   box.innerHTML = t
@@ -1009,15 +1104,32 @@ function init() {
   $('#btn-badges').addEventListener('click', () => { renderBadges(); show('screen-badges'); });
   $('#btn-wardrobe').addEventListener('click', () => { renderWardrobe(); show('screen-wardrobe'); });
   $('#btn-challenge').addEventListener('click', () => social.sendChallenge(state));
+  $('#btn-help').addEventListener('click', () => show('screen-help'));
+  $('#learn-help').addEventListener('click', () => show('screen-help'));
+  $('#over-help').addEventListener('click', () => show('screen-help'));
+  $('#relaxed-chip').addEventListener('click', () => {
+    store.set('tes_relaxed', !isRelaxed());
+    renderRelaxed();
+    sfx.pop();
+    toast(isRelaxed() ? '🐢 Relaxed mode on: more time, bigger text. Scores stay off the leaderboard.' : 'Relaxed mode off: full speed!');
+  });
+  renderRelaxed();
   const appCtx = {
     show, startGame, escapeHtml, playUrl: playUrlSafe, isDemo: DEMO, kiosk: KIOSK,
-    celebrate: (fresh) => social.celebrate(fresh)
+    celebrate: (fresh) => social.celebrate(fresh), getWho, toast
   };
   social.initSocial(appCtx);
   quiz.initQuiz(appCtx);
   initWardrobe(appCtx);
   initJudge(appCtx);
+  battle.initBattle(appCtx);
+  initClassroom(appCtx);
   social.loadIncoming(PARAMS);
+  if (!DEMO) joinFromUrl(PARAMS);
+  // People's Choice link: set on the server on the day (no code change), or ?vote=<link> on a booth device.
+  if (/^https?:\/\//.test(PARAMS.get('vote') || '')) window.TES_CONFIG.VOTE_URL = PARAMS.get('vote');
+  else api.getConfig().then(c => { if (c.voteUrl) window.TES_CONFIG.VOTE_URL = c.voteUrl; }).catch(() => { /* offline: keep config.js */ });
+  if (!DEMO && /^[A-Za-z]{4}$/.test(PARAMS.get('battle') || '')) battle.openJoin(PARAMS.get('battle'));
   social.renderChallengeResults();
   $('#btn-share').addEventListener('click', doShare);
   document.querySelectorAll('[data-mute]').forEach(b => b.addEventListener('click', (e) => {

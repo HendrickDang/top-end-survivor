@@ -128,6 +128,7 @@ def main():
             page.goto(BASE + '/'); page.wait_for_timeout(300)
             page.evaluate(f"window.__TES_FORCE__ = '{gid}'")
             page.click('#btn-play'); page.wait_for_timeout(700)
+            if gid == GAMES[0] and not page.query_selector('#stage .hint-badge'): failures.append('first-time hint')
             if SHOTS: page.screenshot(path=str(SHOTS / f'game-{gid}.png'))
             win(page, gid)
             page.wait_for_timeout(250)
@@ -371,6 +372,101 @@ def main():
         booth.goto(BASE + '/booth?idle=2'); booth.wait_for_timeout(8000)
         if 'show' not in (booth.get_attribute('#attract', 'class') or ''): failures.append('attract mode')
         if SHOTS: booth.screenshot(path=str(SHOTS / '21-booth-attract.png'))
+
+        # ---------- v1.5 ----------
+        # Real help: checked numbers, one tap from the menu.
+        page.goto(BASE + '/'); page.wait_for_timeout(300)
+        page.click('#btn-help'); page.wait_for_timeout(200)
+        if not page.query_selector('#screen-help a[href="tel:000"]') or not page.query_selector('#screen-help a[href="tel:132500"]'): failures.append('real help')
+        if SHOTS: page.screenshot(path=str(SHOTS / '40-real-help.png'), full_page=True)
+
+        # Relaxed mode: slower rounds, kept off the leaderboard; locals vs visitors tap at game over.
+        page.goto(BASE + '/'); page.wait_for_timeout(300)
+        page.click('#relaxed-chip'); page.wait_for_timeout(200)
+        if 'on' not in page.inner_text('#relaxed-chip'): failures.append('relaxed toggle')
+        page.evaluate("window.__TES_FORCE__ = 'flood-road'")
+        page.click('#btn-play'); page.wait_for_timeout(500)
+        page.wait_for_selector('#screen-over.active', timeout=90000)
+        if page.is_visible('#submit-form') or not page.is_visible('#over-relaxed'): failures.append('relaxed game over')
+        page.locator('[data-who="visitor"]').click(); page.wait_for_timeout(1200)
+        if 'Visitor' not in page.inner_text('#over-who'): failures.append('who answer')
+        if SHOTS: page.locator('#over-who').screenshot(path=str(SHOTS / '41-who.png'))
+        st = page.evaluate("fetch('/api/stats').then(r => r.json())")
+        print('Groups:', st['groups']['players'])
+        if st['groups']['players']['visitor'] < 1: failures.append('who saved')
+        page.click('#btn-over-menu'); page.click('#relaxed-chip'); page.wait_for_timeout(200)
+
+        # Classroom mode: teacher creates a class, a student joins by link, the report updates.
+        teacher = browser.new_page(viewport={'width': 1200, 'height': 900})
+        teacher.on('pageerror', lambda e: errors.append('teacher: ' + str(e)))
+        teacher.goto(BASE + '/class.html'); teacher.wait_for_timeout(400)
+        teacher.fill('#class-name', 'Year 7 Casuarina'); teacher.click('#create-form button'); teacher.wait_for_timeout(800)
+        ccode = teacher.inner_text('#ccode')
+        print('Class code:', ccode)
+        page.goto(BASE + '/?class=' + ccode); page.wait_for_timeout(1000)
+        if 'Year 7 Casuarina' not in page.inner_text('#class-chip'): failures.append('class chip')
+        page.evaluate("window.__TES_FORCE__ = 'flood-road'")
+        page.click('#btn-play'); page.wait_for_selector('#screen-over.active', timeout=60000)
+        page.fill('#player-name', 'ClassKid'); page.click('#submit-form button[type=submit]')
+        page.wait_for_function("document.querySelector('#submit-msg').textContent.includes('board')", timeout=8000)
+        teacher.reload(); teacher.wait_for_timeout(1500)
+        if teacher.inner_text('#k-players') != '1' or 'ClassKid' not in teacher.inner_text('#top'): failures.append('class report')
+        if SHOTS: teacher.screenshot(path=str(SHOTS / '42-teacher.png'), full_page=True)
+        page.goto(BASE + '/'); page.wait_for_timeout(300); page.click('#class-leave'); page.wait_for_timeout(200)
+        if page.is_visible('#class-chip'): failures.append('leave class')
+        teacher.close()
+
+        # Shared booth device: big "take it home" QR (and a vote QR once VOTE_URL is set).
+        kctx = browser.new_context(viewport={'width': 390, 'height': 844})
+        kiosk = kctx.new_page()
+        kiosk.on('pageerror', lambda e: errors.append('kiosk: ' + str(e)))
+        kiosk.goto(BASE + '/?kiosk=1'); kiosk.wait_for_timeout(400)
+        kiosk.evaluate("window.TES_CONFIG.VOTE_URL = 'https://example.com/vote'; window.__TES_FORCE__ = 'flood-road'")
+        kiosk.click('#btn-play')
+        if not kiosk.query_selector('#stage .hint-badge'): failures.append('kiosk hint')
+        kiosk.wait_for_selector('#screen-over.active', timeout=60000); kiosk.wait_for_timeout(600)
+        if not kiosk.is_visible('#over-home') or not kiosk.is_visible('#vote-qr-box'): failures.append('take-home QR')
+        if SHOTS: kiosk.locator('#over-home').screenshot(path=str(SHOTS / '43-take-home.png'))
+        kctx.close()
+
+        # Live Booth Battle: the booth opens a battle, 2 phones join with the code, race, podium.
+        booth = browser.new_page(viewport={'width': 1920, 'height': 1080})
+        booth.on('pageerror', lambda e: errors.append('booth battle: ' + str(e)))
+        booth.goto(BASE + '/booth?attract=0'); booth.wait_for_timeout(1200)
+        booth.click('#bbtn'); booth.wait_for_function("/^[A-Z]{4}$/.test(document.querySelector('#bcode').textContent)", timeout=5000)
+        code = booth.inner_text('#bcode')
+        print('Battle code:', code)
+        phones = []
+        for name in ('Ava', 'Ben'):
+            bctx = browser.new_context(viewport={'width': 390, 'height': 844})
+            bctx.add_init_script("localStorage.setItem('tes_quiz_v1', JSON.stringify({status: 'skipped'}))")
+            ph = bctx.new_page()
+            ph.on('pageerror', lambda e, n=name: errors.append(f'{n}: ' + str(e)))
+            ph.goto(BASE + '/?battle=' + code); ph.wait_for_timeout(500)
+            ph.fill('#battle-name', name); ph.click('#battle-join-form button[type=submit]')
+            ph.wait_for_selector('#screen-battle.active', timeout=5000)
+            phones.append(ph)
+        booth.wait_for_function("document.querySelectorAll('#bplayers .bp').length === 2", timeout=5000)
+        if SHOTS: booth.screenshot(path=str(SHOTS / '44-battle-lobby.png'))
+        booth.click('#bstart')
+        plan = {0: [True] * 5, 1: [True, False, True, True, False]}
+        for rnd in range(5):
+            for ph in phones:
+                ph.wait_for_function(f"window.__TES__.state.mode === 'battle' && window.__TES__.state.round === {rnd + 1} && document.querySelector('#screen-game.active')", timeout=20000)
+            time.sleep(0.5)
+            for i, ph in enumerate(phones):
+                ph.evaluate(f"window.__TES__.state.ctx.{'win' if plan[i][rnd] else 'lose'}()")
+            if rnd == 2 and SHOTS:
+                booth.wait_for_timeout(1000); booth.screenshot(path=str(SHOTS / '45-battle-live.png'))
+        for ph in phones: ph.wait_for_function("document.querySelector('#battle-podium .pod')", timeout=20000)
+        print('Battle:', phones[0].inner_text('#battle-wait'), '|', phones[1].inner_text('#battle-wait'))
+        if 'won' not in phones[0].inner_text('#battle-wait') or '#2' not in phones[1].inner_text('#battle-wait'): failures.append('battle result')
+        booth.wait_for_function("document.querySelector('#battle').dataset.view === 'done'", timeout=10000)
+        if 'Ava' not in booth.inner_text('#bpodium'): failures.append('booth podium')
+        if SHOTS:
+            phones[1].screenshot(path=str(SHOTS / '46-battle-phone.png'))
+            booth.wait_for_timeout(800); booth.screenshot(path=str(SHOTS / '47-battle-podium.png'))
+        booth.close()
         browser.close()
 
     print('JS errors:', errors or 'none')

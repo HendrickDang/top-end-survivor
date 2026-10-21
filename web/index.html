@@ -27,6 +27,7 @@
           <button class="btn btn-daily" id="btn-daily">📅 Daily<small id="daily-sub">New challenge today!</small></button>
           <button class="btn btn-journey" id="btn-journey">🗺️ Journey<small id="menu-journey">Darwin to Uluru</small></button>
         </div>
+        <button class="btn btn-battle" id="btn-battle">⚔️ Booth Battle<small>Join with the code on the big screen</small></button>
         <p class="chips"><span id="daily-streak-chip"></span></p>
         <div class="menu-grid">
           <button class="btn" id="btn-board">🏆 Leaderboard</button>
@@ -34,14 +35,17 @@
           <button class="btn" id="btn-chars">🤠 Characters</button>
           <button class="btn" id="btn-wardrobe">👕 Wardrobe</button>
           <button class="btn" id="btn-badges">Badges</button>
+          <button class="btn btn-help" id="btn-help">🆘 Real help</button>
           <button class="btn" id="btn-admin" hidden>🛠️ Admin</button>
         </div>
+        <div class="class-chip" id="class-chip" hidden></div>
         <button class="town-chip" id="town-chip"></button>
+        <button class="relaxed-chip" id="relaxed-chip" aria-pressed="false">🐢 Relaxed mode: off</button>
         <div class="challenge-results" id="challenge-results" hidden></div>
         <button class="btn btn-install" data-install hidden>📲 Install the game · free badge</button>
         <p class="season-chip" id="season-chip"></p>
         <p class="menu-foot"><span class="coin-total" id="menu-coins"></span> <span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
-        <button class="linkish judge-link" id="btn-judge">👩‍⚖️ Judges: 60-second tour</button>
+        <p class="menu-links"><button class="linkish judge-link" id="btn-judge">👩‍⚖️ Judges: 60-second tour</button> <a class="linkish" id="teacher-link" href="class.html">🏫 Teachers: use it in class</a></p>
       </div>
       <div class="challenge-banner" id="challenge-banner" hidden>
         <p id="challenge-text"></p>
@@ -116,7 +120,13 @@
           </div>
           <p class="form-msg" id="submit-msg" aria-live="polite"></p>
         </form>
+        <p class="over-relaxed" id="over-relaxed" hidden>🐢 Relaxed mode: this score stays off the leaderboard, but every round still counts towards what the NT is learning.</p>
         <p class="over-town" id="over-town" hidden></p>
+        <div class="over-who" id="over-who" hidden></div>
+        <div class="over-home" id="over-home" hidden>
+          <div class="home-qr"><img id="home-qr" alt="QR code to play on your phone"><b>📲 Take it home</b><small>Play on your own phone. Free, no sign-up, works offline.</small></div>
+          <div class="home-qr" id="vote-qr-box" hidden><img id="vote-qr" alt="QR code to vote for Team CAP003"><b>🗳️ Vote for us</b><small>People's Choice: Team CAP003</small></div>
+        </div>
         <h3>What you learned the hard way</h3>
         <ul class="lessons" id="over-lessons"></ul>
         <div class="menu-row">
@@ -124,7 +134,8 @@
           <button class="btn" id="btn-over-menu">Menu</button>
         </div>
         <button class="btn btn-install" data-install hidden>📲 Play every day: install the game</button>
-        <p class="vote-nudge">Enjoyed it? Tell the judges: <b>Team CAP003</b> 🐊</p>
+        <a class="btn btn-vote" id="btn-vote" hidden target="_blank" rel="noopener">🗳️ Vote for us: People's Choice</a>
+        <p class="vote-nudge">Enjoyed it? Tell the judges: <b>Team CAP003</b> 🐊 · <button class="linkish" id="over-help">🆘 Real help numbers</button></p>
       </div>
     </section>
 
@@ -223,6 +234,61 @@
       </div>
     </section>
 
+    <!-- LIVE BOOTH BATTLE (phone side) -->
+    <section class="screen" id="screen-battle" aria-label="Booth Battle" data-view="lobby">
+      <div class="panel battle-panel">
+        <h2 id="battle-title">⚔️ Booth Battle</h2>
+        <div class="bv bv-lobby">
+          <p class="battle-status" id="battle-status"></p>
+          <p class="battle-mystery"><span>❓❓❓❓❓</span><small>5 mystery hazards. Everyone gets the same ones, at the same time.</small></p>
+          <ul class="battle-players" id="battle-players"></ul>
+          <button class="btn" id="battle-leave">Leave</button>
+        </div>
+        <div class="bv bv-count">
+          <div class="battle-hazards" id="battle-hazards"></div>
+          <div class="battle-count" id="battle-count">3</div>
+          <p class="sub">Get ready! Highest score wins. No lives: you play all 5.</p>
+        </div>
+        <div class="bv bv-result">
+          <p class="battle-you" id="battle-you"></p>
+          <p class="battle-wait" id="battle-wait"></p>
+          <div class="battle-podium" id="battle-podium"></div>
+          <ol class="battle-standings" id="battle-standings"></ol>
+          <div class="menu-row"><button class="btn btn-primary" id="battle-again">Join the next battle</button><button class="btn" id="battle-menu">Menu</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REAL HELP -->
+    <section class="screen" id="screen-help" aria-label="Real help">
+      <div class="panel help-panel">
+        <h2>🆘 Real help</h2>
+        <p class="sub">The game is practice. These are the real numbers. Tap to call.</p>
+        <a class="help-big" href="tel:000"><b>000</b><span>Emergency: police, fire, ambulance. Snake bite, croc attack, someone swept away: call 000 first.</span></a>
+        <div class="help-list">
+          <a href="tel:132500"><b>132 500</b><span>NT Emergency Service: help in floods, storms and cyclones</span></a>
+          <a href="tel:131126"><b>13 11 26</b><span>Poisons Information Centre: bites, stings and poisons, 24/7</span></a>
+          <a href="tel:1800022222"><b>1800 022 222</b><span>healthdirect: talk to a registered nurse, 24/7</span></a>
+          <a href="tel:131444"><b>131 444</b><span>NT Police assistance, when it's not an emergency</span></a>
+        </div>
+        <h3>🐊 Report a crocodile (urgent)</h3>
+        <div class="help-list">
+          <a href="tel:0419822859"><b>0419 822 859</b><span>Darwin region (or 08 8983 2475)</span></a>
+          <a href="tel:0407958405"><b>0407 958 405</b><span>Katherine region (or 08 8973 8888)</span></a>
+        </div>
+        <h3>⚠️ Check before you go</h3>
+        <div class="help-links">
+          <a href="https://securent.nt.gov.au/alerts-warnings" target="_blank" rel="noopener">SecureNT: alerts and warnings</a>
+          <a href="https://www.bom.gov.au/nt/warnings/" target="_blank" rel="noopener">Bureau of Meteorology: NT weather warnings</a>
+          <a href="https://roadreport.nt.gov.au/" target="_blank" rel="noopener">Road Report NT: closures and conditions</a>
+          <a href="https://www.pfes.nt.gov.au/incidentmap" target="_blank" rel="noopener">PFES incident map: fires and incidents</a>
+          <a href="https://becrocwise.nt.gov.au/contact/report-a-crocodile" target="_blank" rel="noopener">Be Crocwise: report a crocodile</a>
+        </div>
+        <p class="sub small">Numbers checked in October 2026 against NT Government, NT Police Fire and Emergency Services, NT Health and the Poisons Information Centre.</p>
+        <button class="btn" data-back>Back</button>
+      </div>
+    </section>
+
     <!-- QUICK SAFETY CHECK -->
     <section class="screen" id="screen-quiz" aria-label="Quick safety check">
       <div class="panel quiz-panel">
@@ -260,6 +326,7 @@
       <div class="panel">
         <h2>The real rules</h2>
         <p class="sub">Every mini-game is based on official Northern Territory safety advice. Tap a source to read more.</p>
+        <button class="btn btn-help btn-small" id="learn-help">🆘 Real help numbers</button>
         <div id="learn-list" class="learn-list"></div>
         <p class="sub small">This game is a learning tool, not medical advice. In an emergency call <b>000</b>.</p>
         <button class="btn" data-back>Back</button>
@@ -289,6 +356,18 @@
         <div class="town-list" id="town-list"></div>
         <button class="btn" id="town-close">Close</button>
       </div>
+    </div>
+    <div class="sheet" id="battle-sheet" hidden>
+      <form class="sheet-card" id="battle-join-form" autocomplete="off">
+        <h3>⚔️ Join the Booth Battle</h3>
+        <p class="sub small">Enter the 4-letter code from the big screen. Everyone plays the same 5 hazards at the same time.</p>
+        <label for="battle-code">Battle code</label>
+        <input id="battle-code" class="code-input" maxlength="4" placeholder="ABCD" autocapitalize="characters" spellcheck="false">
+        <label for="battle-name">Your name on the big screen</label>
+        <input id="battle-name" maxlength="16" placeholder="e.g. CrocDodger">
+        <p class="form-msg" id="battle-msg" aria-live="polite"></p>
+        <div class="row"><button class="btn btn-primary" type="submit">Join</button><button class="btn" type="button" id="battle-cancel">Cancel</button></div>
+      </form>
     </div>
     <div class="sheet" id="quiz-offer" hidden>
       <div class="sheet-card">

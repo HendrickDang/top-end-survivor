@@ -41,7 +41,7 @@ async function request(path, opts = {}) {
 export function queueRun(run) {
   const outbox = load(KEY_OUTBOX, []);
   const localId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  outbox.push({ localId, ...run, clientId: clientId(), name: null, serverId: null, nameSent: false, townSent: true });
+  outbox.push({ localId, ...run, clientId: clientId(), name: null, serverId: null, nameSent: false, townSent: true, whoSent: true });
   save(KEY_OUTBOX, outbox.slice(-50));
   return localId;
 }
@@ -58,7 +58,14 @@ export function setRunTown(localId, town) {
   if (r && r.town !== town) { r.town = town; r.townSent = !r.serverId; save(KEY_OUTBOX, outbox); }
 }
 
-const needsWork = (r) => !r.dead && (!r.serverId || (r.name && !r.nameSent) || (r.town && r.townSent === false));
+// Locals vs visitors: the one-tap answer after a game.
+export function setRunWho(localId, who) {
+  const outbox = load(KEY_OUTBOX, []);
+  const r = outbox.find(x => x.localId === localId);
+  if (r && r.who !== who) { r.who = who; r.whoSent = !r.serverId; save(KEY_OUTBOX, outbox); }
+}
+
+const needsWork = (r) => !r.dead && (!r.serverId || (r.name && !r.nameSent) || (r.town && r.townSent === false) || (r.who && r.whoSent === false));
 
 // Try to send everything in the outbox. Safe to call any time.
 let flushing = null;
@@ -76,10 +83,11 @@ export function flush() {
               clientId: r.clientId, results: r.results, durationMs: r.durationMs,
               mode: r.mode || 'classic', day: r.day,
               town: r.town || undefined, challengeOf: r.challengeOf || undefined,
+              relaxed: r.relaxed || undefined, who: r.who || undefined, classCode: r.classCode || undefined,
               name: r.name || undefined, appVersion: r.appVersion
             })
           });
-          r.serverId = res.id; r.score = res.score; r.nameSent = !!r.name; r.townSent = true; changed = true;
+          r.serverId = res.id; r.score = res.score; r.nameSent = !!r.name; r.townSent = true; r.whoSent = true; changed = true;
         }
         if (r.serverId && r.name && !r.nameSent) {
           await request(`/api/runs/${r.serverId}/name`, {
@@ -92,6 +100,12 @@ export function flush() {
             method: 'POST', body: JSON.stringify({ town: r.town, clientId: r.clientId })
           });
           r.townSent = true; changed = true;
+        }
+        if (r.serverId && r.who && r.whoSent === false) {
+          await request(`/api/runs/${r.serverId}/who`, {
+            method: 'POST', body: JSON.stringify({ who: r.who, clientId: r.clientId })
+          });
+          r.whoSent = true; changed = true;
         }
       } catch (e) {
         if (e.status && e.status >= 400 && e.status < 500) { r.dead = true; r.error = e.message; changed = true; }
@@ -110,6 +124,7 @@ export function flush() {
         score: p.score ?? f.score,
         nameSent: f.nameSent || (p.nameSent && p.name === f.name),
         townSent: f.townSent === false && p.townSent && p.town === f.town ? true : f.townSent,
+        whoSent: f.whoSent === false && p.whoSent && p.who === f.who ? true : f.whoSent,
         dead: f.dead || p.dead,
         error: f.error || p.error
       };
@@ -135,7 +150,8 @@ export function runStatus(localId) {
 const KEY_QUIZ = 'tes_quiz_outbox_v1';
 export function queueQuiz(payload) {
   const q = load(KEY_QUIZ, []);
-  q.push({ ...payload, clientId: clientId() });
+  const cls = myClass();
+  q.push({ ...payload, clientId: clientId(), classCode: cls ? cls.code : undefined });
   save(KEY_QUIZ, q.slice(-4));
   flushQuiz();
 }
@@ -155,3 +171,20 @@ export const getTowns = (period = 'today') => request(`/api/towns?period=${perio
 export const getChallenge = (id) => request(`/api/challenge/${encodeURIComponent(id)}`);
 export const getChallengeResults = () => request(`/api/challenges/results?client=${encodeURIComponent(clientId())}`);
 export const ping = () => request('/api/health');
+export const getConfig = () => request('/api/config');
+
+// ---- Classroom mode ----
+// The class this device is playing for ({ code, name }), set by a teacher's join link.
+const KEY_CLASS = 'tes_class';
+export const myClass = () => load(KEY_CLASS, null);
+export const setMyClass = (c) => { if (c) save(KEY_CLASS, { code: c.code, name: c.name }); else { try { localStorage.removeItem(KEY_CLASS); } catch { /* ignore */ } } };
+export const getClass = (code) => request(`/api/classes/${encodeURIComponent(code)}`);
+
+// ---- Live Booth Battle ----
+export const battle = {
+  get: (code) => request(`/api/battles/${encodeURIComponent(code)}`),
+  join: (code, body) => request(`/api/battles/${encodeURIComponent(code)}/join`, { method: 'POST', body: JSON.stringify({ ...body, clientId: clientId() }) }),
+  progress: (code, playerId, results) => request(`/api/battles/${encodeURIComponent(code)}/progress`, {
+    method: 'POST', body: JSON.stringify({ playerId, clientId: clientId(), results })
+  })
+};
