@@ -30,6 +30,234 @@ function swirlAt(x, y) {
   return el('path', { d: `M${x} ${y} m-28 0 a28 28 0 1 1 28 28 a17 17 0 1 1 -14 -17`, stroke: '#9b8fd6', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' });
 }
 
+// Rock and bush dressing for shorelines (croc edge and Berry Springs).
+function rock(x, y, s = 1, fill = '#a9a090') {
+  return g([
+    el('path', { d: 'M-28 0 q-2 -12 6 -20 q10 -10 24 -7 q13 2 20 12 q6 8 2 15 z', fill, stroke: '#1d1a16', 'stroke-width': 3 }),
+    el('path', { d: 'M-15 -2 q9 -8 21 -5', stroke: 'rgba(255,255,255,.35)', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round' })
+  ], { transform: `translate(${x} ${y}) scale(${s})` });
+}
+
+function bush(x, y, s = 1) {
+  return g([
+    el('path', {
+      d: 'M-44 8 q-8 -12 2 -21 q-5 -14 9 -17 q3 -14 17 -13 q9 -10 20 -2 q14 -6 20 6 q14 2 15 14 q11 7 6 18 q4 11 -9 17 q-3 8 -16 6 z',
+      fill: '#3f6b2e', stroke: '#1d1a16', 'stroke-width': 3, 'stroke-linejoin': 'round'
+    }),
+    el('ellipse', { cx: -20, cy: -13, rx: 15, ry: 10, fill: '#4f8a3c' }),
+    el('ellipse', { cx: 12, cy: -17, rx: 17, ry: 12, fill: '#5c9b45' }),
+    el('ellipse', { cx: 20, cy: -1, rx: 13, ry: 8, fill: '#4f8a3c' }),
+    el('circle', { cx: -8, cy: -16, r: 3.5, fill: '#c8412f' }),
+    el('circle', { cx: 9, cy: -22, r: 3, fill: '#e0892e' })
+  ], { transform: `translate(${x} ${y}) scale(${s})` });
+}
+
+// Tropical planting for Berry Springs.
+function pandanus(x, y, s = 1) {
+  return g([
+    el('path', { d: 'M0 0 q-4 -34 2 -64', stroke: '#6b4a2b', 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }),
+    el('path', {
+      d: 'M2 -64 q-36 4 -50 28 M2 -64 q36 4 50 28 M2 -64 q-24 -22 -42 -20 M2 -64 q24 -22 42 -20 M2 -64 q-8 -28 -2 -42 M2 -64 q14 8 20 26',
+      stroke: '#3f7a2e', 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round'
+    }),
+    el('circle', { cx: 2, cy: -64, r: 5, fill: '#5c9b45' })
+  ], { transform: `translate(${x} ${y}) scale(${s})` });
+}
+
+function fern(x, y, s = 1) {
+  return g([
+    el('path', {
+      d: 'M0 0 q-6 -20 2 -34 M0 -4 q-20 -4 -28 -18 M0 -10 q20 -4 28 -18 M0 -18 q-14 -6 -20 -20 M0 -22 q14 -6 20 -20',
+      stroke: '#3f7a2e', 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round'
+    })
+  ], { transform: `translate(${x} ${y}) scale(${s})` });
+}
+
+// Berry Springs: clear turquoise spring, sandstone ledges, waterfall and monsoon forest.
+function berrySprings() {
+  const canopy = (cx, cy, rx, ry, fill) => el('ellipse', { cx, cy, rx, ry, fill });
+  return g([
+    // Sky and soft sunlight behind the rainforest (extends into the stage letterbox).
+    el('rect', { x: -200, y: -200, width: 760, height: 500, fill: '#cfeef0' }),
+    el('circle', { cx: 302, cy: 46, r: 34, fill: '#ffe9a8', opacity: .75 }),
+
+    // Far rainforest canopy.
+    el('path', {
+      d: 'M-20 210 L-20 154 Q12 96 66 112 Q96 62 152 84 Q206 42 256 80 Q306 54 364 104 L390 122 L390 220 Z',
+      fill: '#2f5a2a'
+    }),
+    canopy(32, 146, 68, 44, '#3f6b2e'),
+    canopy(100, 116, 78, 54, '#4f7a33'),
+    canopy(188, 120, 86, 58, '#3f6b2e'),
+    canopy(276, 110, 80, 54, '#4f7a33'),
+    canopy(348, 146, 64, 42, '#2f5a2a'),
+    canopy(70, 96, 34, 20, 'rgba(140,200,100,.28)'),
+    canopy(212, 90, 42, 23, 'rgba(140,200,100,.24)'),
+    canopy(318, 110, 30, 18, 'rgba(140,200,100,.22)'),
+    el('rect', { x: 62, y: 152, width: 10, height: 70, fill: '#6b4a2b' }),
+    el('rect', { x: 182, y: 158, width: 12, height: 62, fill: '#5a3c22' }),
+    el('rect', { x: 302, y: 150, width: 9, height: 74, fill: '#6b4a2b' }),
+
+    // Sandstone wall and ledges behind the pool.
+    el('path', {
+      d: 'M-20 266 L-20 220 Q20 198 64 210 Q104 184 150 202 Q190 176 240 198 Q286 178 332 204 Q356 210 380 230 L380 276 Z',
+      fill: '#b98b5a', stroke: '#1d1a16', 'stroke-width': 3, 'stroke-linejoin': 'round'
+    }),
+    el('path', {
+      d: 'M-20 228 Q20 208 64 220 Q104 194 150 212 Q190 186 240 208 Q286 188 332 214 Q356 220 380 238',
+      stroke: '#8a6a3a', 'stroke-width': 6, fill: 'none', opacity: .55
+    }),
+
+    // Upper pool and cascade feeding the main spring.
+    el('ellipse', { cx: 184, cy: 214, rx: 64, ry: 18, fill: '#5ec8c6', stroke: '#1d1a16', 'stroke-width': 3 }),
+    el('path', {
+      d: 'M158 226 q8 30 3 54 l44 0 q-5 -24 3 -54 z',
+      fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    el('path', {
+      d: 'M164 230 q3 22 1 44 M172 230 q2 24 1 46 M180 230 q-1 24 1 46 M188 230 q2 22 0 44 M196 230 q3 20 1 42',
+      stroke: '#fffaf0', 'stroke-width': 3, fill: 'none', opacity: .8
+    }),
+    el('ellipse', { cx: 184, cy: 282, rx: 42, ry: 12, fill: '#fffaf0', opacity: .7 }),
+
+    // Main spring-fed pool.
+    el('path', {
+      d: 'M8 284 Q64 250 124 262 Q170 242 216 256 Q268 240 318 266 Q358 288 352 338 Q346 390 308 420 Q246 444 182 430 Q108 420 58 388 Q18 360 12 320 Z',
+      fill: '#2f9fae', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    el('path', {
+      d: 'M28 306 Q78 278 128 288 Q170 270 214 282 Q262 268 304 290 Q334 306 330 340 Q326 380 296 402 Q244 422 184 412 Q120 404 78 378 Q44 356 38 326 Z',
+      fill: '#5ec8c6', opacity: .55
+    }),
+    el('path', { d: 'M62 326 q30 -10 60 0 t60 0 t60 0 t60 0', stroke: 'rgba(255,255,255,.45)', 'stroke-width': 4, fill: 'none' }),
+    el('path', { d: 'M84 362 q34 -10 68 0 t68 0 t68 0', stroke: 'rgba(255,255,255,.3)', 'stroke-width': 4, fill: 'none' }),
+    el('ellipse', { cx: 90, cy: 386, rx: 30, ry: 10, fill: '#3b7d81', opacity: .75 }),
+    el('ellipse', { cx: 288, cy: 374, rx: 26, ry: 9, fill: '#3b7d81', opacity: .7 }),
+    rock(142, 284, .55, '#b0a696'),
+    rock(226, 284, .55, '#a9a090'),
+
+    // Banks framing the pool.
+    el('path', {
+      d: 'M-20 218 L112 218 Q94 252 88 292 Q80 344 94 396 Q58 438 -20 468 Z',
+      fill: '#d9b97a', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    el('path', {
+      d: 'M380 222 L272 222 Q284 254 290 292 Q298 346 288 402 Q328 442 380 466 Z',
+      fill: '#d9b97a', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    el('path', {
+      d: 'M-20 410 Q70 396 160 408 Q250 396 380 418 L380 700 L-20 700 Z',
+      fill: '#c9a76d', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    rock(70, 430, .9, '#b0a696'),
+    rock(300, 438, .8, '#a9a090'),
+
+    // Tropical planting around the pool.
+    pandanus(322, 274, .95),
+    fern(44, 286, 1.1),
+    fern(94, 250, .8),
+    bush(28, 432, .8),
+    bush(336, 424, .75)
+  ]);
+}
+
+// The sandy bank between the land and the water, with rocks and a bush on top.
+function waterBank() {
+  return g([
+    // Dry ground from just above the 5 m mark down to the bank, so the player
+    // has a continuous shore to step back across instead of seeing the backdrop.
+    el('path', {
+      d: 'M0 158 Q36 152 72 158 T144 156 T216 162 T288 154 T360 160 L360 334 L0 334 Z',
+      fill: '#d9c08e'
+    }),
+    // A faint walking trail from the bank up past the 5 m mark.
+    el('path', {
+      d: 'M150 332 Q138 288 148 252 T144 164',
+      stroke: '#c9a76d', 'stroke-width': 24, fill: 'none', opacity: .4, 'stroke-linecap': 'round'
+    }),
+    // Soft dry-grass patches to stop the ground looking flat.
+    el('ellipse', { cx: 78, cy: 252, rx: 58, ry: 20, fill: '#d0b17c', opacity: .45 }),
+    el('ellipse', { cx: 268, cy: 232, rx: 52, ry: 18, fill: '#e7d3a4', opacity: .5 }),
+    el('ellipse', { cx: 232, cy: 306, rx: 66, ry: 18, fill: '#d0b17c', opacity: .35 }),
+    // Grass tufts between the bank and the mark.
+    el('path', {
+      d: 'M62 292 q-5 -16 0 -26 M62 292 q-13 3 -18 13 M62 292 q13 3 17 12 ' +
+        'M98 234 q-5 -14 0 -23 M98 234 q-12 3 -17 12 M98 234 q12 3 16 11 ' +
+        'M238 268 q-5 -15 0 -25 M238 268 q-13 3 -18 12 M238 268 q13 3 17 12 ' +
+        'M286 310 q-5 -14 0 -23 M286 310 q-12 3 -16 12 M286 310 q12 3 16 11',
+      stroke: '#3f7a2e', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round'
+    }),
+    el('path', {
+      d: 'M0 330 Q36 320 72 330 T144 332 T216 326 T288 332 T360 328 L360 374 L0 374 Z',
+      fill: '#e0c28a', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    el('path', {
+      d: 'M0 359 q24 -6 48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0 L360 374 L0 374 Z',
+      fill: '#c9a76d'
+    }),
+    el('path', {
+      d: 'M0 346 q24 -6 48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0',
+      stroke: 'rgba(29,26,22,.18)', 'stroke-width': 3, fill: 'none'
+    }),
+    rock(38, 360, 1, '#a9a090'),
+    rock(94, 368, .62, '#bdb5a6'),
+    rock(300, 358, .85, '#a39a8b'),
+    bush(312, 330, .9),
+    // grass tufts along the bank
+    el('path', {
+      d: 'M126 354 q-5 -18 1 -28 M126 354 q-14 2 -19 14 M126 354 q14 2 18 13 M252 356 q-5 -16 0 -25 M252 356 q-13 2 -18 12 M252 356 q13 2 17 12',
+      stroke: '#3f7a2e', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round'
+    })
+  ]);
+}
+
+// A Top End campsite: safe grass above the 50 m line, dry scrubby land below it,
+// then a rocky riverbank.
+function crocCampScene() {
+  return g([
+    // Safe camping grass (extends up into the stage letterbox).
+    el('rect', { x: -200, y: -200, width: 760, height: 360, fill: '#8fb85a' }),
+    el('ellipse', { cx: 70, cy: 40, rx: 120, ry: 46, fill: '#9cc367', opacity: .5 }),
+    el('ellipse', { cx: 290, cy: 96, rx: 110, ry: 36, fill: '#7fae4a', opacity: .45 }),
+    pandanus(30, 148, .75),
+    pandanus(336, 140, .75),
+
+    // Dry land below the line, where the tent starts.
+    el('path', {
+      d: 'M-20 150 Q70 142 160 150 Q250 142 380 150 L380 402 L-20 402 Z',
+      fill: '#c9b27a'
+    }),
+    el('ellipse', { cx: 85, cy: 235, rx: 80, ry: 26, fill: '#d9c08e', opacity: .55 }),
+    el('ellipse', { cx: 292, cy: 300, rx: 72, ry: 24, fill: '#b99c62', opacity: .45 }),
+    el('ellipse', { cx: 170, cy: 350, rx: 90, ry: 22, fill: '#d9c08e', opacity: .4 }),
+    // Spinifex and rocks on the dry land.
+    el('path', {
+      d: 'M54 228 q-5 -16 0 -26 M54 228 q-12 3 -17 12 M54 228 q12 3 16 11 ' +
+        'M118 302 q-5 -14 0 -23 M118 302 q-11 3 -16 11 M118 302 q11 3 15 10 ' +
+        'M282 218 q-5 -15 0 -24 M282 218 q-12 3 -17 12 M282 218 q12 3 16 11 ' +
+        'M320 344 q-5 -14 0 -23 M320 344 q-11 3 -16 11 M320 344 q11 3 15 10',
+      stroke: '#7f8f3a', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round'
+    }),
+    rock(44, 332, .55, '#b0a696'),
+    rock(318, 252, .5, '#a9a090'),
+
+    // River water behind the bank (extends down into the stage letterbox).
+    water(400, 300),
+    // Sandy bank and rocks at the water's edge.
+    el('path', {
+      d: 'M-20 390 Q50 378 110 388 T220 384 T380 392 L380 420 L-20 420 Z',
+      fill: '#e0c28a', stroke: '#1d1a16', 'stroke-width': 3
+    }),
+    rock(30, 404, .85, '#a9a090'),
+    rock(326, 398, .7, '#a39a8b'),
+    bush(300, 380, .8),
+    el('path', {
+      d: 'M-40 430 q30 -10 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0',
+      stroke: 'rgba(255,255,255,.28)', 'stroke-width': 4, fill: 'none'
+    })
+  ]);
+}
+
 function houseInside(calm = false) {
   return g([
     el('rect', { x: 30, y: 150, width: 300, height: 240, fill: '#e9dcc0', stroke: '#1d1a16', 'stroke-width': 4 }),
@@ -83,6 +311,7 @@ export const GAMES = [
       const { svg } = ctx;
       svg.append(
         water(360, 120),
+        waterBank(),
         el('line', { x1: 0, y1: 190, x2: W, y2: 190, stroke: '#1d1a16', 'stroke-width': 3, 'stroke-dasharray': '10 8' }),
         text(310, 182, '5 m', { size: 20 }),
         text(W / 2, 236, 'TAP TAP TAP', { size: 16, fill: 'rgba(29,26,22,.45)' })
@@ -111,20 +340,21 @@ export const GAMES = [
 
   // 2. To swim or not: only jump in where the sign says swimming area.
   {
-    id: 'swim-sign', prompt: 'SWIM?', bg: '#9bbf4a',
+    id: 'swim-sign', prompt: 'SWIM?', bg: '#cfeef0', ownBackdrop: true,
     setup(ctx) {
       const safe = Math.random() < 0.4;
       const variant = safe ? 'safe' : pick(['croc', 'none']);
       ctx.correct = safe ? 'swim' : 'stay';
-      ctx.svg.append(
-        el('ellipse', { cx: W / 2, cy: 300, rx: 170, ry: 80, fill: '#2f7f8f', stroke: '#1d1a16', 'stroke-width': 3 }),
-        el('path', { d: 'M60 300 q30 -10 60 0 t60 0 t60 0 t60 0', stroke: 'rgba(255,255,255,.35)', 'stroke-width': 4, fill: 'none' })
-      );
-      if (variant === 'safe') ctx.svg.append(sign(90, 210, ['SWIMMING', 'AREA'], { bg: '#4f8a3c', fg: '#fffaf0' }));
-      if (variant === 'croc') ctx.svg.append(sign(90, 210, ['DANGER', 'CROCODILES'], { bg: '#ffd25e', fg: '#c8412f', w: 130 }));
-      if (variant === 'none') ctx.svg.append(text(W / 2, 120, '(no sign...)', { size: 18, fill: 'rgba(29,26,22,.6)' }));
-      ctx.svg.append(person({ x: 270, y: 230, s: .9 }));
-      if (variant !== 'safe' && Math.random() < 0.5) ctx.svg.append(crocEyes({ x: 230, y: 330, s: .6 }));
+      ctx.svg.append(berrySprings());
+      if (variant === 'safe') ctx.svg.append(sign(72, 300, ['SWIMMING', 'AREA'], { bg: '#4f8a3c', fg: '#fffaf0' }));
+      if (variant === 'croc') ctx.svg.append(sign(72, 300, ['DANGER', 'CROCODILES'], { bg: '#ffd25e', fg: '#c8412f', w: 130 }));
+      if (variant === 'none') {
+        // A bare post and no sign is the clue.
+        ctx.svg.append(el('rect', { x: 68, y: 300, width: 8, height: 70, fill: '#6b4a2b', stroke: '#1d1a16', 'stroke-width': 2 }));
+        ctx.svg.append(text(W / 2, 172, '(no sign...)', { size: 18, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 }));
+      }
+      ctx.svg.append(person({ x: 300, y: 304, s: .9 }));
+      if (variant !== 'safe' && Math.random() < 0.5) ctx.svg.append(crocEyes({ x: 200, y: 352, s: .6 }));
       ctx.buttons([
         { label: 'Jump in', ok: ctx.correct === 'swim' },
         { label: 'Stay out', ok: ctx.correct === 'stay' }
@@ -136,11 +366,10 @@ export const GAMES = [
 
   // 3. Camping: drag the tent beyond the 50 m line.
   {
-    id: 'croc-camp', prompt: 'PITCH IT FAR!', bg: '#c9b27a',
+    id: 'croc-camp', prompt: 'PITCH IT FAR!', bg: '#8fb85a', ownBackdrop: true,
     setup(ctx) {
       ctx.svg.append(
-        el('rect', { x: 0, y: 0, width: W, height: 150, fill: 'rgba(140,180,90,.4)' }),
-        water(400, 80),
+        crocCampScene(),
         el('line', { x1: 0, y1: 150, x2: W, y2: 150, stroke: '#1d1a16', 'stroke-width': 3, 'stroke-dasharray': '10 8' }),
         text(312, 142, '50 m', { size: 20 }),
         text(W / 2, 80, 'DRAG THE TENT UP HERE', { size: 15, fill: 'rgba(29,26,22,.5)' }),
