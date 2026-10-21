@@ -170,6 +170,8 @@ export function createApp(repo, opts = {}) {
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
 
   // ---- static web game ----
+  // Friendly URL for the sandbox tester (same screen as /?admin=1).
+  app.get(['/admin', '/debug'], (req, res) => res.redirect('/?admin=1'));
   app.get('/sw.js', (req, res) => { res.set('Cache-Control', 'no-cache'); res.sendFile(path.join(WEB_DIR, 'sw.js')); });
   app.get('/booth', (req, res) => res.sendFile(path.join(WEB_DIR, 'booth.html')));
   app.use(express.static(WEB_DIR, { maxAge: '1h', setHeaders: (res, p) => { if (p.endsWith('.html')) res.set('Cache-Control', 'no-cache'); } }));

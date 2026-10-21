@@ -42,8 +42,10 @@ const state = {
   // Journey mode: where we are on the road trip
   locationIndex: 0, roundInLocation: 0, pendingIntro: true, furthest: 0
 };
-// Admin tester (?admin=1): play one chosen mini-game; lives, score, coins and the leaderboard are untouched.
+// Admin tester (?admin=1 or /admin): play any mini-game or mode as a sandbox.
+// A sandbox run never saves anything: no best score, coins, badges, fail stats or leaderboard entry.
 let forcedGame = null, adminMode = false, adminLocationIndex = 0;
+let adminSearch = '', adminTimerScale = 1, adminDebug = true, adminLastGame = null, adminLastLoc = 0;
 const byId = (id) => GAMES.find(g => g.id === id);
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -122,8 +124,8 @@ function showLocationIntro(loc, done) {
 function advanceLocation() {
   // Counts on past Uluru (wraps back to Darwin), so a great run can do a second lap.
   state.locationIndex++;
-  saveFurthest(state.locationIndex);
-  if (locationAt(state.locationIndex).id === 'uluru' && !DEMO) {
+  if (!adminMode) saveFurthest(state.locationIndex);
+  if (locationAt(state.locationIndex).id === 'uluru' && !DEMO && !adminMode) {
     const fresh = badges.grant1('uluru');
     state.newBadges.push(...fresh);
     if (fresh.length) social.celebrate(fresh);
@@ -185,11 +187,11 @@ function resetHud() {
   renderLives();
   music.setTempo(132);
   document.body.classList.toggle('daily-mode', state.mode === 'daily');
-  document.body.classList.toggle('journey-mode', state.mode === 'journey' || adminMode);
+  document.body.classList.toggle('journey-mode', state.mode === 'journey' || (adminMode && state.mode === 'test'));
 }
 
 function playRound() {
-  if (state.mode === 'journey' && !adminMode) {
+  if (state.mode === 'journey') {
     const loc = locationAt(state.locationIndex);
     if (state.roundInLocation >= loc.rounds) { advanceLocation(); return; }
     // "Now arriving" card at each new stop (the smoke test can skip it).
@@ -216,17 +218,30 @@ function addLocationBackdrop(svg, id) {
   if (node) svg.appendChild(document.importNode(node, true));
 }
 
+// Debug overlay for admin sandbox rounds: which game is running and how long it should last.
+function renderDebugHud(game, loc, seconds) {
+  const el = $('#debug-hud');
+  if (!el) return;
+  const on = adminMode && adminDebug;
+  el.hidden = !on;
+  if (!on) return;
+  el.textContent = `${state.mode}${game.boss ? ' · BOSS' : ''} · ${game.id} · ${loc.name} · round ${state.round} · ${seconds.toFixed(1)}s` +
+    (adminTimerScale !== 1 ? ` · timer ×${adminTimerScale}` : '');
+}
+
 function runRound() {
   state.round++;
   $('#hud-round').textContent = state.round;
   music.duck(false);
   const game = nextGame();
   // Journey rounds use the stop you are at; Classic and Daily rounds use the hazard's home location.
-  const journey = state.mode === 'journey' || adminMode;
+  const journey = state.mode === 'journey';
+  const sandboxTest = adminMode && state.mode === 'test';
   if (journey) { state.roundInLocation++; renderHudLocation(); }
-  const loc = journey ? locationAt(state.locationIndex) : homeLocationFor(game.id);
+  const loc = journey || sandboxTest ? locationAt(state.locationIndex) : homeLocationFor(game.id);
   music.setTempo(game.boss ? 190 : 132 + state.round * 4);
-  const seconds = game.seconds || roundSeconds(state.round);
+  const seconds = (game.seconds || roundSeconds(state.round)) * (adminMode ? adminTimerScale : 1);
+  renderDebugHud(game, loc, seconds);
   const stage = $('#stage');
   stage.innerHTML = '';
   stage.style.pointerEvents = '';
@@ -376,7 +391,7 @@ function renderStreak() {
 async function endRound(game, ok, ms) {
   const stage = $('#stage');
   const svg = stage.querySelector('svg');
-  if (adminMode) return endAdminRound(game, ok, svg);
+  if (adminMode && state.mode === 'test') return endAdminRound(game, ok, svg);
   // Record the result immediately (the animations below are only cosmetic).
   state.results.push({ g: game.id, ok, ms: Math.round(ms) });
   let bonus = 0;
@@ -391,7 +406,7 @@ async function endRound(game, ok, ms) {
   } else {
     state.streak = 0;
     state.lives--;
-    if (!DEMO) { const f = store.get('tes_fails', {}); f[game.id] = (f[game.id] || 0) + 1; store.set('tes_fails', f); }
+    if (!DEMO && !adminMode) { const f = store.get('tes_fails', {}); f[game.id] = (f[game.id] || 0) + 1; store.set('tes_fails', f); }
     navigator.vibrate?.([80, 40, 120]);
     shake(stage, 12);
     music.duck(true);
@@ -436,8 +451,9 @@ async function endAdminRound(game, ok, svg) {
   if (ok) { sfx.win(); confetti(45); await wait(550); }
   else { const snd = await playFail(game.id, svg); (sfx[snd] || sfx.lose)(); await wait(900); }
   showResultCard(game, ok);
-  $('#result-streak').textContent = '🛠️ Admin test round: nothing was saved';
-  setTimeout(showAdmin, ok ? 1500 : 2300);
+  adminLastGame = game.id;
+  $('#result-streak').textContent = '🛠️ Sandbox test round: nothing was saved';
+  setTimeout(() => showAdmin(`Tested ${GAME_LABELS[game.id] || game.id}. Nothing was saved.`), ok ? 1500 : 2300);
 }
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -448,6 +464,11 @@ function gameOver() {
   if (!DEMO) music.play('menu');
   sfx.over();
   if (DEMO) { show('screen-over'); $('#over-score').textContent = state.score; setTimeout(() => startGame('classic'), 3500); return; }
+  if (adminMode) {
+    const survived = state.results.filter(r => r.ok).length;
+    showAdmin(`Sandbox ${state.mode} run finished: ${state.score} points, survived ${survived}/${state.results.length} rounds. Nothing was saved.`);
+    return;
+  }
   const durationMs = Math.round(performance.now() - state.startedAt);
   state.runLocalId = api.queueRun({
     mode: state.mode,
@@ -841,24 +862,40 @@ function showCharacters() {
   renderCharacters();
 }
 
-// ---------- admin tester (?admin=1) ----------
-// Pick a location for the backdrop, then tap any mini-game to play it straight away.
-function playAdminGame(gameId) {
+// ---------- admin tester (?admin=1 or /admin) ----------
+// Sandbox runs: look at any location's backdrop, replay one mini-game, or play a whole
+// Classic / Daily / Journey run from a stop. Nothing is ever saved.
+
+function playAdminGame(gameId, locationIndex = adminLocationIndex) {
+  adminLastGame = gameId;
+  adminLastLoc = locationIndex;
+  startAdminRun('test', { gameId, locationIndex });
+}
+
+function startAdminRun(mode, { gameId = null, locationIndex = 0 } = {}) {
   sfx.unlock();
   music.play('play');
   forcedGame = gameId;
   adminMode = true;
   Object.assign(state, {
-    mode: 'classic', dailyDay: null, round: 0, lives: MAX_LIVES, score: 0, results: [], startedAt: performance.now(),
-    bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], challenge: null,
-    locationIndex: adminLocationIndex, roundInLocation: 0, pendingIntro: false
+    mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [],
+    startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], challenge: null,
+    locationIndex, roundInLocation: 0, pendingIntro: false
   });
   social.startRun(null);
   resetHud();
-  runRound();
+  if (mode === 'test') renderHudLocation();
+  playRound();
 }
 
 function renderAdmin() {
+  renderAdminLocations();
+  renderAdminGames();
+  const replay = $('#admin-replay');
+  if (replay) replay.hidden = !adminLastGame;
+}
+
+function renderAdminLocations() {
   const locRow = $('#admin-locs');
   locRow.innerHTML = '';
   LOCATIONS.forEach((loc, i) => {
@@ -869,12 +906,20 @@ function renderAdmin() {
     b.addEventListener('click', () => { adminLocationIndex = i; renderAdmin(); });
     locRow.appendChild(b);
   });
-  // This location's mini-games first, then the rest (bosses last).
+}
+
+function renderAdminGames() {
   const here = locationAt(adminLocationIndex).games;
+  // This location's mini-games first, then the rest (bosses last).
   const ordered = [...GAMES.filter(g => here.includes(g.id)), ...GAMES.filter(g => !here.includes(g.id))];
+  const q = adminSearch.trim().toLowerCase();
+  const list = q ? ordered.filter(g => `${g.id} ${GAME_LABELS[g.id] || ''} ${g.prompt}`.toLowerCase().includes(q)) : ordered;
   const grid = $('#admin-games');
   grid.innerHTML = '';
-  for (const gme of ordered) {
+  if (!list.length) {
+    grid.innerHTML = '<p class="sub small" style="grid-column:1/-1">No mini-games match that search.</p>';
+  }
+  for (const gme of list) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'admin-game' + (here.includes(gme.id) ? ' here' : '');
@@ -884,13 +929,17 @@ function renderAdmin() {
     b.addEventListener('click', () => playAdminGame(gme.id));
     grid.appendChild(b);
   }
+  const count = $('#admin-count');
+  if (count) count.textContent = `${list.length} of ${GAMES.length}${q ? ' match' : ''}`;
 }
 
-function showAdmin() {
+function showAdmin(message = '') {
   adminMode = false;
   forcedGame = null;
   show('screen-admin');
   renderAdmin();
+  const msg = $('#admin-msg');
+  if (msg) msg.textContent = message;
 }
 
 function playRandomHere() {
@@ -982,10 +1031,23 @@ function init() {
   if (ADMIN) {
     const adminBtn = $('#btn-admin');
     adminBtn.hidden = false;
-    adminBtn.addEventListener('click', showAdmin);
+    adminBtn.addEventListener('click', () => showAdmin());
     $('#admin-random').addEventListener('click', playRandomHere);
-    $('#admin-play').addEventListener('click', () => startGame('journey'));
+    $('#admin-play-classic').addEventListener('click', () => startAdminRun('classic', { locationIndex: adminLocationIndex }));
+    $('#admin-play-daily').addEventListener('click', () => startAdminRun('daily', { locationIndex: adminLocationIndex }));
+    $('#admin-play-journey').addEventListener('click', () => startAdminRun('journey', { locationIndex: adminLocationIndex }));
+    $('#admin-replay').addEventListener('click', () => { if (adminLastGame) playAdminGame(adminLastGame, adminLastLoc); });
     $('#admin-menu').addEventListener('click', () => show('screen-menu'));
+    $('#admin-search').addEventListener('input', (e) => { adminSearch = e.target.value; renderAdminGames(); });
+    const speed = $('#admin-speed');
+    speed.value = String(adminTimerScale);
+    speed.addEventListener('change', (e) => { adminTimerScale = Number(e.target.value) || 1; });
+    const debug = $('#admin-debug');
+    debug.checked = adminDebug;
+    debug.addEventListener('change', (e) => {
+      adminDebug = e.target.checked;
+      if (!adminDebug) $('#debug-hud').hidden = true;
+    });
   }
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('screen-menu')));
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));

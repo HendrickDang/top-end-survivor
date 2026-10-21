@@ -217,6 +217,9 @@ test('qr code and static game are served', async () => {
   const page = await fetch(base + '/');
   assert.match(await page.text(), /Top End Survivor/);
   assert.equal((await fetch(base + '/booth')).status, 200);
+  const admin = await fetch(base + '/admin', { redirect: 'manual' });
+  assert.equal(admin.status, 302);
+  assert.equal(admin.headers.get('location'), '/?admin=1');
 });
 
 test('admin endpoints need the token', async () => {

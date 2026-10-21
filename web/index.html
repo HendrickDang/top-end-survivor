@@ -59,6 +59,7 @@
       <div class="timer"><div class="timer-bar" id="timer-bar"></div></div>
       <div class="stage" id="stage"></div>
       <div class="banner" id="banner" aria-live="assertive"></div>
+      <div class="debug-hud" id="debug-hud" hidden aria-hidden="true"></div>
 
       <!-- Journey: "now arriving" location card -->
       <div class="loc-intro" id="loc-intro" role="status" aria-live="polite">
@@ -178,16 +179,45 @@
       </div>
     </section>
 
-    <!-- ADMIN / DEBUG (enabled with ?admin=1) -->
+    <!-- ADMIN / DEBUG (enabled with ?admin=1 or /admin) -->
     <section class="screen" id="screen-admin" aria-label="Admin mini-game tester">
       <div class="panel">
-        <h2>Admin</h2>
-        <p class="sub">Testing tools. Pick a location, then jump straight into any mini-game. Lives, score, coins and the leaderboard are left untouched.</p>
+        <h2>🛠️ Admin</h2>
+        <p class="sub">Sandbox mode: pick any location, mini-game or mode and jump straight in. Scores, coins, badges and the leaderboard are never changed.</p>
+
+        <h3>Play a full run</h3>
+        <div class="admin-actions">
+          <button class="btn btn-primary" id="admin-play-classic">▶️ Classic</button>
+          <button class="btn" id="admin-play-daily">📅 Today's Daily</button>
+          <button class="btn" id="admin-play-journey">🗺️ Journey from here</button>
+        </div>
+
+        <h3>Debug options</h3>
+        <div class="admin-options">
+          <label>Round timer
+            <select id="admin-speed">
+              <option value="0.5">0.5× (fast)</option>
+              <option value="1" selected>1× (normal)</option>
+              <option value="1.5">1.5× (slow)</option>
+              <option value="2">2× (very slow)</option>
+            </select>
+          </label>
+          <label class="admin-check"><input type="checkbox" id="admin-debug" checked> Show game id and timer</label>
+        </div>
+
+        <h3>Location / backdrop</h3>
         <div class="tabs admin-locs" id="admin-locs"></div>
-        <button class="btn btn-primary" id="admin-random">Random mini-game here</button>
+
+        <h3>Mini-games</h3>
+        <div class="admin-search">
+          <input id="admin-search" type="search" placeholder="Find by name, prompt or id..." autocomplete="off" spellcheck="false">
+          <span id="admin-count" class="sub small"></span>
+        </div>
+        <button class="btn btn-primary" id="admin-random">🎲 Random mini-game here</button>
         <div class="admin-games" id="admin-games"></div>
+        <p class="form-msg" id="admin-msg" aria-live="polite"></p>
         <div class="menu-row">
-          <button class="btn" id="admin-play">Play Journey</button>
+          <button class="btn" id="admin-replay" hidden>🔁 Replay last</button>
           <button class="btn" id="admin-menu">Back to menu</button>
         </div>
       </div>

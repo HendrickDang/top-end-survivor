@@ -48,7 +48,7 @@ Minh's Journey, characters, fail cartoons and music, merged with everything from
 - **A fail cartoon for every hazard:** after the in-game fail animation, the result card plays a looping cartoon of exactly what went wrong (the croc drags the tent into the billabong, the ute floats away, lobster mode in the sun), starring your character.
 - **Location backdrops:** every round is drawn over a real NT landscape: the stop you are at in Journey, or the hazard's home region in Classic and Daily.
 - **Soundtrack:** a looping track that fades in on the first tap, speeds up as rounds get faster (and a lot for bosses), ducks under the fail sounds, pauses in a background tab and is cached for offline play. The mute button covers music and effects.
-- **Admin tester** (`/?admin=1`): pick a location and jump straight into any mini-game. Nothing is saved.
+- **Admin tester** (`/?admin=1` or `/admin`): search for any mini-game, pick a location, or start a full Classic, Daily or Journey sandbox run. Nothing is saved.
 
 ### Friends, towns and proof it works (v1.3)
 
@@ -162,7 +162,7 @@ curl -H "X-Admin-Token: $TOKEN" https://<host>/api/admin/export.csv -o rounds.cs
 
 Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box, skips the quick check and returns to the menu after 45 s).
 
-Mini-game tester: `/?admin=1` (pick a location, tap any mini-game; lives, score, coins and the leaderboard are untouched).
+Mini-game tester: `/admin` (or `/?admin=1`). Search any mini-game, pick a location for the backdrop, start a full Classic / Daily / Journey sandbox run, slow the round timer down, and turn on the debug overlay. Scores, lives, coins, badges and the leaderboard are untouched.
 
 Judge's tour: `/?judge=1`. Booth keys: `A` toggles attract mode, `N` shows the next stats panel (hazards, Town Battle, learning).
 

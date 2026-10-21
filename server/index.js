@@ -9,5 +9,6 @@ app.listen(port, () => {
   console.log(`Top End Survivor running on http://localhost:${port}`);
   console.log(`  Game:  http://localhost:${port}/`);
   console.log(`  Booth: http://localhost:${port}/booth`);
+  console.log(`  Admin: http://localhost:${port}/admin`);
   if (!process.env.ADMIN_TOKEN) console.log('  (admin endpoints disabled - set ADMIN_TOKEN to enable)');
 });
