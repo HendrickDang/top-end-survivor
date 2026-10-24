@@ -156,21 +156,27 @@ const SCENES = {
     cap(190, 34, 'GET OUT!', { size: 15, fill: '#c8412f' }),
 
   // 13. Drove into the dust: swallowed by the brown cloud.
-  'dust-storm': (p) => rect(0, 0, W, 150, '#a9c46a') + rect(96, 0, 60, 150, '#6d6d6d') +
+  'dust-storm': (p) => rect(0, 0, W, 150, '#c9a15f') +
+    rect(76, 0, 20, 150, '#b58f5c') + rect(156, 0, 20, 150, '#b58f5c') +
+    rect(96, 0, 60, 150, '#5e5e5e') +
+    `<path d="M100 0 v150 M152 0 v150" stroke="#f6e7c8" stroke-width="2.5" opacity=".9"/>` +
+    `<path d="M126 0 v14 M126 26 v14 M126 52 v14 M126 78 v14 M126 104 v14 M126 130 v14" stroke="#f6e7c8" stroke-width="3"/>` +
     `<g class="fv f-spin" style="transform-origin:50% 50%" opacity=".95">
-       ${circle(150, 34, 52, 'rgba(158,128,88,.95)')}${circle(200, 60, 46, 'rgba(158,128,88,.95)')}${circle(120, 66, 40, 'rgba(158,128,88,.95)')}
-       ${circle(214, 20, 40, 'rgba(158,128,88,.95)')}${circle(160, 90, 36, 'rgba(158,128,88,.95)')}
+       ${circle(150, 34, 52, 'rgba(160,120,64,.95)')}${circle(200, 60, 46, 'rgba(143,101,49,.95)')}${circle(120, 66, 40, 'rgba(177,135,75,.95)')}
+       ${circle(214, 20, 40, 'rgba(143,101,49,.95)')}${circle(160, 90, 36, 'rgba(160,120,64,.95)')}${circle(226, 108, 34, 'rgba(122,86,42,.95)')}
      </g>` +
     `<g class="fv f-drift">
        <rect x="104" y="104" width="46" height="30" rx="8" fill="#c8412f" stroke="${IN}" stroke-width="3"/>
        <rect x="110" y="110" width="30" height="12" rx="3" fill="#9fd8ef" stroke="${IN}" stroke-width="2"/>
+       <rect x="98" y="108" width="7" height="22" rx="2" fill="#cfd6dc" stroke="${IN}" stroke-width="2"/>
+       <circle cx="147" cy="108" r="3" fill="#ffb400" stroke="${IN}" stroke-width="1.5"/>
      </g>` +
     `<g class="fv f-spin" style="transform-origin:50% 50%"><circle cx="152" cy="140" r="11" fill="#2b2b2b" stroke="${IN}" stroke-width="3"/></g>` +
     cap(56, 40, "CAN'T SEE!", { size: 14, fill: '#fffaf0', stroke: IN }),
 
   // 14. Caught in a flash flood: tumbling down the creek.
-  'flash-flood': (p) => rect(0, 0, W, 150, '#e6d3a3') + rect(0, 58, W, 92, '#2f7f8f') +
-    `<path d="M0 66 q34 -10 68 0 t68 0 t68 0 t68 0" stroke="#fffaf0" stroke-width="4" fill="none" opacity=".5"/>` +
+  'flash-flood': (p) => rect(0, 0, W, 150, '#e6d3a3') + rect(0, 58, W, 92, '#9c6b3a') +
+    `<path d="M0 66 q34 -10 68 0 t68 0 t68 0 t68 0" stroke="#f6e7c8" stroke-width="4" fill="none" opacity=".65"/>` +
     `<g class="fv f-drift"><rect x="150" y="30" width="6" height="46" fill="#8a6a3a" stroke="${IN}" stroke-width="2"/><rect x="134" y="16" width="38" height="15" rx="3" fill="#ffd25e" stroke="${IN}" stroke-width="3"/></g>` +
     victim({ x: 92, y: 96, s: .85, skin: p.skin, shirt: p.shirt, cls: 'f-tumble', origin: '50% 50%' }) +
     `<g class="fv f-splash">${circle(66, 74, 9, '#fffaf0')}${circle(122, 66, 7, '#fffaf0')}</g>` +

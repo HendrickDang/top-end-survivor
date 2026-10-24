@@ -595,3 +595,20 @@ body.battle-mode .lives { visibility: hidden; }
 .help-list span { font-size: .92rem; line-height: 1.2; }
 .help-links { display: flex; flex-direction: column; gap: 4px; }
 .help-links a { color: var(--teal-2); font-weight: 700; }
+
+/* Croc Creek boss background: a little life in the scene. */
+.cc-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: cc-sway 5.4s ease-in-out infinite; }
+@keyframes cc-sway { 0%, 100% { transform: rotate(-2.2deg); } 50% { transform: rotate(2.2deg); } }
+.cc-bob { transform-box: fill-box; transform-origin: 50% 50%; animation: cc-bob 3.8s ease-in-out infinite; }
+@keyframes cc-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3.5px); } }
+.cc-glimmer { animation: cc-glimmer 3.4s ease-in-out infinite; }
+@keyframes cc-glimmer { 0%, 100% { opacity: .22; } 50% { opacity: .62; } }
+.cc-fly { animation: cc-fly 6.5s ease-in-out infinite; }
+@keyframes cc-fly {
+  0%, 100% { transform: translate(0, 0); }
+  22% { transform: translate(26px, -15px); }
+  48% { transform: translate(44px, 3px); }
+  72% { transform: translate(15px, -23px); }
+}
+.cc-drift { animation: cc-drift 16s ease-in-out infinite alternate; }
+@keyframes cc-drift { from { transform: translateX(-7px); } to { transform: translateX(11px); } }

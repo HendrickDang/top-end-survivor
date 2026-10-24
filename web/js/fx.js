@@ -158,10 +158,11 @@ const FAILS = {
     bigWord(svg, 'BLOWN AWAY!', '#d9d2f0', 110);
     return 'whoosh';
   },
-  async float(svg) {
+  async float(svg, gameId) {
+    const muddy = gameId === 'flash-flood';
     const flood = g([
-      el('rect', { x: -20, y: 0, width: W + 40, height: H, fill: 'rgba(47,127,143,.85)' }),
-      el('path', { d: `M-20 0 q25 -16 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0`, stroke: '#fffaf0', 'stroke-width': 6, fill: 'none', opacity: .7 })
+      el('rect', { x: -20, y: 0, width: W + 40, height: H, fill: muddy ? 'rgba(156,107,58,.9)' : 'rgba(47,127,143,.85)' }),
+      el('path', { d: `M-20 0 q25 -16 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0`, stroke: muddy ? '#f6e7c8' : '#fffaf0', 'stroke-width': 6, fill: 'none', opacity: .7 })
     ]);
     svg.appendChild(flood);
     flood.animate?.([{ transform: `translate(0px,${H}px)` }, { transform: `translate(0px,${H * .35}px)` }], { duration: 600, easing: 'ease-out', fill: 'forwards' });
@@ -283,7 +284,7 @@ const FAIL_FOR = {
 export async function playFail(gameId, svg) {
   const kind = FAIL_FOR[gameId] || 'chomp';
   if (reduced()) { bigWord(svg, 'OOPS!'); return 'lose'; }
-  try { return await FAILS[kind](svg); } catch { return 'lose'; }
+  try { return await FAILS[kind](svg, gameId); } catch { return 'lose'; }
 }
 
 // Cheeky, kid-safe titles shown on the result card.
