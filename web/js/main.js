@@ -842,7 +842,7 @@ function renderOverTown() {
 // ---------- leaderboard ----------
 async function showBoard(period = 'today') {
   show('screen-board');
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
+  document.querySelectorAll('#screen-board .tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
   const list = $('#board-list'), msg = $('#board-msg');
   list.innerHTML = '';
   msg.textContent = 'Loading...';
@@ -1162,7 +1162,8 @@ function init() {
     });
   }
   document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('screen-menu')));
-  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
+  // Only the leaderboard's tabs: the Wardrobe and Admin screens have their own .tab buttons.
+  document.querySelectorAll('#screen-board .tab').forEach(t => t.addEventListener('click', () => showBoard(t.dataset.period)));
   $('#submit-form').addEventListener('submit', submitName);
   window.addEventListener('online', updateNet);
   window.addEventListener('offline', updateNet);

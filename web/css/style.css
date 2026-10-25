@@ -612,3 +612,6 @@ body.battle-mode .lives { visibility: hidden; }
 }
 .cc-drift { animation: cc-drift 16s ease-in-out infinite alternate; }
 @keyframes cc-drift { from { transform: translateX(-7px); } to { transform: translateX(11px); } }
+
+/* Menu: never squash items when the menu is taller than the screen (it scrolls instead). */
+.menu-content > * { flex-shrink: 0; }
