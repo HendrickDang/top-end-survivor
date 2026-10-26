@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Top End Survivor - an NT safety micro-game for web and Android (CDU IT Code Fair 2026, CAP003)",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "start": "npm --prefix server start",
     "dev": "npm --prefix server run dev",

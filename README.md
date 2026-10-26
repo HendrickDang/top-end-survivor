@@ -237,4 +237,4 @@ This game is a learning tool, not medical advice. In an emergency call 000.
 
 ## License
 
-MIT
+Copyright © 2026 Saltie Studios (Van Hoi (Hendrick) Dang, Le Nhat Minh Tran, Phuong Vy Ho). All rights reserved. See [LICENSE](LICENSE).
