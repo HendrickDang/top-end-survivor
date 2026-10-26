@@ -297,7 +297,7 @@
       }
       svg.innerHTML = out;
       document.getElementById('tlist').innerHTML = entries.slice(0, 7).map(e =>
-        `<li><span>${short(e.town)}</span><b>${e.points}</b><small>${e.players} player${e.players > 1 ? 's' : ''} · best ${e.best}</small></li>`).join('') ||
+        `<li><span>${short(e.town)}</span><b>${num(e.points)}</b><small>${num(e.players)} player${num(e.players) > 1 ? 's' : ''} · best ${num(e.best)}</small></li>`).join('') ||
         '<li style="list-style:none"><span>No towns yet. Pick yours in the game!</span></li>';
     }
 
@@ -347,6 +347,7 @@
     $('#url').textContent = playUrl.replace(/^https?:\/\//, '');
     $('#qr').src = `${api}/api/qr.svg?url=${encodeURIComponent(playUrl)}`;
 
+    const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let lastTop = null, lastFeed = '', soundOn = false, sfx = null;
     const DEATH = {
@@ -421,6 +422,9 @@
       fetch(`${api}/api/admin/config`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': params.get('token') }, body: JSON.stringify({ voteUrl: voteParam }) })
         .then(r => { $('#status').textContent = r.ok ? 'Vote link saved for every device' : 'Vote link NOT saved: check the admin token'; })
         .catch(() => {});
+      // Don't leave the admin token showing in the address bar on a public screen.
+      const clean = new URL(location.href); clean.searchParams.delete('token');
+      history.replaceState(null, '', clean.pathname + clean.search);
     }
     showVote(voteParam || (window.TES_CONFIG && window.TES_CONFIG.VOTE_URL) || '');
     const checkVote = () => fetch(`${api}/api/config`).then(r => r.json()).then(c => showVote(voteParam || c.voteUrl)).catch(() => {});
@@ -456,14 +460,14 @@
           if (lastFeed && soundOn && sfx) sfx.chomp();
           lastFeed = feedKey;
           const items = fd.entries.map(e => e.mode === 'battle'
-            ? `<span>⚔️ <b>${esc(e.name || 'A mystery player')}</b> scored ${e.score} in a Booth Battle</span>`
-            : `<span>💀 <b>${esc(e.name || 'A mystery player')}</b>${e.town ? ' from ' + esc(townName(e.town).split(' &')[0]) : ''} ${DEATH[e.killedBy] || 'got caught out'} on round ${e.rounds} (${e.score} pts)${e.challengeOf ? ' ⚔️' : ''}</span>`);
+            ? `<span>⚔️ <b>${esc(e.name || 'A mystery player')}</b> scored ${num(e.score)} in a Booth Battle</span>`
+            : `<span>💀 <b>${esc(e.name || 'A mystery player')}</b>${e.town ? ' from ' + esc(townName(e.town).split(' &')[0]) : ''} ${DEATH[e.killedBy] || 'got caught out'} on round ${num(e.rounds)} (${num(e.score)} pts)${e.challengeOf ? ' ⚔️' : ''}</span>`);
           const tr = $('#ticker');
           tr.innerHTML = items.join('');
           tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');
         }
         $('#board').innerHTML = lb.entries.map((e, i) =>
-          `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${e.score}</span></li>`).join('');
+          `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
         lastTop = top;
         $('#board-empty').style.display = lb.entries.length ? 'none' : '';
         $('#k-players').textContent = st.players;
@@ -561,15 +565,15 @@
         $('#blanes').innerHTML = b.players.slice(0, 12).map((p, i) => `<div class="lane ${i === 0 && p.score > 0 ? 'lead' : ''}">
           <span class="rk">${i === 0 && p.score > 0 ? '👑' : '#' + p.rank}</span>${avatar(p)}<span class="nm">${esc(p.name)}</span>
           <span class="cells">${b.games.map((g, k) => `<i class="${k < p.marks.length ? (p.marks[k] ? 'ok' : 'bad') : ''}">${GAME_ICONS[g] || ''}</i>`).join('')}</span>
-          <span class="sc">${p.score}</span></div>`).join('');
+          <span class="sc">${num(p.score)}</span></div>`).join('');
       } else if (b.status === 'done') {
         bview('done');
         if (bt.celebrated) return;
         bt.celebrated = true;
         clearTimeout(bt.timer); bt.timer = 0;
         const top = b.players.slice(0, 3), order = [top[1], top[0], top[2]].filter(Boolean);
-        $('#bpodium').innerHTML = order.map(p => `<div class="bpod p${p.rank}">${avatar(p, 'win')}<b>${['🥇', '🥈', '🥉'][p.rank - 1]} ${esc(p.name)}</b><span>${p.score}</span></div>`).join('');
-        $('#brest').innerHTML = b.players.slice(3, 20).map(p => `<span>#${p.rank} ${esc(p.name)} ${p.score}</span>`).join('');
+        $('#bpodium').innerHTML = order.map(p => `<div class="bpod p${p.rank}">${avatar(p, 'win')}<b>${['🥇', '🥈', '🥉'][p.rank - 1]} ${esc(p.name)}</b><span>${num(p.score)}</span></div>`).join('');
+        $('#brest').innerHTML = b.players.slice(3, 20).map(p => `<span>#${num(p.rank)} ${esc(p.name)} ${num(p.score)}</span>`).join('');
         confetti();
         if (soundOn && sfx) sfx.fanfare();
         bt.closeTimer = setTimeout(closeBattle, 60000);

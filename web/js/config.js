@@ -3,7 +3,6 @@
 //   - Web build served by our own server: leave '' (same origin).
 //   - Android (Capacitor) build: set to your deployed server URL,
 //     e.g. 'https://top-end-survivor.onrender.com'.
-// Can also be overridden at runtime with ?api=https://... (saved to localStorage).
 window.TES_CONFIG = {
   API_BASE: '',
   // Used only inside the Android app. Change this after you deploy the server.
@@ -16,12 +15,10 @@ window.TES_CONFIG = {
   APP_VERSION: '1.5.0'
 };
 (function () {
-  try {
-    var q = new URLSearchParams(location.search).get('api');
-    if (q) localStorage.setItem('tes_api', q);
-    var saved = localStorage.getItem('tes_api');
-    if (saved) window.TES_CONFIG.API_BASE = saved;
-  } catch (e) { /* storage blocked: keep default */ }
+  // Security: the server address used to be changeable with a ?api= link and was remembered,
+  // so a crafted link could point a phone at someone else's server for good. Not any more:
+  // the address comes only from this file. Clear any value saved by an older version.
+  try { localStorage.removeItem('tes_api'); } catch (e) { /* storage blocked */ }
   // Inside the Android app, the page origin is https://localhost - fall back to the deployed server.
   if (!window.TES_CONFIG.API_BASE && /^(capacitor:|https?:\/\/localhost$)/.test(location.origin) && window.Capacitor) {
     window.TES_CONFIG.API_BASE = window.TES_CONFIG.ANDROID_API_BASE || '';

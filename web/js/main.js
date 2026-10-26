@@ -812,7 +812,7 @@ function renderOverWho() {
 function renderOverHome(refetch = true) {
   const cfg = window.TES_CONFIG || {};
   // Pick up a vote link set on the server since this page loaded.
-  if (refetch && !PARAMS.get('vote')) api.getConfig().then(c => { if (c.voteUrl && c.voteUrl !== cfg.VOTE_URL) { cfg.VOTE_URL = c.voteUrl; renderOverHome(false); } }).catch(() => {});
+  if (refetch) api.getConfig().then(c => { if (c.voteUrl && c.voteUrl !== cfg.VOTE_URL) { cfg.VOTE_URL = c.voteUrl; renderOverHome(false); } }).catch(() => {});
   const voteUrl = cfg.VOTE_URL || '';
   const vote = $('#btn-vote');
   vote.hidden = !voteUrl || KIOSK;
@@ -851,7 +851,7 @@ async function showBoard(period = 'today') {
     if (period === 'towns') { await social.renderTownsBoard(list, msg); return; }
     const data = await api.getLeaderboard(period);
     list.innerHTML = data.entries.map(e =>
-      `<li class="${e.mine ? 'me' : ''}"><span class="n">${escapeHtml(e.name)}</span><span class="s">${e.score}</span></li>`).join('');
+      `<li class="${e.mine ? 'me' : ''}"><span class="n">${escapeHtml(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
     msg.textContent = data.entries.length ? '' : 'No scores yet. Be the first!';
   } catch {
     msg.textContent = 'Leaderboard needs internet. Your scores are saved and will upload later.';
@@ -870,6 +870,8 @@ function renderLearn() {
       </div>
     </div>`).join('');
 }
+
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1126,9 +1128,9 @@ function init() {
   initClassroom(appCtx);
   social.loadIncoming(PARAMS);
   if (!DEMO) joinFromUrl(PARAMS);
-  // People's Choice link: set on the server on the day (no code change), or ?vote=<link> on a booth device.
-  if (/^https?:\/\//.test(PARAMS.get('vote') || '')) window.TES_CONFIG.VOTE_URL = PARAMS.get('vote');
-  else api.getConfig().then(c => { if (c.voteUrl) window.TES_CONFIG.VOTE_URL = c.voteUrl; }).catch(() => { /* offline: keep config.js */ });
+  // People's Choice link: set on the server on the day (no code change). Not taken from the page
+  // address, so a crafted link can't swap in a different "vote" site.
+  api.getConfig().then(c => { if (c.voteUrl) window.TES_CONFIG.VOTE_URL = c.voteUrl; }).catch(() => { /* offline: keep config.js */ });
   if (!DEMO && /^[A-Za-z]{4}$/.test(PARAMS.get('battle') || '')) battle.openJoin(PARAMS.get('battle'));
   social.renderChallengeResults();
   $('#btn-share').addEventListener('click', doShare);

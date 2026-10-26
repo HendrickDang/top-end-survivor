@@ -64,7 +64,13 @@ export function createBattles({ now = () => Date.now(), onFinish = () => {} } = 
   return {
     create() {
       sweep();
-      if (battles.size >= MAX_BATTLES) return { error: 'Too many battles right now. Try again in a minute.' };
+      // Full (for example someone scripted lots of empty battles): make room by dropping the oldest
+      // battle that isn't racing right now, so the booth can always open a new one.
+      if (battles.size >= MAX_BATTLES) {
+        const idle = [...battles.values()].filter(x => tick(x).status !== 'live').sort((x, y) => x.createdAt - y.createdAt)[0];
+        if (idle) battles.delete(idle.code);
+        else return { error: 'Too many battles right now. Try again in a minute.' };
+      }
       const b = {
         code: newCode(), hostKey: crypto.randomBytes(12).toString('hex'), status: 'lobby',
         games: pick(REGULAR, BATTLE_ROUNDS), createdAt: now(), startsAt: null, endsAt: null, players: new Map()

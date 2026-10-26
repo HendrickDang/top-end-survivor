@@ -95,12 +95,13 @@ function poll() {
 }
 
 const esc = (s) => app.escapeHtml(s);
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
 
 function playerList(b, { scores = false } = {}) {
   return b.players.map(p => `<li class="${p.id === me?.playerId ? 'me' : ''}">
       <span class="av">${characterSVG(p.character, 'idle')}</span>
-      <span class="n">${scores ? `<i>#${p.rank}</i> ` : ''}${esc(p.name)}</span>
-      ${scores ? `<span class="marks">${p.marks.map(ok => ok ? '🟩' : '🟥').join('')}</span><b>${p.score}</b>` : ''}
+      <span class="n">${scores ? `<i>#${num(p.rank)}</i> ` : ''}${esc(p.name)}</span>
+      ${scores ? `<span class="marks">${p.marks.map(ok => ok ? '🟩' : '🟥').join('')}</span><b>${num(p.score)}</b>` : ''}
     </li>`).join('');
 }
 
@@ -181,7 +182,7 @@ function showResult(b) {
   const order = [top[1], top[0], top[2]].filter(Boolean);
   $('#battle-podium').innerHTML = order.map(p => `<div class="pod pod-${p.rank}">
       <div class="av">${characterSVG(p.character, 'win')}</div>
-      <b>${['🥇', '🥈', '🥉'][p.rank - 1]} ${esc(p.name)}</b><span>${p.score}</span>
+      <b>${['🥇', '🥈', '🥉'][p.rank - 1]} ${esc(p.name)}</b><span>${num(p.score)}</span>
     </div>`).join('');
   if (mine && mine.rank === 1) {
     $('#battle-wait').textContent = '🏆 You won the Booth Battle!';

@@ -318,6 +318,17 @@ test('booth battle: join, start, race, podium, saved for stats', async () => {
   } finally { srv.close(); battles.stop(); }
 });
 
+test('booth battle: someone opening lots of empty battles can\'t lock the booth out', () => {
+  let clock = 0;
+  const battles = createBattles({ now: () => clock });
+  for (let i = 0; i < 300; i++) { clock++; assert.ok(battles.create().battle); }
+  clock++;
+  const booth = battles.create();
+  assert.ok(booth.battle, 'the booth can still open a battle');
+  assert.equal(battles.size(), 300);
+  battles.stop();
+});
+
 test('booth battle: ends after the time limit even if a phone wanders off', () => {
   let clock = 0;
   const battles = createBattles({ now: () => clock });

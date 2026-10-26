@@ -46,15 +46,17 @@ export function openTownPicker(onPick) {
   }));
 }
 
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
+
 export async function renderTownsBoard(list, msg) {
   const data = await api.getTowns('today');
   const mine = getTown();
   const max = Math.max(1, ...data.entries.map(e => e.points));
   list.innerHTML = data.entries.map(e => `
     <li class="${e.town === mine ? 'me' : ''}">
-      <span class="n">${app.escapeHtml(townName(e.town))}<small>${e.players} player${e.players > 1 ? 's' : ''}</small>
-        <i class="tbar" style="width:${Math.round(e.points / max * 100)}%"></i></span>
-      <span class="s">${e.points}</span>
+      <span class="n">${app.escapeHtml(townName(e.town))}<small>${num(e.players)} player${num(e.players) > 1 ? 's' : ''}</small>
+        <i class="tbar" style="width:${Math.round(num(e.points) / max * 100)}%"></i></span>
+      <span class="s">${num(e.points)}</span>
     </li>`).join('');
   msg.textContent = data.entries.length ? 'Each player\'s best score today counts for their town.' : 'No towns on the board yet. Put yours there!';
 }
@@ -68,7 +70,7 @@ export async function loadIncoming(params) {
     const daily = incoming.mode === 'daily' && incoming.day === incoming.today;
     $('#challenge-banner').hidden = false;
     const where = daily ? ' in today\'s Daily Challenge' : incoming.mode === 'journey' ? ' on the Journey' : '';
-    $('#challenge-text').innerHTML = `⚔️ <b>${app.escapeHtml(incoming.name)}</b> challenged you!<br>Beat <b>${incoming.score}</b> points${where}.`;
+    $('#challenge-text').innerHTML = `⚔️ <b>${app.escapeHtml(incoming.name)}</b> challenged you!<br>Beat <b>${num(incoming.score)}</b> points${where}.`;
     incoming.useDaily = daily;
   } catch {
     $('#challenge-banner').hidden = true;
@@ -153,7 +155,7 @@ export async function renderChallengeResults() {
     if (!entries.length) { box.hidden = true; return; }
     box.hidden = false;
     box.innerHTML = '<b>⚔️ Your challenges</b>' + entries.slice(0, 3).map(e =>
-      `<div>${e.beatYou ? '😱' : '🛡️'} ${app.escapeHtml(e.challenger)} ${e.beatYou ? `beat your ${e.yourScore} with <b>${e.theirScore}</b>` : `tried to beat your ${e.yourScore} (got ${e.theirScore})`}</div>`).join('');
+      `<div>${e.beatYou ? '😱' : '🛡️'} ${app.escapeHtml(e.challenger)} ${e.beatYou ? `beat your ${num(e.yourScore)} with <b>${num(e.theirScore)}</b>` : `tried to beat your ${num(e.yourScore)} (got ${num(e.theirScore)})`}</div>`).join('');
   } catch { box.hidden = true; }
 }
 

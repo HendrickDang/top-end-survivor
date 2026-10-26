@@ -66,10 +66,10 @@ const STEPS = [
         return `<div class="judge-kpis">
             <div><b>${pct(l.firstTry)}</b><span>survive a hazard the first time they see it</span></div>
             <div><b>${pct(l.laterTries)}</b><span>survive it on later attempts</span></div>
-            <div><b>${q.n ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : '-'}</b><span>optional safety check, before → after one game (${q.n || 0} players)</span></div>
+            <div><b>${q.n ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : '-'}</b><span>optional safety check, before → after one game (${Number(q.n) || 0} players)</span></div>
             ${groupKpi(st.groups)}
           </div>
-          <p class="small">Live from ${st.rounds} rounds played by ${st.players} players. Measured with no extra effort from players, plus an optional 3-question check and an optional "local or visitor?" tap.</p>
+          <p class="small">Live from ${Number(st.rounds) || 0} rounds played by ${Number(st.players) || 0} players. Measured with no extra effort from players, plus an optional 3-question check and an optional "local or visitor?" tap.</p>
           <ul class="judge-list"><li>🏫 <b>Classroom mode:</b> a teacher gets a class code and a live report of the hazards their class misses, with before → after quiz scores (<a href="class.html" target="_blank" rel="noopener">try it</a>)</li></ul>`;
       } catch { return '<p>Live numbers appear here when the server is online.</p>'; }
     }
@@ -80,7 +80,7 @@ const STEPS = [
       let towns = '';
       try {
         const t = await api.getTowns('all');
-        towns = t.entries.slice(0, 3).map((e, i) => `${['🥇', '🥈', '🥉'][i]} ${app.escapeHtml(townName(e.town))} ${e.points}`).join(' · ');
+        towns = t.entries.slice(0, 3).map((e, i) => `${['🥇', '🥈', '🥉'][i]} ${app.escapeHtml(townName(e.town))} ${Number(e.points) || 0}`).join(' · ');
       } catch { /* offline */ }
       return `<ul class="judge-list">
           <li>🗺️ <b>Journey:</b> a road trip from Darwin to Uluru, ${LOCATION_COUNT} stops, each with its own landscape and local hazards</li>
@@ -108,7 +108,7 @@ const STEPS = [
       return `${load}<ul class="judge-list">
           <li>🛡️ Server re-scores every run from per-round results: the leaderboard can't be faked</li>
           <li>📶 Offline first: runs queue on the phone and sync later (remote NT has patchy signal)</li>
-          <li>🧪 25 API tests + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
+          <li>🧪 26 API tests + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
           <li>⚔️ Booth Battles run in memory with server-side scoring; finished races still feed the learning stats</li>
           <li>🧩 One codebase for web, installable app and Android; SQLite today, Postgres-ready</li>
         </ul>`;
