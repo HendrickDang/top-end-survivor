@@ -28,7 +28,7 @@ jobs:
           python scripts/smoke_test.py http://localhost:8099 screenshots
       - name: Load test (200 simulated players)
         run: node scripts/load_test.mjs --url http://localhost:8099 --players 200 --concurrency 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: screenshots
@@ -60,7 +60,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: top-end-survivor-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
