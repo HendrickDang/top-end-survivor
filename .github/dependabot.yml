@@ -1,0 +1,18 @@
+# Dependabot: checks our packages every week and opens a pull request when an update
+# (especially a security fix) is available. Review and merge those PRs like normal changes.
+version: 2
+updates:
+  - package-ecosystem: npm          # server packages (Express, qrcode)
+    directory: /server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm          # Capacitor (Android app wrapper)
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions   # the CI workflow's actions
+    directory: /
+    schedule:
+      interval: monthly
