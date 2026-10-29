@@ -37,7 +37,7 @@ export const CHARACTERS = [
   },
   {
     id: 'mick', name: 'Mad Dog Mick', price: 450, accent: '#c8412f', skin: '#e0ac69', shirt: '#2b2b2b',
-    tagline: 'Hold my stubby.',
+    tagline: 'Watch this, mate.',
     winLine: 'Mick went the ton!', failLine: 'Mick stacked it.'
   },
   {
@@ -92,7 +92,7 @@ const shades = '<g><circle cx="82" cy="56" r="10" fill="' + INK + '"/><circle cx
 // ---------- the seven characters ----------
 const ART = {
 
-  // 1. Backpacker Barry - singlet, backpack, permanent hitchhiking thumb.
+  // 1. Backpacker Barry - singlet, backpack, a big friendly wave.
   barry(mood) {
     const skin = '#e0ac69';
     const win = mood === 'win', fail = mood === 'fail';
@@ -101,9 +101,12 @@ const ART = {
       : armL(armDown(46, skin), 56, 92)
         + armR(`<g class="ch-thumb" style="transform-box:view-box;transform-origin:145px 104px">
                 <rect x="136" y="74" width="19" height="36" rx="9" fill="${skin}" stroke="${INK}" stroke-width="4"/>
-                <circle cx="145" cy="70" r="12" fill="${skin}" stroke="${INK}" stroke-width="4"/>
-                <rect x="141.5" y="44" width="7" height="18" rx="3.5" fill="${skin}" stroke="${INK}" stroke-width="3"/>
-                <path d="M133 62 l12 0" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+                <rect x="133.5" y="46" width="6" height="16" rx="3" fill="${skin}" stroke="${INK}" stroke-width="2.5"/>
+                <rect x="139.5" y="42" width="6" height="18" rx="3" fill="${skin}" stroke="${INK}" stroke-width="2.5"/>
+                <rect x="145.5" y="42" width="6" height="18" rx="3" fill="${skin}" stroke="${INK}" stroke-width="2.5"/>
+                <rect x="151.5" y="46" width="6" height="16" rx="3" fill="${skin}" stroke="${INK}" stroke-width="2.5"/>
+                <rect x="124" y="60" width="16" height="7" rx="3.5" fill="${skin}" stroke="${INK}" stroke-width="2.5" transform="rotate(-35 132 64)"/>
+                <rect x="132" y="56" width="26" height="22" rx="9" fill="${skin}" stroke="${INK}" stroke-width="4"/>
               </g>`, 145, 104);
     return ground()
       + `<g class="ch-fig ${fail ? 'ch-wobble' : 'ch-bob'}">
@@ -193,7 +196,7 @@ const ART = {
       </g>`;
   },
 
-  // 4. Bush Mechanic Bazza - singlet, backwards cap, wrench and a stubby.
+  // 4. Bush Mechanic Bazza - singlet, backwards cap, wrench and a cold drink.
   bazza(mood) {
     const skin = '#8d5524';
     const win = mood === 'win', fail = mood === 'fail';
