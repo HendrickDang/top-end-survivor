@@ -42,7 +42,7 @@
         </div>
         <div class="class-chip" id="class-chip" hidden></div>
         <button class="town-chip" id="town-chip"></button>
-        <button class="relaxed-chip" id="relaxed-chip" aria-pressed="false">🐢 Relaxed mode: off</button>
+        <div class="mode-chips"><button class="relaxed-chip" id="relaxed-chip" aria-pressed="false">🐢 Relaxed mode: off</button><button class="relaxed-chip hard-chip" id="hard-chip" aria-pressed="false">🔥 Hard mode: off</button></div>
         <div class="challenge-results" id="challenge-results" hidden></div>
         <button class="btn btn-install" data-install hidden>📲 Install the game · free badge</button>
         <p class="season-chip" id="season-chip"></p>
@@ -122,6 +122,7 @@
           </div>
           <p class="form-msg" id="submit-msg" aria-live="polite"></p>
         </form>
+        <p class="over-relaxed over-hard" id="over-hard" hidden>🔥 Hard mode: this score goes on the <b>Hard</b> leaderboard.</p>
         <p class="over-relaxed" id="over-relaxed" hidden>🐢 Relaxed mode: this score stays off the leaderboard, but every round still counts towards what the NT is learning.</p>
         <p class="over-town" id="over-town" hidden></p>
         <div class="over-who" id="over-who" hidden></div>
@@ -148,6 +149,7 @@
         <div class="tabs" role="tablist">
           <button class="tab active" data-period="today" role="tab">Today</button>
           <button class="tab" data-period="daily" role="tab">Daily</button>
+          <button class="tab" data-period="hard" role="tab">🔥 Hard</button>
           <button class="tab" data-period="towns" role="tab">Towns</button>
           <button class="tab" data-period="all" role="tab">All time</button>
         </div>

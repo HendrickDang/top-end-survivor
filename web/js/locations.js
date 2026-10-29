@@ -25,7 +25,7 @@ export const LOCATIONS = [
   {
     id: 'katherine', name: 'Katherine', accent: '#c9a25a', rounds: 5,
     blurb: 'Big river country. It floods fast, and the heat does not let up.',
-    games: ['flood-road', 'heat-drink', 'croc-edge', 'swim-sign']
+    games: ['flood-road', 'heat-drink', 'croc-edge', 'swim-sign', 'roo-dusk']
   },
   {
     id: 'arnhem', name: 'Arnhem Land', accent: '#b5641a', rounds: 5,
@@ -35,12 +35,12 @@ export const LOCATIONS = [
   {
     id: 'barkly', name: 'Barkly', accent: '#e0892e', rounds: 5,
     blurb: 'The long, flat drive east. Dust storms, road trains and flooded crossings.',
-    games: ['dust-storm', 'flood-road', 'heat-drink', 'bushfire-leave']
+    games: ['dust-storm', 'flood-road', 'heat-drink', 'bushfire-leave', 'roo-dusk']
   },
   {
     id: 'alice', name: 'Alice Springs', accent: '#c8412f', rounds: 5,
     blurb: 'Desert country. Dry rivers that flood in minutes, snakes and relentless heat.',
-    games: ['flash-flood', 'heat-drink', 'snake-bite', 'bushfire-leave']
+    games: ['flash-flood', 'heat-drink', 'snake-bite', 'bushfire-leave', 'roo-dusk']
   },
   {
     id: 'uluru', name: 'Uluru Region', accent: '#f4845f', rounds: 5,

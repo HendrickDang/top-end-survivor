@@ -38,6 +38,11 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
 
+### Hard mode and Roos at Dusk (v1.6)
+
+- **🔥 Hard mode:** a menu toggle for players who find the game too easy. Classic and Journey rounds get 40% less time, gesture hints are off, multiple-choice answers are shuffled every round, and the music runs faster. Hard runs go on their own **🔥 Hard** leaderboard tab, so a quick player never pushes a first-timer off the main board. The server only accepts Hard runs in Classic and Journey, never together with Relaxed mode.
+- **New hazard, Roos at Dusk:** a one-button rhythm runner, inspired by the feel of one-tap rhythm games. You drive the Stuart Highway at dusk: hold anywhere to brake, let go to drive. Kangaroos (and the odd wandering cow) hop across on the beat of the music; reach the roadhouse before the timer runs out without hitting one. A planner builds every round on the beat and always leaves a way through: some roos cross right where you'd be (brake and let them pass), others are decoys that clear just ahead (brake for those and you run out of time). It gets denser every round, and denser still in Hard mode. The rule: roos are most active at dusk and dawn; brake firmly in a straight line and never swerve (source: Transport for NSW Centre for Road Safety). It appears in Classic, the Daily Challenge and Booth Battles, and on the Katherine, Barkly and Alice Springs stops of the Journey.
+
 ### Booth Battle, classrooms and help for everyone (v1.5)
 
 - **Live Booth Battle:** press `B` (or the ⚔️ button) on the booth screen. It shows a join QR and a 4-letter code; everyone who scans (or taps ⚔️ Booth Battle on the menu) appears in the lobby with their character. Press Enter and every phone counts down together, then plays the same 5 hazards. The big screen shows a live race (green and red squares per round) and a podium with confetti. No lives: everyone plays all 5, highest score wins. The server keeps score and saves every finished race for the learning stats.
@@ -53,7 +58,7 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 Minh's Journey, characters, fail cartoons and music, merged with everything from v1.3.
 
 - **Journey mode:** a road trip across the Territory in 8 stops: Darwin, Kakadu, Litchfield, Katherine, Arnhem Land, Barkly, Alice Springs and the Uluru Region. Each stop is 5 rounds of that region's own hazards, played over that region's landscape, with a "Now arriving" card in between. Three lives for the whole trip; after Uluru it loops back to Darwin for lap 2. Your furthest stop shows on the menu, reaching Uluru unlocks the *Red Centre* badge, and the server checks every Journey round really came from that stop.
-- **4 new hazards:** croc traps (Kakadu), rock holes (Arnhem Land), dust storms (Barkly) and flash floods in dry river beds (Alice Springs). 17 hazards plus 2 bosses in total.
+- **4 new hazards:** croc traps (Kakadu), rock holes (Arnhem Land), dust storms (Barkly) and flash floods in dry river beds (Alice Springs). 17 hazards plus 2 bosses at the time (18 with Roos at Dusk in v1.6).
 - **Territory Characters:** 7 cheeky locals to play as, from Backpacker Barry (free) to Market Stall Sheila (600 coins). Every game earns 1 coin per 10 points, and game over says how close the next one is. Your character is the menu avatar, celebrates your wins and stars in your fails. Their skin and shirt carry into every mini-game, with your wardrobe hats, shirts and specs on top.
 - **A fail cartoon for every hazard:** after the in-game fail animation, the result card plays a looping cartoon of exactly what went wrong (the croc drags the tent into the billabong, the ute floats away, lobster mode in the sun), starring your character.
 - **Location backdrops:** every round is drawn over a real NT landscape: the stop you are at in Journey, or the hazard's home region in Classic and Daily.
@@ -95,7 +100,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 ## How it meets the judging criteria
 
 - **Innovation**: safety education as a crowd game that measures its own impact. Every round played becomes data on which NT safety rules people actually get wrong, split by locals, newcomers and visitors. A live Booth Battle lets a whole crowd race the same hazards on their own phones, and Classroom mode gives a teacher a live report of what their class misses, with before → after quiz scores.
-- **Functionality**: 17 mini-games and 2 boss rounds across 8 NT locations; Classic, Daily, Journey and live Booth Battle modes; Classroom mode with a teacher dashboard; 7 unlockable characters and badge gear; leaderboards and Town Battle; booth screen with QR codes for playing, voting and taking the game home; a judge's tour; admin tools and CSV export; installable web app and Android app from one codebase; works fully offline.
+- **Functionality**: 18 mini-games and 2 boss rounds across 8 NT locations, including a one-button rhythm runner; Classic, Daily, Journey and live Booth Battle modes, plus Hard and Relaxed modes; Classroom mode with a teacher dashboard; 7 unlockable characters and badge gear; leaderboards and Town Battle; booth screen with QR codes for playing, voting and taking the game home; a judge's tour; admin tools and CSV export; installable web app and Android app from one codebase; works fully offline.
 - **Usability**: one tap to play, no sign-up and no personal details; a ghost hand shows first-timers each gesture; Relaxed mode gives kids and older players more time and bigger text; 🆘 Real help lists checked NT emergency numbers; big touch targets, reduced-motion support, step-by-step install help for iPhone and Android, and it works with no signal.
 - **Scalability**: load-tested with 500 players finishing games plus 5 full Booth Battles (200 phones) racing at the same time: 5,615 requests, 0 errors, 95% under about 150 ms on a 2-core machine. The server re-scores every run, so it scales without trusting phones; rate limits are sized for a whole venue sharing one Wi-Fi; an offline outbox smooths spikes. Scores and runs live in SQLite behind one module (`server/src/db.js`), so Postgres is a drop-in swap; live battles are short-lived and kept in memory, so running several servers would move them to a shared store such as Redis. New mini-games are a single object in `web/js/games.js`, and new towns, locations and quiz questions are data files.
 
@@ -195,7 +200,7 @@ Judge's tour: `/?judge=1`. Booth keys: `A` toggles attract mode, `N` shows the n
 web/                 the game (also the Android app's content)
   index.html         screens
   booth.html         big-screen leaderboard + live analytics + QR
-  js/games.js        the 17 mini-games + 2 bosses
+  js/games.js        the 18 mini-games + 2 bosses
   js/lessons.js      tips + official sources (edit wording here)
   js/main.js         engine: modes, rounds, timer, scoring, screens
   js/battle.js       Booth Battle on the phone: join, lobby, countdown, podium

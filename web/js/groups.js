@@ -11,7 +11,7 @@ export const whoLabel = (id) => (WHO.find(w => w.id === id) || {}).long || id;
 // Short names for the safety topics (the keys of SOURCES in lessons.js).
 export const TOPIC_LABELS = {
   crocwise: 'Crocs', stingers: 'Stingers', cyclone: 'Cyclones', flood: 'Floods', heat: 'Heat',
-  snake: 'Snake bites', roads: 'Dust storms', lightning: 'Lightning', mozzies: 'Mozzies', sun: 'Sun', bushfire: 'Bushfire'
+  snake: 'Snake bites', roads: 'Dust storms', lightning: 'Lightning', mozzies: 'Mozzies', sun: 'Sun', bushfire: 'Bushfire', wildlife: 'Roos on roads'
 };
 
 // Classroom codes: 5 characters, no look-alikes (0/O, 1/I/L).

@@ -68,7 +68,7 @@
 
 1. **Hook (15 s), Minh:** hand the judge a phone. "You've got five seconds. Don't get eaten."
 2. **Problem (20 s), Vy:** newcomers and tourists don't read safety PDFs; the Top End's hazards are seasonal and unfamiliar.
-3. **Solution (30 s), Vy:** 17 mini-games and 2 bosses, each one an official rule, on a road trip from Darwin to Uluru. Fail, and a cartoon of your character shows exactly what went wrong, then you learn the real rule with its source.
+3. **Solution (30 s), Vy:** 18 mini-games and 2 bosses, each one an official rule, on a road trip from Darwin to Uluru. Fail, and a cartoon of your character shows exactly what went wrong, then you learn the real rule with its source.
 4. **Tech (30 s), Hendrick:** one codebase for web, PWA and Android; offline first with a sync outbox; server re-scores every run so the leaderboard can't be faked; CI plays every game automatically.
 5. **Data (15 s), Hendrick:** point at the booth chart: "Right now 70% of people are failing the stinger question. That's the insight a health department would want."
 6. **Next (10 s), Vy:** more hazards (Irukandji, remote breakdowns, buffalo), more Journey stops (Tiwi Islands, Tennant Creek), Aboriginal languages, partner with NT Gov / tourism.
@@ -84,6 +84,7 @@ Who answers first: accuracy and design questions, Vy; testing and difficulty, Mi
 - *How does it scale?* We load-tested it: 500 players finishing games plus 5 full Booth Battles of 40 phones racing at once, 5,615 requests, zero errors, 95% of requests under about 150 ms on a small 2-core machine. The server re-scores every run, SQLite is swappable for Postgres in `server/src/db.js`, and the offline outbox smooths spikes. Honest limit: live battles sit in one server's memory, so going multi-server means moving them to Redis; that's a small, contained change.
 - *Does it actually teach anything?* Show the booth's learning panel: survival rate the first time people see a hazard vs. later tries, and the optional before/after quick check.
 - *Who would use this after the competition?* NT schools (open `/class` and show the teacher dashboard), and agencies: the "locals vs visitors" panel shows which rules newcomers and tourists miss, which is what NT Government and Tourism NT campaigns need to know.
+- *Isn't it too easy?* (Minh) Turn on 🔥 Hard mode: 40% less time, no hints, shuffled answers, its own leaderboard. Then hand them Roos at Dusk, the one-button rhythm runner: hold to brake, roos hop across on the beat, and braking for the decoys makes you miss the roadhouse.
 - *Is it accessible?* Gesture hints for first-timers, Relaxed mode (more time, bigger text), big touch targets, reduced-motion support, and a Real help screen with checked emergency numbers.
 - *How do you stop cheating?* The server ignores the client score and recomputes it from per-round results, checks timing and the 3-life rule, and rate-limits writes.
 - *Privacy?* No accounts, no personal data. A random device id is used only to let you attach a name to your own run; the CSV export excludes it.

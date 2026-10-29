@@ -1,4 +1,4 @@
-// The mini-games (17 hazards + 2 boss rounds). Each one is a few seconds long and teaches one NT safety rule.
+// The mini-games (18 hazards + 2 boss rounds). Each one is a few seconds long and teaches one NT safety rule.
 //
 // A game is { id, prompt, bg, timeoutWins, setup(ctx) }.
 //   prompt       - the shouted instruction ("STEP BACK!")
@@ -841,6 +841,118 @@ function crocCreekScene() {
 }
 
 // A boss is a 3-step mini story. Each step shows a caption and two choices.
+// ---------- Roos at Dusk: art ----------
+// A cartoon kangaroo, side on, facing right, origin at its feet.
+function kangaroo() {
+  return g([
+    el('ellipse', { cx: 0, cy: 2, rx: 20, ry: 4, fill: 'rgba(0,0,0,.25)' }),
+    el('path', { d: 'M-8 -12 q-22 4 -30 12 q10 -2 32 -6 z', fill: '#9a5d2c', stroke: '#1d1a16', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }),
+    el('ellipse', { cx: -1, cy: -20, rx: 12, ry: 16, fill: '#b5733a', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('ellipse', { cx: 2, cy: -16, rx: 6, ry: 9, fill: '#e8c79a' }),
+    el('path', { d: 'M-6 -6 q4 8 18 6', stroke: '#1d1a16', 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round' }),
+    el('path', { d: 'M-6 -6 q4 8 18 6', stroke: '#9a5d2c', 'stroke-width': 2.4, fill: 'none', 'stroke-linecap': 'round' }),
+    el('path', { d: 'M7 -26 l7 6', stroke: '#1d1a16', 'stroke-width': 3, 'stroke-linecap': 'round' }),
+    el('ellipse', { cx: 9, cy: -38, rx: 9, ry: 7, fill: '#b5733a', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('ellipse', { cx: 3, cy: -48, rx: 3, ry: 6, fill: '#b5733a', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('ellipse', { cx: 9, cy: -49, rx: 3, ry: 6, fill: '#b5733a', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('circle', { cx: 11, cy: -40, r: 1.8, fill: '#1d1a16' }),
+    el('circle', { cx: 17.5, cy: -37, r: 1.6, fill: '#1d1a16' }),
+    // Eyes catch the headlights.
+    el('circle', { cx: 11.6, cy: -40.6, r: .8, fill: '#ffe9a8' })
+  ]);
+}
+
+// A wandering cow (outback stations aren't always fenced), side on, facing right.
+function cowSide() {
+  return g([
+    el('ellipse', { cx: 0, cy: 2, rx: 30, ry: 5, fill: 'rgba(0,0,0,.25)' }),
+    el('rect', { x: -22, y: -12, width: 6, height: 14, fill: '#3b3027', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: 14, y: -12, width: 6, height: 14, fill: '#3b3027', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: -28, y: -34, width: 52, height: 26, rx: 11, fill: '#f6efe4', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('ellipse', { cx: -12, cy: -24, rx: 9, ry: 6, fill: '#3b3027' }),
+    el('ellipse', { cx: 10, cy: -18, rx: 6, ry: 4, fill: '#3b3027' }),
+    el('path', { d: 'M-28 -28 q-8 6 -6 16', stroke: '#1d1a16', 'stroke-width': 2.5, fill: 'none' }),
+    el('rect', { x: 20, y: -42, width: 16, height: 16, rx: 6, fill: '#f6efe4', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('ellipse', { cx: 33, cy: -30, rx: 5, ry: 4, fill: '#f2b8b0', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('path', { d: 'M22 -42 l-4 -6 M32 -42 l4 -6', stroke: '#e8dcc0', 'stroke-width': 3, 'stroke-linecap': 'round' }),
+    el('circle', { cx: 29, cy: -37, r: 1.6, fill: '#1d1a16' })
+  ]);
+}
+
+// Top-down ute with headlight beams and brake lights (origin at the centre of the ute).
+function uteTop() {
+  const brakes = [el('rect', { x: -21, y: 40, width: 12, height: 6, rx: 2, fill: '#5a1414' }), el('rect', { x: 9, y: 40, width: 12, height: 6, rx: 2, fill: '#5a1414' })];
+  const glow = el('ellipse', { cx: 0, cy: 54, rx: 34, ry: 12, fill: '#ff3b2f', opacity: 0 });
+  const wheel = (x, y) => el('rect', { x, y, width: 8, height: 22, rx: 3, fill: '#2b2b2b', stroke: '#1d1a16', 'stroke-width': 2 });
+  const node = g([
+    el('path', { d: 'M-20 -48 L-62 -230 L62 -230 L20 -48 Z', fill: '#fff3b0', opacity: .22 }),
+    el('path', { d: 'M-14 -48 L-34 -150 L34 -150 L14 -48 Z', fill: '#fff3b0', opacity: .22 }),
+    glow,
+    el('ellipse', { cx: 2, cy: 8, rx: 30, ry: 48, fill: 'rgba(0,0,0,.3)' }),
+    wheel(-29, -34), wheel(21, -34), wheel(-29, 12), wheel(21, 12),
+    el('rect', { x: -23, y: -46, width: 46, height: 92, rx: 9, fill: '#2f7fd0', stroke: '#1d1a16', 'stroke-width': 3 }),
+    el('rect', { x: -19, y: 6, width: 38, height: 36, rx: 4, fill: '#235f9e', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('path', { d: 'M-19 16 h38 M-19 26 h38 M-19 36 h38', stroke: 'rgba(255,250,240,.22)', 'stroke-width': 2.5 }),
+    el('rect', { x: -19, y: -42, width: 38, height: 44, rx: 6, fill: '#3d8fe0', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('rect', { x: -15, y: -38, width: 30, height: 15, rx: 4, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: -14, y: -8, width: 28, height: 10, rx: 3, fill: '#9fd8ef', stroke: '#1d1a16', 'stroke-width': 2 }),
+    el('rect', { x: -25, y: -50, width: 50, height: 7, rx: 3, fill: '#cfd6dc', stroke: '#1d1a16', 'stroke-width': 2.5 }),
+    el('rect', { x: -19, y: -46, width: 10, height: 5, rx: 2, fill: '#fffaf0', stroke: '#1d1a16', 'stroke-width': 1.4 }),
+    el('rect', { x: 9, y: -46, width: 10, height: 5, rx: 2, fill: '#fffaf0', stroke: '#1d1a16', 'stroke-width': 1.4 }),
+    ...brakes
+  ]);
+  return { node, setBraking(on) { for (const b of brakes) b.setAttribute('fill', on ? '#ff3b2f' : '#5a1414'); glow.setAttribute('opacity', on ? .45 : 0); } };
+}
+
+// Spinifex tufts and guide posts for the roadside, drawn once and scrolled.
+function roadsideTile(seed) {
+  const r = (i) => ((i * 9301 + 49297 + seed * 233) % 233280) / 233280;
+  const tufts = [];
+  for (let i = 0; i < 9; i++) {
+    const left = i % 2 === 0;
+    const x = left ? 10 + r(i) * 80 : 270 + r(i + 40) * 80;
+    const y = r(i + 80) * 480;
+    tufts.push(el('path', {
+      d: `M${x - 9} ${y} q4 -12 9 -2 q3 -14 8 -1 q5 -10 7 3`, stroke: '#7a8a3a', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round'
+    }));
+  }
+  return g(tufts);
+}
+
+// A beat-synced planner: roos cross on the beat, and every run has a way through.
+// "Blockers" cross right when you'd arrive at full speed, so you must brake and let them pass.
+// "Decoys" cross just ahead of you: brake for those and you lose time you may need later.
+function planRooRun({ seconds, round, hard, relaxed, bpm }) {
+  const rnd = Math.random;
+  const beat = 60 / bpm;
+  const F = Math.min(340, 220 + 7 * round) * (hard ? 1.15 : 1) * (relaxed ? .8 : 1);
+  // Later rounds: tighter beats and less spare time.
+  const slack = hard ? .45 : relaxed ? 1.6 : Math.max(.55, .95 - .025 * (round - 1));
+  const finishT = seconds - slack;
+  const SPAN = 440; // a roo hops from x = -40 to x = 400
+  const items = [];
+  // (tPrev, pPrev): the last moment the plan is driving flat out, and where.
+  let tPrev = 0, pPrev = 0;
+  for (;;) {
+    const beats = hard ? pick([2, 2, 3]) : relaxed ? pick([3, 4, 4]) : round >= 12 ? pick([2, 2, 3]) : round >= 6 ? pick([2, 3, 3]) : pick([2, 3, 3, 4]);
+    const gap = beats * beat + (items.length ? 0 : .7);
+    const tArr = tPrev + gap;
+    if (items.length && tArr + .8 > finishT) break;
+    const Y = pPrev + F * gap;
+    const cow = round >= 4 && rnd() < .18;
+    const C = cow ? 3.4 : hard ? 1.25 + rnd() * .35 : relaxed ? 2.2 + rnd() * .4 : 1.6 + rnd() * .5;
+    const half = cow ? 56 : 42;
+    const w = (2 * half) / (SPAN / C);              // how long it blocks the lane
+    const decoy = items.length > 0 && rnd() < (hard ? .35 : .25);
+    // Decoys clear the lane just before you get there; blockers are in it when you'd arrive.
+    const a = decoy ? tArr - w - (.22 + rnd() * .18) : tArr - w * (.25 + rnd() * .5);
+    items.push({ Y, C, half, cow, dir: rnd() < .5 ? 1 : -1, start: a - (220 - half) / (SPAN / C) });
+    tPrev = decoy ? tArr : a + w + .42; // braking, waiting and speeding up again costs time
+    pPrev = Y;
+  }
+  return { F, items, D: pPrev + F * Math.max(.6, finishT - tPrev) };
+}
+
 function boss(id, title, bg, failKind, steps) {
   return {
     id, boss: true, seconds: 15, failKind, prompt: '👑 BOSS: ' + title, bg,
@@ -1704,5 +1816,119 @@ export const GAMES = [
         if (top < py) { done = true; ctx.lose(); }
       });
     }
+  },
+  // 18. Roos at Dusk: a one-button rhythm runner. Hold to brake, let go to drive.
+  // Roos hop across the highway on the beat; reach the roadhouse before dark without hitting one.
+  {
+    id: 'roo-dusk', prompt: 'ROOS AT DUSK!', bg: '#c4683a', ownBackdrop: true, ownHard: true,
+    // A longer round than most: this one is about rhythm, not a single tap. Gets shorter as you go.
+    seconds: (round) => Math.max(4.6, 7.2 - .12 * (round - 1)),
+    timeoutResult(ctx) {
+      ctx.failTip = 'Too slow to the roadhouse, and now it\'s dark: peak roo time. Plan long drives to finish before dusk.';
+      return false;
+    },
+    setup(ctx) {
+      const { svg } = ctx;
+      const plan = planRooRun({ seconds: ctx.seconds, round: ctx.round || 1, hard: !!ctx.hard, relaxed: !!ctx.relaxed, bpm: ctx.bpm || 140 });
+      const beat = 60 / (ctx.bpm || 140);
+      const UTE_FRONT = 342;
+      const sy = (Y) => UTE_FRONT - (Y - d); // world distance -> screen y
+
+      // Red dirt, the Stuart Highway and its markings.
+      const dashes = el('path', { d: 'M180 -40 V520', stroke: '#ffe9a8', 'stroke-width': 5, 'stroke-dasharray': '24 20', fill: 'none' });
+      const posts = el('path', { d: 'M102 -40 V520 M258 -40 V520', stroke: '#fffaf0', 'stroke-width': 4, 'stroke-dasharray': '7 113', fill: 'none' });
+      const tiles = [roadsideTile(1), roadsideTile(2)];
+      svg.append(
+        el('rect', { x: -200, y: -200, width: 760, height: 900, fill: '#c4683a' }),
+        ...tiles,
+        el('rect', { x: 110, y: -200, width: 140, height: 900, fill: '#4a4a52' }),
+        el('path', { d: 'M114 -200 V700 M246 -200 V700', stroke: '#f6e7c8', 'stroke-width': 3 }),
+        dashes, posts
+      );
+
+      // The roadhouse: a sign and a finish line across the road at distance D.
+      const finish = g([
+        el('rect', { x: 110, y: -6, width: 140, height: 12, fill: '#fffaf0' }),
+        ...Array.from({ length: 7 }, (_, i) => el('rect', { x: 110 + i * 20, y: i % 2 ? 0 : -6, width: 10, height: 6, fill: '#1d1a16' })),
+        ...Array.from({ length: 7 }, (_, i) => el('rect', { x: 120 + i * 20, y: i % 2 ? -6 : 0, width: 10, height: 6, fill: '#1d1a16' })),
+        el('rect', { x: 268, y: -70, width: 84, height: 50, rx: 6, fill: '#e0892e', stroke: '#1d1a16', 'stroke-width': 3 }),
+        text(310, -50, 'ROADHOUSE', { size: 11, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 3 }),
+        text(310, -30, 'fuel · food · beds', { size: 8, fill: '#1d1a16' }),
+        el('rect', { x: 306, y: -20, width: 6, height: 26, fill: '#6b4a2b' })
+      ]);
+      svg.append(finish);
+
+      // Animals, back to front so nearer ones overlap further ones.
+      const actors = plan.items.map(it => {
+        const art = it.cow ? cowSide() : kangaroo();
+        const node = g([g([art], { transform: it.dir === 1 ? '' : 'scale(-1 1)' })]);
+        svg.append(node);
+        return { ...it, node, hit: false };
+      });
+
+      // The ute, and a dusk wash over everything but the HUD.
+      const ute = uteTop();
+      place(ute.node, 180, UTE_FRONT + 46);
+      svg.append(ute.node);
+      svg.append(el('rect', { x: -200, y: -200, width: 760, height: 900, fill: '#3b2a6b', opacity: .18, 'pointer-events': 'none' }));
+
+      // Progress to the roadhouse, and the control hint.
+      const bar = g([
+        el('rect', { x: 40, y: 444, width: 280, height: 10, rx: 5, fill: 'rgba(29,26,22,.65)', stroke: '#fffaf0', 'stroke-width': 2 }),
+        text(336, 455, '⛽', { size: 14 })
+      ]);
+      const marker = el('circle', { cx: 40, cy: 449, r: 7, fill: '#2f7fd0', stroke: '#fffaf0', 'stroke-width': 2.5 });
+      const say = text(W / 2, 476, 'HOLD TO BRAKE · LET GO TO DRIVE', { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+      svg.append(bar, marker, say);
+
+      // One button: hold anywhere to brake.
+      let braking = false, done = false;
+      const setBrake = (on) => { braking = on; ute.setBraking(on); };
+      svg.addEventListener('pointerdown', (e) => { e.preventDefault(); svg.setPointerCapture?.(e.pointerId); setBrake(true); });
+      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) svg.addEventListener(ev, () => setBrake(false));
+
+      let d = 0, v = plan.F;
+      // For the automated tests: the plan and the ute's position.
+      svg.__roo = { plan, get d() { return d; }, get v() { return v; }, beat };
+      // Draw the road, the animals and the roadhouse for game time t; returns true on a hit.
+      const draw = (t) => {
+        dashes.setAttribute('stroke-dashoffset', String(-d % 44));
+        posts.setAttribute('stroke-dashoffset', String(-d % 120));
+        tiles.forEach((tile, i) => tile.setAttribute('transform', `translate(0 ${((d * .999 + i * 480) % 960) - 480})`));
+        // The beat: the centre line pulses and every roo hops in time with the music.
+        const phase = (t % beat) / beat;
+        dashes.setAttribute('opacity', (1 - .45 * phase).toFixed(2));
+        finish.setAttribute('transform', `translate(0 ${sy(plan.D)})`);
+        marker.setAttribute('cx', (40 + 280 * Math.min(1, d / plan.D)).toFixed(1));
+
+        for (const a of actors) {
+          const k = (t - a.start) / a.C; // 0..1 across the road
+          const x = a.dir === 1 ? -40 + 440 * k : 400 - 440 * k;
+          const hop = a.cow ? Math.abs(Math.sin(t * 6)) * 2 : Math.abs(Math.sin(Math.PI * phase)) * 14;
+          const y = sy(a.Y);
+          a.node.setAttribute('transform', `translate(${x.toFixed(1)} ${(y - hop).toFixed(1)})`);
+          a.node.style.display = y < -260 || y > 560 ? 'none' : '';
+          // Hit: the animal is in your lane while any part of the ute is level with it.
+          if (Math.abs(x - 180) < a.half && d >= a.Y - 4 && d <= a.Y + 92) {
+            ctx.failTip = a.cow
+              ? 'Wandering stock on the road! Slow down at dusk and brake firmly in a straight line.'
+              : 'Hit a roo! Roos are most active at dusk and dawn. Brake firmly in a straight line, and never swerve.';
+            return true;
+          }
+        }
+        return false;
+      };
+      draw(0); // first frame, while the prompt shows
+
+      ctx.onTick((p, dt) => {
+        if (done) return;
+        // Brakes bite fast; getting back up to speed takes a moment.
+        v += ((braking ? 0 : plan.F) - v) * Math.min(1, dt * (braking ? 9 : 4.5));
+        d += v * dt;
+        if (draw(p * ctx.seconds)) { done = true; ctx.lose(); return; }
+        if (d >= plan.D) { done = true; ctx.win(); }
+      });
+    }
   }
+
 ];

@@ -118,11 +118,11 @@ export function createApp(repo, opts = {}) {
   });
 
   app.get('/api/leaderboard', (req, res) => {
-    const period = ['all', 'daily'].includes(req.query.period) ? req.query.period : 'today';
+    const period = ['all', 'daily', 'hard'].includes(req.query.period) ? req.query.period : 'today';
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const client = typeof req.query.client === 'string' ? req.query.client : null;
     const entries = repo.leaderboard({
-      day: period === 'all' ? null : today(), limit, client, mode: period === 'daily' ? 'daily' : 'classic'
+      day: period === 'all' ? null : today(), limit, client, mode: period === 'daily' ? 'daily' : period === 'hard' ? 'hard' : 'classic'
     });
     res.json({ period, day: today(), entries });
   });

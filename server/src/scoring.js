@@ -92,6 +92,9 @@ export function validateRun(body, { today = darwinDay() } = {}) {
   if (body.challengeOf != null && !(Number.isInteger(body.challengeOf) && body.challengeOf > 0)) return { error: 'Invalid challenge.' };
   if (body.who != null && !WHO_IDS.includes(body.who)) return { error: 'Invalid player group.' };
   if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
+  // Hard mode: Classic and Journey only, and never together with Relaxed mode.
+  const hard = body.hard === true;
+  if (hard && (mode === 'daily' || body.relaxed === true)) return { error: 'Hard mode is for Classic and Journey runs.' };
   return {
     run: {
       clientId,
@@ -108,7 +111,8 @@ export function validateRun(body, { today = darwinDay() } = {}) {
       // Relaxed mode (slower timer): counted for learning stats, kept off the leaderboards.
       relaxed: body.relaxed === true,
       who: body.who || null,
-      classCode: body.classCode || null
+      classCode: body.classCode || null,
+      hard
     }
   };
 }

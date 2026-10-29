@@ -59,6 +59,8 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
   if (!cols.includes('relaxed')) db.exec('ALTER TABLE runs ADD COLUMN relaxed INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('who')) db.exec('ALTER TABLE runs ADD COLUMN who TEXT');
   if (!cols.includes('class_code')) db.exec('ALTER TABLE runs ADD COLUMN class_code TEXT');
+  // v1.6: Hard mode (shorter timers) has its own leaderboard.
+  if (!cols.includes('hard')) db.exec('ALTER TABLE runs ADD COLUMN hard INTEGER NOT NULL DEFAULT 0');
   const qcols = db.prepare('PRAGMA table_info(quiz)').all().map(c => c.name);
   if (!qcols.includes('class_code')) db.exec('ALTER TABLE quiz ADD COLUMN class_code TEXT');
   db.exec(`
@@ -80,8 +82,8 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
 const rate = (fails, plays) => (plays ? +(fails / plays).toFixed(3) : null);
 
 export function makeRepo(db) {
-  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day, mode, town, challenge_of, relaxed, who, class_code)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day, mode, town, challenge_of, relaxed, who, class_code, hard)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
   // Fail rates per game, optionally for one day and/or one class.
   function gameRates({ day = null, classCode = null } = {}) {
@@ -121,7 +123,7 @@ export function makeRepo(db) {
       db.exec('BEGIN');
       try {
         const { lastInsertRowid } = insRun.run(run.clientId, name || null, run.score, run.rounds, run.wins, run.durationMs, run.appVersion ?? null,
-          run.day || day, run.mode || 'classic', run.town || null, run.challengeOf || null, run.relaxed ? 1 : 0, run.who || null, run.classCode || null);
+          run.day || day, run.mode || 'classic', run.town || null, run.challengeOf || null, run.relaxed ? 1 : 0, run.who || null, run.classCode || null, run.hard ? 1 : 0);
         const id = Number(lastInsertRowid);
         run.results.forEach((r, i) => insRes.run(id, i, r.g, r.ok ? 1 : 0, r.ms));
         db.exec('COMMIT');
@@ -142,8 +144,9 @@ export function makeRepo(db) {
     // Best named run per player (client + name), highest first.
     // The main boards mix Classic and Journey runs (same scoring); the Daily board is separate.
     leaderboard({ day = null, limit = 20, client = null, mode = 'classic' } = {}) {
-      // Relaxed-mode runs (slower timer) never go on the boards.
-      const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ' AND relaxed = 0' + (mode === 'daily' ? ` AND mode = 'daily'` : ` AND mode IN ('classic', 'journey')`);
+      // Relaxed-mode runs (slower timer) never go on the boards. Hard-mode runs have a board of their own.
+      const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ' AND relaxed = 0' +
+        (mode === 'daily' ? ` AND mode = 'daily'` : mode === 'hard' ? ` AND hard = 1 AND mode IN ('classic', 'journey')` : ` AND hard = 0 AND mode IN ('classic', 'journey')`);
       const rows = db.prepare(`
         SELECT name, client_id, MAX(score) AS score, MAX(rounds) AS rounds, MIN(created_at) AS first_at
         FROM runs ${where}

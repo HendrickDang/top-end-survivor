@@ -12,7 +12,7 @@ window.TES_CONFIG = {
   // People's Choice voting link from the IT Code Fair committee. When set, the booth screen shows a
   // "Vote for us" QR and the game-over screen shows a vote button. Leave '' until you have it.
   VOTE_URL: '',
-  APP_VERSION: '1.5.0'
+  APP_VERSION: '1.6.0'
 };
 (function () {
   // Security: the server address used to be changeable with a ?api= link and was remembered,

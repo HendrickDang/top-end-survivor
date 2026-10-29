@@ -615,3 +615,10 @@ body.battle-mode .lives { visibility: hidden; }
 
 /* Menu: never squash items when the menu is taller than the screen (it scrolls instead). */
 .menu-content > * { flex-shrink: 0; }
+
+/* ---------- v1.6: Hard mode ---------- */
+.mode-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.hard-chip[aria-pressed="true"] { background: #c8412f; border-color: #ffd25e; }
+.over-hard { background: #fde3dc; border-color: #c8412f; }
+body.hard-mode .timer-bar:not(.urgent) { background: #ff8a3d; }
+body.hard-mode #hud-round::after { content: ' 🔥'; }

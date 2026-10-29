@@ -210,6 +210,26 @@ const SCENES = {
     cap(180, 100, 'LOBSTER MODE!', { size: 13, fill: '#c8412f' }) +
     cap(70, 146, 'slip slop slap seek slide', { size: 10 }),
 
+  // 18. Roos at dusk: the roo wins, the bullbar loses.
+  'roo-dusk': (p) => rect(0, 0, W, 150, '#c4683a') + rect(70, 0, 100, 150, '#4a4a52') +
+    `<path d="M120 0 v14 M120 30 v14 M120 60 v14 M120 90 v14 M120 120 v14" stroke="#ffe9a8" stroke-width="3"/>` +
+    rect(0, 0, W, 150, '#3b2a6b', 'opacity=".22"') +
+    `<g class="fv f-shake" style="transform-origin:50% 50%">
+       <rect x="96" y="82" width="48" height="58" rx="8" fill="#2f7fd0" stroke="${IN}" stroke-width="3"/>
+       <rect x="101" y="88" width="38" height="14" rx="3" fill="#9fd8ef" stroke="${IN}" stroke-width="2"/>
+       <rect x="92" y="78" width="56" height="7" rx="3" fill="#cfd6dc" stroke="${IN}" stroke-width="2.5"/>
+     </g>` +
+    `<g class="fv f-bounce" style="transform-origin:50% 100%"><g transform="translate(124 76)">
+       <path d="M-8 -12 q-22 4 -30 12 q10 -2 32 -6 z" fill="#9a5d2c" stroke="${IN}" stroke-width="2.5"/>
+       <ellipse cx="-1" cy="-20" rx="12" ry="16" fill="#b5733a" stroke="${IN}" stroke-width="2.5"/>
+       <ellipse cx="9" cy="-38" rx="9" ry="7" fill="#b5733a" stroke="${IN}" stroke-width="2.5"/>
+       <ellipse cx="4" cy="-48" rx="3" ry="6" fill="#b5733a" stroke="${IN}" stroke-width="2"/>
+       <path d="M8 -42 l4 4 M12 -42 l-4 4" stroke="${IN}" stroke-width="2"/>
+     </g></g>` +
+    `<g class="fv f-spin" style="transform-origin:50% 50%">${cap(100, 40, '★', { size: 16, fill: '#ffd25e', stroke: IN })}${cap(146, 34, '★', { size: 14, fill: '#ffd25e', stroke: IN })}</g>` +
+    cap(196, 30, 'BONK!', { size: 20, fill: '#ffd25e', stroke: IN }) +
+    cap(176, 142, 'brake, never swerve', { size: 10, fill: '#fffaf0', stroke: IN, sw: 2 }),
+
   // Boss: Cyclone Night. Should have sheltered: round and round we go.
   'boss-cyclone': (p) => rect(0, 0, W, 150, '#2b3a5b') +
     `<path d="M120 75 m-50 0 a50 50 0 1 1 50 50 a32 32 0 1 1 -24 -30" stroke="#8fd0e0" stroke-width="7" fill="none" stroke-linecap="round" class="fv f-spin" style="transform-origin:50% 50%"/>` +

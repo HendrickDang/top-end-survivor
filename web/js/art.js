@@ -435,6 +435,7 @@ export function iconFor(key) {
     lightning: () => { tmp.innerHTML = ''; tmp.appendChild(items.bolt()); return wrap(`<g transform="scale(.6)">${tmp.innerHTML}</g>`, '#4b5363'); },
     mozzies: () => { tmp.innerHTML = ''; tmp.appendChild(items.mozzie()); return wrap(`<g transform="scale(1.6)">${tmp.innerHTML}</g>`, '#e3d4f0'); },
     sun: () => { tmp.innerHTML = ''; tmp.appendChild(items.hat()); return wrap(`<g transform="scale(.75)">${tmp.innerHTML}</g>`, '#ffe9a8'); },
+    wildlife: () => wrap('<path d="M-30 18 h60" stroke="#4a4a52" stroke-width="10"/><path d="M-12 10 q-16 2 -20 8 l18 -3 z" fill="#9a5d2c" stroke="#1d1a16" stroke-width="2"/><ellipse cx="-2" cy="0" rx="9" ry="12" fill="#b5733a" stroke="#1d1a16" stroke-width="2.5"/><ellipse cx="6" cy="-14" rx="7" ry="5.5" fill="#b5733a" stroke="#1d1a16" stroke-width="2.5"/><ellipse cx="2" cy="-22" rx="2.4" ry="5" fill="#b5733a" stroke="#1d1a16" stroke-width="1.8"/><circle cx="8" cy="-15" r="1.6" fill="#1d1a16"/>', '#f4c28a'),
     bushfire: () => wrap('<path d="M0 -24 C 14 -8, 18 4, 12 16 C 8 24, -8 24, -12 16 C -18 4, -8 -4, -4 -14 C -2 -6, 4 -4, 0 -24 z" fill="#e0892e" stroke="#1d1a16" stroke-width="3"/>', '#fbe0d8')
   };
   return (pick[key] || pick.crocwise)();

@@ -86,7 +86,7 @@ export function flush() {
               clientId: r.clientId, results: r.results, durationMs: r.durationMs,
               mode: r.mode || 'classic', day: r.day,
               town: r.town || undefined, challengeOf: r.challengeOf || undefined,
-              relaxed: r.relaxed || undefined, who: r.who || undefined, classCode: r.classCode || undefined,
+              relaxed: r.relaxed || undefined, hard: r.hard || undefined, who: r.who || undefined, classCode: r.classCode || undefined,
               name: r.name || undefined, appVersion: r.appVersion
             })
           });

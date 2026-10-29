@@ -15,11 +15,34 @@ if SHOTS: SHOTS.mkdir(parents=True, exist_ok=True)
 
 GAMES = ['croc-edge', 'swim-sign', 'croc-camp', 'stinger-vinegar', 'stinger-suit',
          'cyclone-kit', 'flood-road', 'heat-drink', 'snake-bite', 'bushfire-leave',
-         'lightning-pool', 'mozzie-dusk', 'sun-slip', 'croc-trap', 'rock-hole', 'dust-storm', 'flash-flood',
+         'lightning-pool', 'mozzie-dusk', 'sun-slip', 'croc-trap', 'rock-hole', 'dust-storm', 'flash-flood', 'roo-dusk',
          'boss-cyclone', 'boss-croc']
 
 SVG_PT = """([x, y]) => { const svg = document.querySelector('#stage svg'); const p = svg.createSVGPoint();
   p.x = x; p.y = y; const r = p.matrixTransform(svg.getScreenCTM()); return [r.x, r.y]; }"""
+# Roos at Dusk autopilot: hold the brake only when driving on would put the ute in the lane with an animal.
+ROO_AUTOPILOT = """() => new Promise((done) => {
+  const svg = document.querySelector('#stage svg'); const r = svg.__roo; let held = false;
+  const press = (on) => { if (on === held) return; held = on;
+    svg.dispatchEvent(new PointerEvent(on ? 'pointerdown' : 'pointerup', { bubbles: true, pointerId: 1 })); };
+  const t0 = performance.now();
+  const step = () => {
+    if (!document.querySelector('#screen-game.active') || !document.body.contains(svg)) { press(false); return done(true); }
+    const d = r.d, F = r.plan.F, bar = document.querySelector('#timer-bar');
+    const p = 1 - (new DOMMatrix(getComputedStyle(bar).transform).a);
+    const t = p * window.__TES__.state.ctx.seconds;
+    let brake = false;
+    for (const a of r.plan.items) {
+      if (d > a.Y + 92) continue;
+      const bandIn = a.start + a.C * ((220 - a.half) / 440), bandOut = bandIn + a.C * (2 * a.half / 440);
+      const tFront = t + Math.max(0, a.Y - 4 - d) / F, tBack = t + (a.Y + 92 - d) / F + .12;
+      if (tFront < bandOut + .08 && tBack > bandIn - .08 && tFront - t < .6) brake = true;
+    }
+    press(brake);
+    if (performance.now() - t0 < 15000) requestAnimationFrame(step); else done(false);
+  };
+  requestAnimationFrame(step);
+})"""
 CENTER = """(sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect();
   return [r.x + r.width / 2, r.y + r.height / 2]; }"""
 
@@ -97,6 +120,9 @@ def win(page, gid):
                 tap(page, *svg_point(page, 190, 300))
                 break
             time.sleep(0.05)
+    elif gid == 'roo-dusk':
+        page.wait_for_function("document.querySelector('#stage svg') && document.querySelector('#stage svg').__roo")
+        page.evaluate(ROO_AUTOPILOT)
     elif gid == 'flash-flood':
         x, y = svg_point(page, 180, 300)
         for _ in range(8):
@@ -150,7 +176,7 @@ def main():
         LOSE = {'croc-edge': None, 'stinger-suit': '[data-ok="false"]', 'cyclone-kit': '[data-ok="false"]',
                 'flood-road': '.choice-bad', 'heat-drink': None, 'snake-bite': None, 'bushfire-leave': '.choice-bad',
                 'lightning-pool': None, 'mozzie-dusk': None, 'sun-slip': '[data-ok="false"]', 'boss-croc': '.choice-bad',
-                'croc-trap': None, 'rock-hole': None, 'dust-storm': None, 'flash-flood': None}
+                'croc-trap': None, 'rock-hole': None, 'dust-storm': None, 'flash-flood': None, 'roo-dusk': None}
         for gid, sel in LOSE.items():
             page.goto(BASE + '/'); page.wait_for_timeout(300)
             page.evaluate(f"window.__TES_FORCE__ = '{gid}'")

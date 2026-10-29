@@ -32,6 +32,7 @@ const DEMO = PARAMS.has('demo'); // self-playing attract mode for the booth scre
 const ADMIN = PARAMS.has('admin'); // ?admin=1: mini-game tester for the team
 const COINS_PER_POINT_DIVISOR = 10; // 1 coin per 10 points scored
 const RELAXED_SLOWER = 1.6;         // relaxed mode: 60% more time every round
+const HARD_FASTER = 0.6;            // hard mode: 40% less time every round
 const BATTLE_ROUNDS = 5;
 
 // Difficulty: rounds get shorter, down to a floor.
@@ -69,7 +70,15 @@ function renderRelaxed() {
   const chip = $('#relaxed-chip');
   chip.setAttribute('aria-pressed', String(on));
   chip.innerHTML = on ? '🐢 Relaxed mode: <b>on</b> · slower, bigger text' : '🐢 Relaxed mode: off';
+  const hard = isHard();
+  const hchip = $('#hard-chip');
+  hchip.setAttribute('aria-pressed', String(hard));
+  hchip.innerHTML = hard ? '🔥 Hard mode: <b>on</b> · faster, no hints' : '🔥 Hard mode: off';
 }
+// Hard mode: much less time, no hints, shuffled answers, and a leaderboard of its own.
+// Classic and Journey only (the Daily Challenge and Booth Battles are the same for everyone).
+const isHard = () => !isRelaxed() && store.get('tes_hard', false) === true;
+const hardNow = () => isHard() && (state.mode === 'classic' || state.mode === 'journey');
 // On a shared booth device every player is different, so the answer is never remembered there.
 let kioskWho = null;
 const getWho = () => (KIOSK ? kioskWho : store.get('tes_who', null));
@@ -216,6 +225,7 @@ function resetHud() {
   document.body.classList.toggle('daily-mode', state.mode === 'daily');
   document.body.classList.toggle('journey-mode', state.mode === 'journey' || (adminMode && state.mode === 'test'));
   document.body.classList.toggle('battle-mode', state.mode === 'battle');
+  document.body.classList.toggle('hard-mode', hardNow());
 }
 
 function playRound() {
@@ -267,8 +277,12 @@ function runRound() {
   const sandboxTest = adminMode && state.mode === 'test';
   if (journey) { state.roundInLocation++; renderHudLocation(); }
   const loc = journey || sandboxTest ? locationAt(state.locationIndex) : homeLocationFor(game.id);
-  music.setTempo(game.boss ? 190 : 132 + state.round * 4);
-  const seconds = (game.seconds || roundSeconds(state.round)) * (adminMode ? adminTimerScale : 1) * (relaxedNow() ? RELAXED_SLOWER : 1);
+  const hard = hardNow();
+  const bpm = game.boss ? 190 : Math.round((132 + state.round * 4) * (hard ? 1.12 : 1));
+  music.setTempo(bpm);
+  const base = typeof game.seconds === 'function' ? game.seconds(state.round) : (game.seconds || roundSeconds(state.round));
+  // A game marked ownHard makes itself harder (more hazards) rather than just shorter.
+  const seconds = base * (adminMode ? adminTimerScale : 1) * (relaxedNow() ? RELAXED_SLOWER : 1) * (hard && !game.ownHard ? HARD_FASTER : 1);
   renderDebugHud(game, loc, seconds);
   const stage = $('#stage');
   stage.innerHTML = '';
@@ -300,6 +314,7 @@ function runRound() {
 
   const ctx = {
     svg, stage, speed: 5.5 / seconds, location: loc,
+    round: state.round, seconds, bpm, hard, relaxed: relaxedNow(),
     win: () => finish(true),
     lose: () => finish(false),
     onTick: (fn) => tickers.push(fn),
@@ -310,6 +325,8 @@ function runRound() {
     buttons(list) {
       const row = document.createElement('div');
       row.className = 'choice-row';
+      // Hard mode: answers move around, so you have to read them every time.
+      if (hard) list = list.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
       list.forEach(({ label, ok, onPick }) => {
         const b = document.createElement('button');
         b.className = 'btn' + (ok ? ' choice-ok' : ' choice-bad');
@@ -373,7 +390,7 @@ function runRound() {
   game.setup(ctx);
   if (DEMO) demoBot(ctx, () => finished);
   // First time meeting this game? A ghost hand shows how to play it (and the timer waits a moment).
-  const hintGrace = !DEMO && hints.needHint(game.id, { perRun: KIOSK || relaxedNow() }) ? hints.showHint(ctx, game.id) : 0;
+  const hintGrace = !DEMO && !hard && hints.needHint(game.id, { perRun: KIOSK || relaxedNow() }) ? hints.showHint(ctx, game.id) : 0;
 
   // banner
   const banner = $('#banner');
@@ -387,7 +404,7 @@ function runRound() {
   const bar = $('#timer-bar');
   bar.style.transform = 'scaleX(1)';
   bar.classList.remove('urgent');
-  const grace = 350 + hintGrace;
+  const grace = (hard ? 200 : 350) + hintGrace;
   let last = performance.now();
   const loop = (now) => {
     if (finished) return;
@@ -511,6 +528,7 @@ function gameOver() {
     town: (!relaxedNow() && social.getTown()) || undefined,
     challengeOf: state.challenge?.id || undefined,
     relaxed: relaxedNow() || undefined,
+    hard: hardNow() || undefined,
     who: getWho() || undefined,
     classCode: api.myClass()?.code || undefined,
     appVersion: window.TES_CONFIG?.APP_VERSION
@@ -534,6 +552,7 @@ function gameOver() {
   renderOverHome();
   const relaxed = relaxedNow();
   $('#over-relaxed').hidden = !relaxed;
+  $('#over-hard').hidden = !hardNow();
   $('#submit-form').hidden = relaxed;
   $('#btn-challenge').hidden = relaxed;
   $('#challenge-link').hidden = true;
@@ -1132,8 +1151,17 @@ function init() {
   $('#btn-help').addEventListener('click', () => show('screen-help'));
   $('#learn-help').addEventListener('click', () => show('screen-help'));
   $('#over-help').addEventListener('click', () => show('screen-help'));
+  $('#hard-chip').addEventListener('click', () => {
+    const on = !isHard();
+    store.set('tes_hard', on);
+    if (on) store.set('tes_relaxed', false);
+    renderRelaxed();
+    sfx.pop();
+    toast(on ? '🔥 Hard mode on for Classic and Journey: 40% less time, no hints, shuffled answers, its own leaderboard!' : 'Hard mode off.');
+  });
   $('#relaxed-chip').addEventListener('click', () => {
     store.set('tes_relaxed', !isRelaxed());
+    if (isRelaxed()) store.set('tes_hard', false);
     renderRelaxed();
     sfx.pop();
     toast(isRelaxed() ? '🐢 Relaxed mode on: more time, bigger text. Scores stay off the leaderboard.' : 'Relaxed mode off: full speed!');

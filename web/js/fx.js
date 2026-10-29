@@ -259,6 +259,21 @@ Object.assign(FAILS, {
     bigWord(svg, 'DUSTED!', '#fffaf0', 110);
     return 'whoosh';
   },
+  async bonk(svg) {
+    // Roo strike: headlights flash, the screen jolts and stars spin.
+    const flash = el('rect', { x: -20, y: -20, width: W + 40, height: H + 40, fill: '#fff3b0', opacity: 0 });
+    svg.appendChild(flash);
+    flash.animate?.([{ opacity: 0 }, { opacity: .8 }, { opacity: 0 }], { duration: 300 });
+    shake(svg, 14);
+    for (let i = 0; i < 5; i++) {
+      const s = text(W / 2 + Math.cos(i * 1.26) * 60, 250 + Math.sin(i * 1.26) * 24, '★', { size: 26, fill: '#ffd25e', stroke: INK, strokeWidth: 3 });
+      svg.appendChild(s);
+      anim(s, [{ transform: 'scale(0) rotate(0deg)' }, { transform: 'scale(1.2) rotate(180deg)' }, { transform: 'scale(1) rotate(360deg)' }], { duration: 700, delay: 80 + i * 40 });
+    }
+    await wait(260);
+    bigWord(svg, 'BONK!', '#ffd25e', 110);
+    return 'boing';
+  },
   async sunburnt(svg) {
     const red = el('rect', { x: 0, y: 0, width: W, height: H, fill: '#e2553f', opacity: 0 });
     svg.appendChild(red);
@@ -277,7 +292,7 @@ const FAIL_FOR = {
   'snake-bite': 'dizzy', 'bushfire-leave': 'smoke',
   'lightning-pool': 'struck', 'mozzie-dusk': 'bitten', 'sun-slip': 'sunburnt',
   'boss-cyclone': 'blowaway', 'boss-croc': 'chomp',
-  'croc-trap': 'chomp', 'rock-hole': 'chomp', 'dust-storm': 'dusted', 'flash-flood': 'float'
+  'croc-trap': 'chomp', 'rock-hole': 'chomp', 'dust-storm': 'dusted', 'flash-flood': 'float', 'roo-dusk': 'bonk'
 };
 
 // Plays the cartoon fail for a game. Returns the name of the matching sound effect.
@@ -299,7 +314,8 @@ export const FAIL_TITLES = {
   struck: ['Frazzled!', 'Zapped from above!', 'Shocking, mate!'],
   bitten: ['Eaten alive!', 'Itchy, mate!', 'Mozzie buffet!'],
   sunburnt: ['Lobster mode!', 'Burnt to a crisp!', 'Ouch, sunburn!'],
-  dusted: ['Dusted!', 'Lost in the dust!', 'Can\'t see a thing!']
+  dusted: ['Dusted!', 'Lost in the dust!', 'Can\'t see a thing!'],
+  bonk: ['Bonk!', 'Roo strike!', 'Skippy says no!']
 };
 export const WIN_TITLES = ['Too easy!', 'Crocwise!', 'Legend!', 'Bonza!', 'Ripper!', 'Spot on, mate!'];
 export const failKind = (gameId) => FAIL_FOR[gameId] || 'chomp';

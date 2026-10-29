@@ -206,6 +206,17 @@ test('relaxed mode runs count for learning but stay off the boards', async () =>
   assert.ok(st.runs >= 1);
 });
 
+test('hard mode runs get their own leaderboard', async () => {
+  assert.equal((await post('/api/runs', { ...makeRun(6), clientId: 'hard-device-0001', hard: true, name: 'HardAsNails' })).status, 201);
+  const today = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();
+  assert.ok(!today.entries.some(e => e.name === 'HardAsNails'));
+  const hard = await (await fetch(base + '/api/leaderboard?period=hard&limit=50')).json();
+  assert.equal(hard.period, 'hard');
+  assert.ok(hard.entries.some(e => e.name === 'HardAsNails'));
+  // not with Relaxed mode, and not in the Daily Challenge
+  assert.equal((await post('/api/runs', { ...makeRun(3), clientId: 'hard-device-0002', hard: true, relaxed: true })).status, 400);
+});
+
 test('locals vs visitors: group on the run or added later, split by topic in stats', async () => {
   // visitors miss croc rounds, locals don't
   const crocRun = (client, okCroc, extra = {}) => {

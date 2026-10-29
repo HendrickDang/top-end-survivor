@@ -63,6 +63,12 @@ export const SOURCES = {
     url: 'https://www.cancercouncil.com.au/cancer-prevention/sun-protection/preventing-skin-cancer/slip-slop-slap-seek-slide/',
     summary: 'Slip on clothing that covers your shoulders, arms and legs. Slop on SPF50+ sunscreen. Slap on a hat. Seek shade. Slide on sunglasses.'
   },
+  wildlife: {
+    title: 'Animals on the road',
+    org: 'Transport for NSW (Centre for Road Safety)',
+    url: 'https://www.transport.nsw.gov.au/roadsafety/road-users/drivers/animals',
+    summary: 'Kangaroos and other animals are most likely on or near the road around dusk and dawn, when they are also hardest to see. Slow down and watch the roadside. If an animal is on the road, brake in a careful, controlled way and never swerve: swerving can roll the car.'
+  },
   bushfire: {
     title: 'Bushfire survival plan',
     org: 'NT Police, Fire and Emergency Services',
@@ -91,7 +97,8 @@ export const GAME_LABELS = {
   'croc-trap': 'Leaving croc traps to rangers',
   'rock-hole': 'Swimming in a rock hole',
   'dust-storm': 'Driving into a dust storm',
-  'flash-flood': 'Crossing a dry river bed'
+  'flash-flood': 'Crossing a dry river bed',
+  'roo-dusk': 'Roos on the road at dusk'
 };
 
 // One emoji per game, used for the Daily Challenge share text.
@@ -99,7 +106,7 @@ export const GAME_ICONS = {
   'croc-edge': '🐊', 'swim-sign': '🐊', 'croc-camp': '⛺', 'stinger-vinegar': '🪼', 'stinger-suit': '🪼',
   'cyclone-kit': '🌀', 'flood-road': '🚙', 'heat-drink': '💧', 'snake-bite': '🐍', 'bushfire-leave': '🔥',
   'lightning-pool': '⛈️', 'mozzie-dusk': '🦟', 'sun-slip': '😎', 'boss-cyclone': '👑', 'boss-croc': '👑',
-  'croc-trap': '🪤', 'rock-hole': '🏞️', 'dust-storm': '🌪️', 'flash-flood': '🌊'
+  'croc-trap': '🪤', 'rock-hole': '🏞️', 'dust-storm': '🌪️', 'flash-flood': '🌊', 'roo-dusk': '🦘'
 };
 
 // One entry per mini-game id (see games.js).
@@ -122,5 +129,6 @@ export const LESSONS = {
   'croc-trap':   { source: 'crocwise', win: 'Nice timing! Leave it to the rangers: report croc sightings and never touch a croc trap.', fail: 'Missed it! Where a croc has been seen, stay out of the water and stand well back from the edge.' },
   'rock-hole':   { source: 'crocwise', win: 'Everyone out! Crocs can move into waterholes after the wet.',   fail: 'Too slow! Only swim where a sign says it is a swimming area: crocs can turn up in any Top End waterhole.' },
   'dust-storm':  { source: 'roads',    win: 'Pulled over, lights on. Wait out a dust storm in the car.',      fail: 'Never drive blind into dust. Slow down, lights and hazards on, pull over and wait.' },
-  'flash-flood': { source: 'flood',    win: 'Back on the bank. A dry river bed can flood in minutes.',          fail: 'Swept away! Never camp in a dry river bed. Floodwater can arrive with little warning.' }
+  'flash-flood': { source: 'flood',    win: 'Back on the bank. A dry river bed can flood in minutes.',          fail: 'Swept away! Never camp in a dry river bed. Floodwater can arrive with little warning.' },
+  'roo-dusk':    { source: 'wildlife', win: 'Made the roadhouse! Roos love dusk: slow down, and brake in a straight line, never swerve.', fail: 'Hit a roo! Roos are most active at dusk and dawn. Brake firmly in a straight line, and never swerve.' }
 };

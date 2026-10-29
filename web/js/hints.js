@@ -24,6 +24,7 @@ export const HINTS = {
   'rock-hole': { kind: 'drag', text: 'Drag each swimmer to the bank', from: [118, 262], to: [118, 432] },
   'dust-storm': { kind: 'drag', text: 'Drag the ute off the road', from: [180, 380], to: [62, 380] },
   'flash-flood': { kind: 'taps', text: 'Tap fast to climb the bank', at: [180, 300] },
+  'roo-dusk': { kind: 'tap', text: 'Hold to brake for roos, let go to drive', at: [180, 240] },
   'boss-cyclone': { kind: 'pick', text: 'Pick the safe choice, 3 times' },
   'boss-croc': { kind: 'pick', text: 'Pick the safe choice, 3 times' }
 };
