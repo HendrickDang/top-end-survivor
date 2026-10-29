@@ -1,16 +1,21 @@
 # One-click deploy on Render (render.com): New > Blueprint > pick this repo.
-# Note: the free plan has no persistent disk, so scores reset when the service restarts.
-# That is fine for competition day; add a disk (paid) if you want scores kept long-term.
+# Paid plan (starter = 0.5 CPU, 512 MB) with a 1 GB persistent disk, so scores survive
+# restarts and redeploys, and the server never sleeps. Render bills by the second:
+# switch back to plan: free (and remove the disk) after the competition to stop paying.
 services:
   - type: web
     name: top-end-survivor
     runtime: docker
-    plan: free
+    plan: starter
     healthCheckPath: /api/health
+    disk:
+      name: tes-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: ADMIN_TOKEN
         generateValue: true
       - key: PUBLIC_URL
         value: https://top-end-survivor.onrender.com/
       - key: DB_PATH
-        value: /tmp/tes.sqlite
+        value: /var/data/tes.sqlite
