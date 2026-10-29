@@ -1,6 +1,6 @@
 {
   "name": "Top End Survivor",
-  "short_name": "TE Survivor",
+  "short_name": "Top End Survivor",
   "description": "A fast, funny micro-game that teaches real Northern Territory safety.",
   "start_url": "./index.html",
   "scope": "./",
