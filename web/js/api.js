@@ -69,8 +69,11 @@ const needsWork = (r) => !r.dead && (!r.serverId || (r.name && !r.nameSent) || (
 
 // Try to send everything in the outbox. Safe to call any time.
 let flushing = null;
+// If a send is already running (say the server is slow to wake up), queue ONE more pass after it,
+// so a name typed meanwhile still gets sent instead of waiting for the next game.
+let flushAgain = null;
 export function flush() {
-  if (flushing) return flushing;
+  if (flushing) return (flushAgain ||= flushing.catch(() => {}).then(() => { flushAgain = null; return flush(); }));
   flushing = (async () => {
     const outbox = load(KEY_OUTBOX, []);
     let changed = false;
