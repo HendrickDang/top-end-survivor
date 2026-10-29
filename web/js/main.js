@@ -558,7 +558,11 @@ function gameOver() {
   try { nameInput.value = KIOSK ? '' : (localStorage.getItem('tes_name') || ''); } catch { /* ignore */ }
   $('#submit-msg').textContent = '';
   $('#submit-form').querySelector('button').disabled = false;
+  $('#submit-form').querySelector('button').textContent = 'Submit';
   show('screen-over');
+  // On your own phone, a name you've used before goes on the board straight away (you can still change it).
+  // Shared booth phones always ask, so nobody posts under the last person's name.
+  if (!KIOSK && !relaxed && /^[A-Za-z0-9 _-]{2,16}$/.test(nameInput.value)) autoSubmitName(nameInput.value);
   if (KIOSK) armKioskReset();
 }
 
@@ -566,6 +570,20 @@ let kioskTimer = 0;
 function armKioskReset() {
   clearTimeout(kioskTimer);
   kioskTimer = setTimeout(() => { if ($('#screen-over').classList.contains('active')) show('screen-menu'); }, 45000);
+}
+
+async function autoSubmitName(name) {
+  const runId = state.runLocalId;
+  api.setRunName(runId, name);
+  $('#submit-form').querySelector('button').textContent = 'Change';
+  $('#submit-msg').textContent = 'Sending...';
+  await api.flush();
+  if (state.runLocalId !== runId) return; // they've already started another game
+  const st = api.runStatus(runId);
+  $('#submit-msg').textContent =
+    st.state === 'sent' ? `On the board as ${name}. Type a new name and tap Change to rename.` :
+    st.state === 'rejected' ? `Not accepted: ${st.error}` :
+    `Saved offline as ${name}. It will upload when you are back online.`;
 }
 
 async function submitName(e) {
