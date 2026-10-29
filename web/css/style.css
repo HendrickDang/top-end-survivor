@@ -622,3 +622,5 @@ body.battle-mode .lives { visibility: hidden; }
 .over-hard { background: #fde3dc; border-color: #c8412f; }
 body.hard-mode .timer-bar:not(.urgent) { background: #ff8a3d; }
 body.hard-mode #hud-round::after { content: ' 🔥'; }
+body.demo .pause-btn { display: none; }
+#pause-sheet { z-index: 70; }

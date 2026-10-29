@@ -206,6 +206,25 @@ test('relaxed mode runs count for learning but stay off the boards', async () =>
   assert.ok(st.runs >= 1);
 });
 
+test('learning: same-speed first vs later tries, and survived after a fail', async () => {
+  const before = (await (await fetch(base + '/api/stats')).json()).learning;
+  const run = (results) => post('/api/runs', { clientId: 'learn-device-01', results, durationMs: results.length * 4000 });
+  // Run 1: fails croc-trap on round 1 (sees the rule), loses the run.
+  assert.equal((await run([
+    { g: 'croc-trap', ok: false, ms: 4000 }, { g: 'flood-road', ok: false, ms: 4000 }, { g: 'heat-drink', ok: false, ms: 4000 }
+  ])).status, 201);
+  // Run 2: survives croc-trap on round 1 this time.
+  assert.equal((await run([
+    { g: 'croc-trap', ok: true, ms: 2000 }, { g: 'flood-road', ok: false, ms: 4000 },
+    { g: 'heat-drink', ok: false, ms: 4000 }, { g: 'snake-bite', ok: false, ms: 4000 }
+  ])).status, 201);
+  const l = (await (await fetch(base + '/api/stats')).json()).learning;
+  assert.equal(l.sameSpeedRounds, 5);
+  assert.ok(l.nAfterFail >= before.nAfterFail + 3); // croc-trap, flood-road, heat-drink all met again after a fail
+  assert.ok(l.afterFail > 0 && l.afterFail <= 1);
+  assert.ok(l.nLater > before.nLater);
+});
+
 test('hard mode runs get their own leaderboard', async () => {
   assert.equal((await post('/api/runs', { ...makeRun(6), clientId: 'hard-device-0001', hard: true, name: 'HardAsNails' })).status, 201);
   const today = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();

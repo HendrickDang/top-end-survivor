@@ -207,6 +207,7 @@ function startGame(mode = 'classic', challenge = null, battleInfo = null) {
   social.startRun(state.challenge);
   forcedGame = null;
   adminMode = false;
+  state.runId = (state.runId || 0) + 1;
   Object.assign(state, {
     mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [],
     startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [],
@@ -241,7 +242,8 @@ function playRound() {
       $('#hud-round').textContent = state.round + 1;
       renderHudLocation();
       show('screen-game');
-      showLocationIntro(loc, runRound);
+      const runId = state.runId;
+      showLocationIntro(loc, () => { if (runId === state.runId) runRound(); });
       return;
     }
     state.pendingIntro = false;
@@ -293,9 +295,9 @@ function runRound() {
   if (!game.boss && !game.ownBackdrop) addLocationBackdrop(svg, loc.id); // bosses and a few games paint their own sky
   stage.appendChild(svg);
 
-  let finished = false, raf = 0, started = 0;
+  let finished = false, raf = 0, started = 0, paused = false, pausedAt = 0;
   const tickers = [];
-  const roundStart = performance.now();
+  let roundStart = performance.now();
 
   const finish = (ok) => {
     if (finished) return;
@@ -387,6 +389,17 @@ function runRound() {
   };
 
   state.ctx = ctx;
+  // Pause / quit (the ⏸ button): freeze the timer, block input, or stop the round for good.
+  state.roundCtl = {
+    pause() { if (finished || paused) return; paused = true; pausedAt = performance.now(); stage.style.pointerEvents = 'none'; },
+    resume() {
+      if (finished || !paused) return;
+      const gap = performance.now() - pausedAt;
+      roundStart += gap; if (started) started += gap;
+      paused = false; stage.style.pointerEvents = '';
+    },
+    abort() { finished = true; cancelAnimationFrame(raf); }
+  };
   game.setup(ctx);
   if (DEMO) demoBot(ctx, () => finished);
   // First time meeting this game? A ghost hand shows how to play it (and the timer waits a moment).
@@ -408,6 +421,7 @@ function runRound() {
   let last = performance.now();
   const loop = (now) => {
     if (finished) return;
+    if (paused) { last = now; raf = requestAnimationFrame(loop); return; }
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     const t = now - roundStart - grace;
@@ -436,6 +450,7 @@ function renderStreak() {
 }
 
 async function endRound(game, ok, ms) {
+  const runId = state.runId; // if the player quits during the animations below, stop there
   const stage = $('#stage');
   const svg = stage.querySelector('svg');
   if (adminMode && state.mode === 'test') return endAdminRound(game, ok, svg);
@@ -470,6 +485,7 @@ async function endRound(game, ok, ms) {
     (sfx[snd] || sfx.lose)();
     await wait(1100);
   }
+  if (runId !== state.runId) return;
 
   showResultCard(game, ok);
   $('#result-streak').textContent = ok && game.boss ? `👑 Boss beaten! +${bonus} bonus`
@@ -478,6 +494,7 @@ async function endRound(game, ok, ms) {
   const dailyDone = state.mode === 'daily' && state.round >= DAILY_ROUNDS;
   const battleDone = state.mode === 'battle' && state.round >= BATTLE_ROUNDS;
   setTimeout(() => {
+    if (runId !== state.runId) return; // quit from the pause menu
     if (battleDone) battleOver();
     else if (state.lives <= 0 || dailyDone) gameOver();
     else playRound();
@@ -1016,6 +1033,7 @@ function startAdminRun(mode, { gameId = null, locationIndex = 0 } = {}) {
   music.play('play');
   forcedGame = gameId;
   adminMode = true;
+  state.runId = (state.runId || 0) + 1;
   Object.assign(state, {
     mode, dailyDay: mode === 'daily' ? darwinDay() : null, round: 0, lives: MAX_LIVES, score: 0, results: [],
     startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [], challenge: null,
@@ -1151,6 +1169,39 @@ function init() {
   $('#btn-help').addEventListener('click', () => show('screen-help'));
   $('#learn-help').addEventListener('click', () => show('screen-help'));
   $('#over-help').addEventListener('click', () => show('screen-help'));
+  // Pause and quit: the ⏸ button (or Esc) freezes the round; quitting throws the run away.
+  const openPause = () => {
+    if (!$('#screen-game').classList.contains('active') || !state.roundCtl || DEMO) return;
+    state.roundCtl.pause();
+    music.duck(true);
+    $('#pause-note').textContent = state.mode === 'battle'
+      ? 'The timer is stopped, but the race goes on without you. Quitting leaves the Booth Battle.'
+      : adminMode ? 'The timer is stopped. Quitting goes back to the tester.'
+        : 'The timer is stopped. Quitting ends this run, and it won\'t be saved.';
+    $('#pause-sheet').hidden = false;
+    $('#pause-resume').focus();
+  };
+  const closePause = () => { $('#pause-sheet').hidden = true; music.duck(false); };
+  $('#btn-pause').addEventListener('click', openPause);
+  $('#pause-resume').addEventListener('click', () => { closePause(); state.roundCtl?.resume(); });
+  $('#pause-quit').addEventListener('click', () => {
+    closePause();
+    state.roundCtl?.abort();
+    state.runId = (state.runId || 0) + 1; // cancels the next round and the game over
+    $('#stage').innerHTML = '';
+    $('#banner').classList.remove('show');
+    if (state.mode === 'battle') { battle.leaveBattle(); music.play('menu'); return; }
+    if (adminMode) { showAdmin('Quit the sandbox run. Nothing was saved.'); return; }
+    if (!DEMO) music.play('menu');
+    show('screen-menu');
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('#pause-sheet').hidden) { $('#pause-resume').click(); return; }
+    openPause();
+  });
+  // Switching apps mid-round pauses the game instead of quietly losing a life.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) openPause(); });
   $('#hard-chip').addEventListener('click', () => {
     const on = !isHard();
     store.set('tes_hard', on);

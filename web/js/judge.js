@@ -64,8 +64,8 @@ const STEPS = [
         const st = await api.getStats('all');
         const l = st.learning || {}, q = st.quiz || {};
         return `<div class="judge-kpis">
-            <div><b>${pct(l.firstTry)}</b><span>survive a hazard the first time they see it</span></div>
-            <div><b>${pct(l.laterTries)}</b><span>survive it on later attempts</span></div>
+            <div><b>${pct(l.afterFail)}</b><span>fail a hazard, then survive it the next time (after seeing the real rule)</span></div>
+            <div><b>${pct(l.firstTry)} → ${pct(l.laterTries)}</b><span>survival on a hazard, first time → later tries, at the same speed</span></div>
             <div><b>${q.n ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : '-'}</b><span>optional safety check, before → after one game (${Number(q.n) || 0} players)</span></div>
             ${groupKpi(st.groups)}
           </div>
@@ -135,7 +135,7 @@ async function render() {
   $('#judge-dots').innerHTML = STEPS.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('');
   $('#judge-body').innerHTML = '<p class="small">Loading...</p>';
   $('#judge-body').innerHTML = await s.body();
-  $('#judge-prev').disabled = step === 0;
+  $('#judge-prev').textContent = step === 0 ? 'Menu' : 'Back';
   $('#judge-next').textContent = step === STEPS.length - 1 ? 'Done' : 'Next';
   $('#judge-play')?.addEventListener('click', () => app.startGame('classic'));
 }
@@ -144,7 +144,8 @@ export function openJudge() { step = 0; app.show('screen-judge'); render(); }
 
 export function initJudge(a) {
   app = a;
-  $('#judge-prev').addEventListener('click', () => { if (step > 0) { step--; render(); } });
+  // Back steps through the tour; on the first step it goes back to the menu.
+  $('#judge-prev').addEventListener('click', () => { if (step > 0) { step--; render(); } else app.show('screen-menu'); });
   $('#judge-next').addEventListener('click', () => { if (step < STEPS.length - 1) { step++; render(); } else app.show('screen-menu'); });
   $('#btn-judge').addEventListener('click', openJudge);
 }

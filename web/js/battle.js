@@ -69,6 +69,9 @@ function view(v) {
   app.show('screen-battle');
 }
 
+// Leaving mid-race (the pause menu's Quit): stop polling and go back to the menu.
+export function leaveBattle() { leave(); }
+
 function leave() {
   clearTimeout(pollTimer); clearTimeout(countTimer); clearTimeout(homeTimer);
   me = null; phase = null;

@@ -114,7 +114,8 @@
       <h3>Are they learning?</h3>
       <div class="learn">
         <div class="lrow"><div>Quick safety check: before → after one game</div><div class="vals" id="l-quiz">-</div><small id="l-quiz-n"></small></div>
-        <div class="lrow"><div>Survival rate: first time they meet a hazard → later tries</div><div class="vals" id="l-curve">-</div><small id="l-curve-n"></small></div>
+        <div class="lrow"><div>Failed a hazard, then survived it the next time</div><div class="vals" id="l-fail">-</div><small id="l-fail-n"></small></div>
+        <div class="lrow"><div>Survival rate: first time they meet a hazard → later tries (same speed)</div><div class="vals" id="l-curve">-</div><small id="l-curve-n"></small></div>
       </div>
 
       <h3>Hazards to talk about</h3>
@@ -217,7 +218,9 @@
         $('#l-quiz-n').textContent = `${d.quiz.n} finished both checks (${d.quiz.started} started)`;
         const l = d.learning;
         $('#l-curve').innerHTML = l.nFirst ? `${pc(l.firstTry)} → <span class="${up(l.firstTry, l.laterTries)}">${pc(l.laterTries)}</span>` : '-';
-        $('#l-curve-n').textContent = `${l.nFirst} first tries, ${l.nLater} later tries`;
+        $('#l-curve-n').textContent = `${l.nFirst} first tries, ${l.nLater} later tries (first ${l.sameSpeedRounds || 5} rounds of each game, same timer)`;
+        $('#l-fail').innerHTML = l.nAfterFail ? `<span class="up">${pc(l.afterFail)}</span>` : '-';
+        $('#l-fail-n').textContent = `${l.nAfterFail} second tries after failing and seeing the rule`;
         const games = d.games.filter(g => g.plays >= 2 && !g.id.startsWith('boss-')).slice(0, 5);
         $('#haz').innerHTML = games.length ? games.map(g => {
           const les = LESSONS[g.id], src = SOURCES[les.source];

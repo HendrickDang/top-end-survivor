@@ -60,7 +60,7 @@
       <header class="hud">
         <div class="lives" id="hud-lives" aria-label="Lives"></div>
         <div class="round"><span class="round-n">Round <b id="hud-round">1</b></span><span class="hud-loc"><b id="hud-location">Darwin</b><small id="hud-step">1/5</small></span> <span class="streak" id="hud-streak"></span></div>
-        <div class="score"><span class="target" id="hud-target"></span><b id="hud-score">0</b> <button class="mute-btn" data-mute aria-label="Mute">🔊</button></div>
+        <div class="score"><span class="target" id="hud-target"></span><b id="hud-score">0</b> <button class="mute-btn" data-mute aria-label="Mute">🔊</button> <button class="mute-btn pause-btn" id="btn-pause" aria-label="Pause"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5" fill="#fffaf0"/><rect x="14" y="4" width="5" height="16" rx="1.5" fill="#fffaf0"/></svg></button></div>
       </header>
       <div class="timer"><div class="timer-bar" id="timer-bar"></div></div>
       <div class="stage" id="stage"></div>
@@ -364,6 +364,13 @@
         <p class="sub small">Your best score each day counts for your town on the Town Battle map.</p>
         <div class="town-list" id="town-list"></div>
         <button class="btn" id="town-close">Close</button>
+      </div>
+    </div>
+    <div class="sheet" id="pause-sheet" hidden>
+      <div class="sheet-card" role="dialog" aria-labelledby="pause-title">
+        <h3 id="pause-title">Paused</h3>
+        <p class="sub small" id="pause-note">The timer is stopped. Quitting ends this run, and it won't be saved.</p>
+        <div class="row"><button class="btn btn-primary" type="button" id="pause-resume">▶ Keep playing</button><button class="btn" type="button" id="pause-quit">Quit to menu</button></div>
       </div>
     </div>
     <div class="sheet" id="battle-sheet" hidden>

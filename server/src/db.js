@@ -98,22 +98,35 @@ export function makeRepo(db) {
       .sort((a, b) => b.failRate - a.failRate || b.plays - a.plays);
   }
 
-  // Survival rate the FIRST time a player meets a hazard vs. every time after.
+  // Are people learning? Two measures, both compared like with like:
+  //  1. Survival the FIRST time a player meets a hazard vs. later tries, counting only the first
+  //     5 rounds of a run (same timer, about 5 s). Rounds speed up as a run goes on (5.5 s down to
+  //     2.6 s), so comparing every round would punish players for getting further, not for forgetting.
+  //     Hard and Relaxed runs have different timers, so they are left out.
+  //  2. "Learned from a fail": after failing a hazard (and seeing its rule), how often the player
+  //     survives that same hazard the next time they meet it.
+  const SAME_SPEED_ROUNDS = 5;
   function learningCurve({ day = null, classCode = null } = {}) {
-    const where = ["r.game NOT LIKE 'boss-%'", day && 'u.day = ?', classCode && 'u.class_code = ?'].filter(Boolean);
+    const where = ["r.game NOT LIKE 'boss-%'", 'u.hard = 0', 'u.relaxed = 0', day && 'u.day = ?', classCode && 'u.class_code = ?'].filter(Boolean);
     const lc = db.prepare(`
       WITH t AS (
-        SELECT r.ok, ROW_NUMBER() OVER (PARTITION BY u.client_id, r.game ORDER BY u.id, r.idx) AS n
+        SELECT r.ok, r.idx,
+               ROW_NUMBER() OVER (PARTITION BY u.client_id, r.game ORDER BY u.id, r.idx) AS n,
+               LAG(r.ok) OVER (PARTITION BY u.client_id, r.game ORDER BY u.id, r.idx) AS prevOk
         FROM results r JOIN runs u ON u.id = r.run_id
         WHERE ${where.join(' AND ')}
       )
-      SELECT AVG(CASE WHEN n = 1 THEN ok END) AS firstTry, AVG(CASE WHEN n > 1 THEN ok END) AS laterTries,
-             COALESCE(SUM(n = 1), 0) AS nFirst, COALESCE(SUM(n > 1), 0) AS nLater
+      SELECT AVG(CASE WHEN n = 1 AND idx < ${SAME_SPEED_ROUNDS} THEN ok END) AS firstTry,
+             AVG(CASE WHEN n > 1 AND idx < ${SAME_SPEED_ROUNDS} THEN ok END) AS laterTries,
+             COALESCE(SUM(n = 1 AND idx < ${SAME_SPEED_ROUNDS}), 0) AS nFirst,
+             COALESCE(SUM(n > 1 AND idx < ${SAME_SPEED_ROUNDS}), 0) AS nLater,
+             AVG(CASE WHEN prevOk = 0 THEN ok END) AS afterFail,
+             COALESCE(SUM(prevOk = 0), 0) AS nAfterFail
       FROM t`).get(...[day, classCode].filter(Boolean));
+    const r3 = (x) => (x == null ? null : +x.toFixed(3));
     return {
-      firstTry: lc.firstTry == null ? null : +lc.firstTry.toFixed(3),
-      laterTries: lc.laterTries == null ? null : +lc.laterTries.toFixed(3),
-      nFirst: lc.nFirst, nLater: lc.nLater
+      firstTry: r3(lc.firstTry), laterTries: r3(lc.laterTries), nFirst: lc.nFirst, nLater: lc.nLater,
+      afterFail: r3(lc.afterFail), nAfterFail: lc.nAfterFail, sameSpeedRounds: SAME_SPEED_ROUNDS
     };
   }
   const insRes = db.prepare('INSERT INTO results (run_id, idx, game, ok, ms) VALUES (?, ?, ?, ?, ?)');
