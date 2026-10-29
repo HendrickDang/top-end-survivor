@@ -81,7 +81,7 @@ Who answers first: accuracy and design questions, Vy; testing and difficulty, Mi
 
 - *Is the advice accurate?* Every tip links to an official source; the Safety tips screen lists them all.
 - *Where is the music from?* It was AI-generated for the team by Minh; all art and characters are drawn in our own code.
-- *How does it scale?* We load-tested it: 500 simulated players, 3,000 requests, zero errors, 95% of requests under about 210 ms on a small 2-core machine. Stateless API, SQLite swappable for Postgres in `server/src/db.js`, offline outbox smooths spikes.
+- *How does it scale?* We load-tested it: 500 players finishing games plus 5 full Booth Battles of 40 phones racing at once, 5,615 requests, zero errors, 95% of requests under about 150 ms on a small 2-core machine. The server re-scores every run, SQLite is swappable for Postgres in `server/src/db.js`, and the offline outbox smooths spikes. Honest limit: live battles sit in one server's memory, so going multi-server means moving them to Redis; that's a small, contained change.
 - *Does it actually teach anything?* Show the booth's learning panel: survival rate the first time people see a hazard vs. later tries, and the optional before/after quick check.
 - *Who would use this after the competition?* NT schools (open `/class` and show the teacher dashboard), and agencies: the "locals vs visitors" panel shows which rules newcomers and tourists miss, which is what NT Government and Tourism NT campaigns need to know.
 - *Is it accessible?* Gesture hints for first-timers, Relaxed mode (more time, bigger text), big touch targets, reduced-motion support, and a Real help screen with checked emergency numbers.

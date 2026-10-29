@@ -104,7 +104,7 @@ const STEPS = [
           <div><b>${lt.requestsPerSecond}</b><span>requests per second</span></div>
           <div><b>${lt.p95ms} ms</b><span>95% of requests faster than</span></div>
           <div><b>${lt.errors}</b><span>errors</span></div>
-        </div><p class="small">Load test: ${lt.requests} requests, ${lt.concurrency} at a time (${app.escapeHtml(lt.where || '')}).</p>` : '';
+        </div><p class="small">Load test: ${Number(lt.requests) || 0} requests, ${Number(lt.concurrency) || 0} at a time${lt.battles ? `, plus ${Number(lt.battles)} full Booth Battles (${Number(lt.battlePlayers) || 0} phones) racing at once, ${Number(lt.battlesFinished) || 0} of ${Number(lt.battles)} finished cleanly` : ''} (${app.escapeHtml(lt.where || '')}).</p>` : '';
       return `${load}<ul class="judge-list">
           <li>🛡️ Server re-scores every run from per-round results: the leaderboard can't be faked</li>
           <li>📶 Offline first: runs queue on the phone and sync later (remote NT has patchy signal)</li>

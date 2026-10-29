@@ -94,10 +94,10 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 
 ## How it meets the judging criteria
 
-- **Innovation**: safety education as a crowd game with a live "what's catching people out" analytics board. Every round played becomes data on which safety rules people actually misunderstand.
-- **Functionality**: 17 mini-games and 2 boss rounds across 8 NT locations, three modes (Classic, Daily, Journey), 7 unlockable characters, offline play, leaderboards, booth screen with QR code, Android app, admin tools, CSV export.
-- **Usability**: one-tap play, no sign-up, portrait phone layout, big touch targets, reduced-motion support, works with no signal.
-- **Scalability**: stateless API + SQLite (swap for Postgres with one module), server-side score validation, rate limiting, offline outbox so spiky booth traffic never loses a score. New mini-games are a single object in `web/js/games.js`.
+- **Innovation**: safety education as a crowd game that measures its own impact. Every round played becomes data on which NT safety rules people actually get wrong, split by locals, newcomers and visitors. A live Booth Battle lets a whole crowd race the same hazards on their own phones, and Classroom mode gives a teacher a live report of what their class misses, with before → after quiz scores.
+- **Functionality**: 17 mini-games and 2 boss rounds across 8 NT locations; Classic, Daily, Journey and live Booth Battle modes; Classroom mode with a teacher dashboard; 7 unlockable characters and badge gear; leaderboards and Town Battle; booth screen with QR codes for playing, voting and taking the game home; a judge's tour; admin tools and CSV export; installable web app and Android app from one codebase; works fully offline.
+- **Usability**: one tap to play, no sign-up and no personal details; a ghost hand shows first-timers each gesture; Relaxed mode gives kids and older players more time and bigger text; 🆘 Real help lists checked NT emergency numbers; big touch targets, reduced-motion support, step-by-step install help for iPhone and Android, and it works with no signal.
+- **Scalability**: load-tested with 500 players finishing games plus 5 full Booth Battles (200 phones) racing at the same time: 5,615 requests, 0 errors, 95% under about 150 ms on a 2-core machine. The server re-scores every run, so it scales without trusting phones; rate limits are sized for a whole venue sharing one Wi-Fi; an offline outbox smooths spikes. Scores and runs live in SQLite behind one module (`server/src/db.js`), so Postgres is a drop-in swap; live battles are short-lived and kept in memory, so running several servers would move them to a shared store such as Redis. New mini-games are a single object in `web/js/games.js`, and new towns, locations and quiz questions are data files.
 
 ## Architecture
 
@@ -156,7 +156,7 @@ npm start                                   # in one terminal (or use your deplo
 node scripts/load_test.mjs --url http://localhost:8080 --players 500 --concurrency 50 --save
 ```
 
-`--save` writes `web/load-test.json`, which the Judge's tour displays. Fake players use client ids starting with `loadtest-`; remove them with `curl -X DELETE -H "X-Admin-Token: $TOKEN" <url>/api/admin/loadtest`. Don't run it against the live server on competition day.
+By default it also runs 5 full Booth Battles of 40 phones at the same time (`--battles 0` turns them off). `--save` writes `web/load-test.json`, which the Judge's tour displays. Fake players use client ids starting with `loadtest-`; remove them with `curl -X DELETE -H "X-Admin-Token: $TOKEN" <url>/api/admin/loadtest`. Don't run it against the live server on competition day.
 
 ## Admin (competition day)
 

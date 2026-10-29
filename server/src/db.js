@@ -10,6 +10,7 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
   const db = new DatabaseSync(file);
   db.exec(`
     PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
     PRAGMA foreign_keys = ON;
     CREATE TABLE IF NOT EXISTS runs (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,

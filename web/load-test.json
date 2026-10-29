@@ -1,63 +1,106 @@
 {
-  "when": "2026-10-18T02:32:08.146Z",
+  "when": "2026-10-29T04:06:54.864Z",
   "where": "local server",
   "players": 500,
   "concurrency": 50,
-  "requests": 3000,
-  "seconds": 8.2,
-  "requestsPerSecond": 368,
-  "p50ms": 121,
-  "p95ms": 208,
-  "p99ms": 335,
+  "battles": 5,
+  "battlePlayers": 200,
+  "battlesFinished": 5,
+  "requests": 5615,
+  "seconds": 12.3,
+  "requestsPerSecond": 455,
+  "p50ms": 68,
+  "p95ms": 144,
+  "p99ms": 205,
   "errors": 0,
   "byRequest": [
     {
       "request": "health",
       "count": 500,
-      "p50": 123,
-      "p95": 197,
-      "p99": 313,
-      "max": 334
+      "p50": 87,
+      "p95": 157,
+      "p99": 217,
+      "max": 544
+    },
+    {
+      "request": "battle: open",
+      "count": 5,
+      "p50": 131,
+      "p95": 135,
+      "p99": 135,
+      "max": 135
     },
     {
       "request": "submit run",
       "count": 500,
-      "p50": 125,
-      "p95": 352,
-      "p99": 1581,
-      "max": 1976
+      "p50": 87,
+      "p95": 158,
+      "p99": 220,
+      "max": 646
     },
     {
       "request": "add name",
       "count": 500,
-      "p50": 119,
-      "p95": 204,
-      "p99": 313,
-      "max": 353
+      "p50": 83,
+      "p95": 155,
+      "p99": 205,
+      "max": 233
+    },
+    {
+      "request": "battle: join",
+      "count": 200,
+      "p50": 73,
+      "p95": 133,
+      "p99": 175,
+      "max": 177
     },
     {
       "request": "leaderboard",
       "count": 500,
-      "p50": 116,
-      "p95": 193,
-      "p99": 259,
-      "max": 327
+      "p50": 85,
+      "p95": 176,
+      "p99": 447,
+      "max": 696
     },
     {
       "request": "town battle",
       "count": 500,
-      "p50": 117,
-      "p95": 198,
-      "p99": 268,
-      "max": 307
+      "p50": 87,
+      "p95": 152,
+      "p99": 186,
+      "max": 730
     },
     {
       "request": "stats",
       "count": 500,
-      "p50": 127,
-      "p95": 207,
-      "p99": 309,
-      "max": 338
+      "p50": 89,
+      "p95": 163,
+      "p99": 224,
+      "max": 644
+    },
+    {
+      "request": "battle: poll",
+      "count": 1405,
+      "p50": 2,
+      "p95": 125,
+      "p99": 173,
+      "max": 400
+    },
+    {
+      "request": "battle: start",
+      "count": 5,
+      "p50": 84,
+      "p95": 106,
+      "p99": 106,
+      "max": 106
+    },
+    {
+      "request": "battle: round",
+      "count": 1000,
+      "p50": 2,
+      "p95": 10,
+      "p99": 25,
+      "max": 44
     }
   ]
 }
