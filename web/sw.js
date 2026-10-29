@@ -1,6 +1,6 @@
 // Service worker: caches the whole game so it plays with no signal.
 // Bump CACHE when you change any file so phones pick up the new version.
-const CACHE = 'tes-v1.5.6';
+const CACHE = 'tes-v1.5.7';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/config.js', 'js/main.js', 'js/games.js', 'js/art.js', 'js/lessons.js', 'js/api.js', 'js/sound.js', 'js/fx.js', 'js/badges.js', 'js/share.js', 'js/daily.js', 'js/season.js', 'js/towns.js', 'js/quiz.js', 'js/social.js', 'js/quizui.js', 'js/wardrobe.js', 'js/wardrobeui.js', 'js/judge.js',

@@ -729,10 +729,12 @@ function renderWeakSpot() {
 let installPrompt = null;
 const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true || !!window.Capacitor;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = () => /android/i.test(navigator.userAgent);
 let apkAvailable = false;
 
 function renderInstall() {
-  const show_ = !DEMO && !isStandalone() && (installPrompt || isIOS() || (apkAvailable && /android/i.test(navigator.userAgent)));
+  // Android always gets the button: Chrome's own install box when it's ready, written steps otherwise.
+  const show_ = !DEMO && !isStandalone() && (installPrompt || isIOS() || isAndroid());
   document.querySelectorAll('[data-install]').forEach(b => { b.hidden = !show_; });
 }
 
@@ -746,7 +748,10 @@ async function doInstall() {
     return;
   }
   $('#install-ios').hidden = !isIOS();
-  $('#install-apk').hidden = !(apkAvailable && /android/i.test(navigator.userAgent));
+  $('#install-android').hidden = !isAndroid();
+  $('#install-apk').hidden = !(apkAvailable && isAndroid());
+  // Any other device (e.g. a laptop without an install prompt): show both sets of steps.
+  if (!isIOS() && !isAndroid()) { $('#install-ios').hidden = false; $('#install-android').hidden = false; }
   $('#install-sheet').hidden = false;
 }
 
