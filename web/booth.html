@@ -217,7 +217,7 @@
       <div class="panel-v" data-panel="learning">
         <h2>🧠 Is it teaching people?</h2>
         <div class="learn-big" id="learn-big"></div>
-        <p class="note">Live from every round played today. "Same speed" compares rounds with the same timer, because rounds get faster the further you go.</p>
+        <p class="note">Live from every round played since launch. "Same speed" compares rounds with the same timer, because rounds get faster the further you go.</p>
       </div>
       <div class="panel-v" data-panel="groups">
         <h2>🧳 Locals vs visitors</h2>
@@ -350,7 +350,7 @@
         ${quizCard}
         <div class="lrow"><div class="lab">Came back for another go</div>
           <div class="vals"><span>${pc(st.replayRate)}</span></div>
-          <small>${st.challenges || 0} mate challenges played today</small></div>`;
+          <small>${num(st.challenges)} mate challenges played so far</small></div>`;
     }
     // Locals vs visitors: which safety topics each group gets wrong.
     function drawGroups(g) {
@@ -480,12 +480,13 @@
 
     async function refresh() {
       try {
-        const [lb, st, fd, tw, rr] = await Promise.all([
+        const [lb, st, fd, tw, rr, stAll] = await Promise.all([
           fetch(`${api}/api/leaderboard?period=all&limit=10`).then(r => r.json()),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
           fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
           fetch(`${api}/api/towns?period=today`).then(r => r.json()),
-          fetch(`${api}/api/leaderboard?period=endless&scope=all&limit=1`).then(r => r.json()).catch(() => ({ entries: [] }))
+          fetch(`${api}/api/leaderboard?period=endless&scope=all&limit=1`).then(r => r.json()).catch(() => ({ entries: [] })),
+          fetch(`${api}/api/stats?period=all`).then(r => r.json())
         ]);
         // Roo Run record: the endless mode has its own board.
         const rec = rr.entries[0];
@@ -493,7 +494,7 @@
         $('#roorec').innerHTML = recText;
         $('#attract-roorec').innerHTML = recText;
         drawMap(tw.entries);
-        drawLearning(st);
+        drawLearning(stAll); // "Is it teaching people?" uses every game since launch
         drawGroups(st.groups);
         const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
         if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
