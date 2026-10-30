@@ -21,9 +21,13 @@
       <div class="menu-sky"></div>
       <button class="mute-btn menu-mute" data-mute aria-label="Mute">🔊</button>
       <div class="menu-content">
+        <!-- The wrappers below only matter on wide screens (laptops): hero | play modes | everything else. -->
+        <div class="menu-hero">
         <div class="mascot" id="menu-mascot" aria-hidden="true"></div>
         <h1 class="logo">Top End<br><span>Survivor</span></h1>
         <p class="tagline">Ten seconds of panic. A lifetime of croc sense.</p>
+        </div>
+        <div class="menu-main">
         <button class="btn btn-primary btn-big" id="btn-play">Play</button>
         <button class="btn btn-battle btn-roorun" id="btn-roorun"><span>🦘 Roo Run <i class="new-tag">NEW</i></span><small>Endless: how many roos can you dodge?</small></button>
         <div class="mode-row">
@@ -32,6 +36,8 @@
         </div>
         <button class="btn btn-battle" id="btn-battle">⚔️ Booth Battle<small>Join with the code on the big screen</small></button>
         <p class="chips"><span id="daily-streak-chip"></span></p>
+        </div>
+        <div class="menu-more">
         <div class="menu-grid">
           <button class="btn" id="btn-board">🏆 Leaderboard</button>
           <button class="btn" id="btn-learn">📖 Safety tips</button>
@@ -49,6 +55,7 @@
         <p class="season-chip" id="season-chip"></p>
         <p class="menu-foot"><span class="coin-total" id="menu-coins"></span> <span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
         <p class="menu-links"><button class="linkish judge-link" id="btn-judge">👩‍⚖️ Judges: 60-second tour</button> <a class="linkish" id="teacher-link" href="class.html">🏫 Teachers: use it in class</a></p>
+        </div>
       </div>
       <div class="challenge-banner" id="challenge-banner" hidden>
         <p id="challenge-text"></p>
@@ -92,7 +99,8 @@
 
     <!-- GAME OVER -->
     <section class="screen" id="screen-over" aria-label="Game over">
-      <div class="panel">
+      <div class="panel over-panel">
+        <div class="over-col">
         <div class="over-char" id="over-char" aria-hidden="true"></div>
         <h2 id="over-title">Game over</h2>
         <p class="big-score"><span id="over-score">0</span><small id="over-unit">points</small></p>
@@ -126,6 +134,8 @@
         <p class="over-relaxed over-endless" id="over-endless" hidden>🦘 Roo Run: your score goes on the <b>Roo Run</b> leaderboard. It gets faster every roo, so go again!</p>
         <p class="over-relaxed over-hard" id="over-hard" hidden>🔥 Hard mode: this score goes on the <b>Hard</b> leaderboard.</p>
         <p class="over-relaxed" id="over-relaxed" hidden>🐢 Relaxed mode: this score stays off the leaderboard, but every round still counts towards what the NT is learning.</p>
+        </div>
+        <div class="over-col">
         <p class="over-town" id="over-town" hidden></p>
         <div class="over-who" id="over-who" hidden></div>
         <div class="over-home" id="over-home" hidden>
@@ -141,6 +151,7 @@
         <button class="btn btn-install" data-install hidden>📲 Play every day: install the game</button>
         <a class="btn btn-vote" id="btn-vote" hidden target="_blank" rel="noopener">🗳️ Vote for us: People's Choice</a>
         <p class="vote-nudge">Enjoyed it? Tell the judges: <b>Team CAP003</b> 🐊 · <button class="linkish" id="over-help">🆘 Real help numbers</button></p>
+        </div>
       </div>
     </section>
 

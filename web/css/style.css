@@ -323,7 +323,6 @@ body.daily-mode .hud { background: #2f7fd0; }
 .judge-list { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .judge-looks { display: flex; justify-content: space-around; background: var(--white); border-radius: 12px; border: 2px solid var(--ink); }
 .judge-demo { display: flex; justify-content: center; }
-.judge-demo iframe { width: 260px; height: 480px; border: 6px solid var(--ink); border-radius: 22px; pointer-events: none; }
 .toast { position: absolute; left: 50%; top: calc(14px + var(--safe-top)); transform: translateX(-50%); z-index: 80; background: var(--ink); color: var(--white); padding: 10px 16px; border-radius: 14px; text-align: center; font-size: .95rem; line-height: 1.3; max-width: 90%; box-shadow: 0 6px 18px rgba(0,0,0,.35); animation: card-in .35s cubic-bezier(.2,1.5,.4,1); transition: opacity .35s, transform .35s; }
 .toast.out { opacity: 0; transform: translate(-50%, -20px); }
 
@@ -635,3 +634,76 @@ body.endless-mode .timer-bar:not(.urgent) { background: #c9b6ee; }
 .new-tag { font-style: normal; font-size: .62rem; font-weight: 800; background: #ffd25e; color: var(--ink); border: 2px solid var(--ink); border-radius: 99px; padding: 1px 7px; vertical-align: 3px; margin-left: 4px; }
 @keyframes roo-glow { 50% { box-shadow: 0 4px 0 var(--ink), 0 0 0 5px rgba(255,210,94,.55); } }
 @media (prefers-reduced-motion: reduce) { .btn-roorun { animation: none; } }
+
+/* ---------- v1.8: fits any browser window ---------- */
+/* Layout wrappers are invisible on phones: their children lay out exactly as before. */
+.menu-hero, .menu-main, .menu-more, .over-col { display: contents; }
+/* Back / Next buttons stay on screen even when a panel scrolls. */
+.panel > .btn[data-back], .judge-nav { position: sticky; bottom: 0; z-index: 3; }
+.judge-nav { background: var(--sand); padding: 6px 0 2px; }
+/* The judge's demo phone: a real 390 x 760 phone screen, scaled to the window height in judge.js. */
+.judge-phone { flex: none; width: 246px; height: 480px; border: 6px solid var(--ink); border-radius: 22px; overflow: hidden; background: var(--ink); box-sizing: content-box; }
+.judge-phone iframe { width: 390px; height: 760px; border: 0; transform-origin: 0 0; pointer-events: none; }
+
+/* Wide screens (laptops, desktops, the booth computer): use the whole window, no page scrolling. */
+@media (min-width: 880px) and (min-height: 460px) and (min-aspect-ratio: 5/4) {
+  #app { max-width: none; }
+  /* Menu: hero | play modes | everything else, side by side. */
+  .menu-content { flex-direction: row; align-items: center; justify-content: center; gap: clamp(16px, 3vw, 48px); padding: 20px 3vw; overflow: hidden; }
+  .menu-hero, .menu-main, .menu-more { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+  .menu-hero { flex: 1 1 0; max-width: 420px; }
+  .menu-main { flex: 1 1 0; max-width: 360px; }
+  .menu-more { flex: 1 1 0; max-width: 380px; max-height: 100%; overflow-y: auto; padding: 4px; }
+  .menu-main .btn-big { width: 100%; }
+  .menu-main .mode-row, .menu-main .btn-battle { width: 100%; max-width: none; }
+  .mascot { width: clamp(110px, 22dvh, 190px); height: clamp(110px, 22dvh, 190px); }
+  .logo { font-size: clamp(2.6rem, 6dvh + 1rem, 4rem); } .logo span { font-size: clamp(3rem, 7dvh + 1rem, 4.6rem); }
+  .menu-sky { background: radial-gradient(circle at 88% 18%, #ffe9a8 0 60px, transparent 61px), linear-gradient(transparent 70%, #6b3b1f 70%, #4a2814 100%); }
+
+  /* Game: a wide play area (4:3) under a full-width HUD; answer buttons stay together in the middle. */
+  .hud, .timer { width: min(100% - 32px, 1100px); margin-left: auto; margin-right: auto; }
+  .hud { padding: 8px 0; }
+  .stage { width: min(100% - 24px, (100dvh - 90px) * 1.2); margin: 10px auto 12px; }
+  .choice-row { left: 50%; right: auto; transform: translateX(-50%); width: min(100% - 24px, 560px); }
+  .banner { font-size: 3.4rem; }
+
+  .result-card { max-width: 560px; padding: 26px 32px; }
+  .result-face.scene { max-width: 420px; }
+  .result-tip { font-size: 1.2rem; }
+
+  /* Panels: a centred, wider column. */
+  .panel { width: min(100%, 1040px); margin: 0 auto; padding: 22px 28px 24px; }
+  .learn-list, .help-list { display: grid; grid-template-columns: 1fr 1fr; }
+  .learn-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .judge-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+  .badge-grid { gap: 8px; }
+  .badge-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .char-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .wardrobe-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  #screen-board .panel { width: min(100%, 720px); }
+
+  /* Game over: two columns, score and name on the left, what you learned on the right. */
+  .over-panel { flex-direction: row; align-items: flex-start; gap: 28px; }
+  .over-col { display: flex; flex-direction: column; gap: 10px; flex: 1 1 0; min-width: 0; }
+  .over-panel .over-char { width: 76px; height: 76px; margin: 0; }
+  .over-panel .big-score { font-size: 3.2rem; }
+  .over-panel h2 { font-size: 1.7rem; }
+
+  /* Judge's tour: a wider card; the demo phone sits beside its caption. */
+  .judge-panel { width: min(100%, 900px); }
+  .judge-kpis { grid-template-columns: repeat(4, 1fr); }
+  .judge-body:has(.judge-demo) { flex-direction: row; align-items: center; justify-content: center; gap: 24px; }
+  .judge-body:has(.judge-demo) p { max-width: 280px; }
+
+  /* Sheets (install, pause, join a battle) become centred cards. */
+  .sheet { align-items: center; justify-content: center; }
+  .sheet-card { max-width: 560px; border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); }
+}
+/* Short laptop windows: compact the busiest judge step (features list with characters and outfits). */
+@media (min-width: 880px) and (min-aspect-ratio: 5/4) and (max-height: 720px) {
+  .judge-body { gap: 6px; line-height: 1.25; font-size: .95rem; }
+  .judge-looks svg { width: 44px; height: 72px; }
+  .judge-chars > div { width: 56px; height: 56px; }
+  .judge-panel { padding-top: 12px; }
+  .judge-panel h2 { font-size: 1.6rem; }
+}

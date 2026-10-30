@@ -53,7 +53,7 @@ const STEPS = [
   {
     title: 'See it play',
     async body() {
-      return `<div class="judge-demo"><iframe src="./?demo=1" title="Game demo" tabindex="-1"></iframe></div>
+      return `<div class="judge-demo"><div class="judge-phone"><iframe src="./?demo=1" title="Game demo" tabindex="-1"></iframe></div></div>
         <p class="small">Self-playing demo. On the day, the booth screen switches to this when nobody is playing.</p>`;
     }
   },
@@ -138,7 +138,19 @@ async function render() {
   $('#judge-prev').textContent = step === 0 ? 'Menu' : 'Back';
   $('#judge-next').textContent = step === STEPS.length - 1 ? 'Done' : 'Next';
   $('#judge-play')?.addEventListener('click', () => app.startGame('classic'));
+  fitDemo();
 }
+
+// The demo is a full-size phone (390 x 760) shrunk to fit the window, so it looks the same everywhere.
+function fitDemo() {
+  const phone = document.querySelector('#judge-body .judge-phone');
+  if (!phone) return;
+  const h = Math.max(220, Math.min(480, window.innerHeight - 210));
+  phone.style.width = `${Math.round(h * 390 / 760)}px`;
+  phone.style.height = `${h}px`;
+  phone.querySelector('iframe').style.transform = `scale(${h / 760})`;
+}
+addEventListener('resize', fitDemo);
 
 export function openJudge() { step = 0; app.show('screen-judge'); render(); }
 
