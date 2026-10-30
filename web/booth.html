@@ -187,7 +187,7 @@
     </section>
 
     <section class="card">
-      <h2>Today's top survivors</h2>
+      <h2>🏆 All-time top survivors</h2>
       <ol class="board" id="board"></ol>
       <p class="empty" id="board-empty">No scores yet. Who's first?</p>
       <p class="roorec" id="roorec"></p>
@@ -270,7 +270,7 @@
         <p id="attract-challenge" class="attract-challenge"></p>
       </div>
       <section class="card attract-board">
-        <h2>Today's top survivors</h2>
+        <h2>🏆 All-time top survivors</h2>
         <ol class="board" id="attract-list"></ol>
         <p class="empty" id="attract-empty">No scores yet. Who's first?</p>
         <p class="kline" id="attract-kline"></p>
@@ -481,11 +481,11 @@
     async function refresh() {
       try {
         const [lb, st, fd, tw, rr] = await Promise.all([
-          fetch(`${api}/api/leaderboard?period=today&limit=10`).then(r => r.json()),
+          fetch(`${api}/api/leaderboard?period=all&limit=10`).then(r => r.json()),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
           fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
           fetch(`${api}/api/towns?period=today`).then(r => r.json()),
-          fetch(`${api}/api/leaderboard?period=endless&limit=1`).then(r => r.json()).catch(() => ({ entries: [] }))
+          fetch(`${api}/api/leaderboard?period=endless&scope=all&limit=1`).then(r => r.json()).catch(() => ({ entries: [] }))
         ]);
         // Roo Run record: the endless mode has its own board.
         const rec = rr.entries[0];
@@ -525,7 +525,7 @@
         $('#k-rounds').textContent = st.rounds;
         $('#k-top').textContent = st.topScore;
         $('#k-replay').textContent = Math.round((st.replayRate || 0) * 100) + '%';
-        $('#attract-challenge').textContent = lb.entries[0] ? `Today's #1: ${lb.entries[0].name} with ${lb.entries[0].score}. Beat it!` : 'Nobody on the board yet. Be the first!';
+        $('#attract-challenge').textContent = lb.entries[0] ? `All-time #1: ${lb.entries[0].name} with ${lb.entries[0].score}. Beat it!` : 'Nobody on the board yet. Be the first!';
         const games = st.games.filter(g => g.plays > 0).slice(0, 7);
         $('#bars').innerHTML = games.length ? games.map(g => {
           const pct = Math.round(g.failRate * 100);

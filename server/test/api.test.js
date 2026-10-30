@@ -235,6 +235,8 @@ test('Roo Run (endless): its own board, no per-round results, speed-checked', as
   assert.equal((await post('/api/runs', { clientId: 'roorun-device-01', mode: 'endless', dodged: -1, durationMs: 10000 })).status, 400);
   const board = await (await fetch(base + '/api/leaderboard?period=endless')).json();
   assert.ok(board.entries.some(e => e.name === 'RooDodger' && e.score === 23));
+  const allTime = await (await fetch(base + '/api/leaderboard?period=endless&scope=all')).json();
+  assert.ok(allTime.entries.some(e => e.name === 'RooDodger'));
   const today = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();
   assert.ok(!today.entries.some(e => e.name === 'RooDodger'));
   const after = (await (await fetch(base + '/api/stats')).json());
