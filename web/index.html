@@ -25,6 +25,7 @@
         <h1 class="logo">Top End<br><span>Survivor</span></h1>
         <p class="tagline">Ten seconds of panic. A lifetime of croc sense.</p>
         <button class="btn btn-primary btn-big" id="btn-play">Play</button>
+        <button class="btn btn-battle btn-roorun" id="btn-roorun"><span>🦘 Roo Run <i class="new-tag">NEW</i></span><small>Endless: how many roos can you dodge?</small></button>
         <div class="mode-row">
           <button class="btn btn-daily" id="btn-daily">📅 Daily<small id="daily-sub">New challenge today!</small></button>
           <button class="btn btn-journey" id="btn-journey">🗺️ Journey<small id="menu-journey">Darwin to Uluru</small></button>
@@ -94,7 +95,7 @@
       <div class="panel">
         <div class="over-char" id="over-char" aria-hidden="true"></div>
         <h2 id="over-title">Game over</h2>
-        <p class="big-score"><span id="over-score">0</span><small>points</small></p>
+        <p class="big-score"><span id="over-score">0</span><small id="over-unit">points</small></p>
         <p class="sub" id="over-rounds"></p>
         <p class="coin-total over-coins" id="over-coins"></p>
         <div class="over-challenge" id="over-challenge" hidden></div>
@@ -122,6 +123,7 @@
           </div>
           <p class="form-msg" id="submit-msg" aria-live="polite"></p>
         </form>
+        <p class="over-relaxed over-endless" id="over-endless" hidden>🦘 Roo Run: your score goes on the <b>Roo Run</b> leaderboard. It gets faster every roo, so go again!</p>
         <p class="over-relaxed over-hard" id="over-hard" hidden>🔥 Hard mode: this score goes on the <b>Hard</b> leaderboard.</p>
         <p class="over-relaxed" id="over-relaxed" hidden>🐢 Relaxed mode: this score stays off the leaderboard, but every round still counts towards what the NT is learning.</p>
         <p class="over-town" id="over-town" hidden></p>
@@ -150,6 +152,7 @@
           <button class="tab active" data-period="today" role="tab">Today</button>
           <button class="tab" data-period="daily" role="tab">Daily</button>
           <button class="tab" data-period="hard" role="tab">🔥 Hard</button>
+          <button class="tab" data-period="endless" role="tab">🦘 Roo Run</button>
           <button class="tab" data-period="towns" role="tab">Towns</button>
           <button class="tab" data-period="all" role="tab">All time</button>
         </div>

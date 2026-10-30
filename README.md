@@ -38,6 +38,12 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
 
+### Roo Run: endless mode (v1.7)
+
+- **🦘 Roo Run:** Roos at Dusk with no timer and one life, Flappy Bird style. The ute gets faster with every animal you get past (80 km/h up to about 220 km/h on the speedo), the beat speeds up, roos cross faster and decoys get more common. You can't just sit on the brake: each animal has a deadline, and the bar at the top shows how much braking time you can still afford; run out and night falls. The score is animals dodged, worth 5 coins each, with its own **🦘 Roo Run** leaderboard tab, a record line on the booth screen and in the demo screen, and a ticker line ("Ava dodged 37 roos on the Roo Run").
+- Every stretch is planned like a Roos at Dusk round, so there is always a way through: in simulation a perfect driver never crashes, a driver who never brakes crashes at the first roo, and a driver who brakes for everything runs out of time within a few animals. Simulated human players (0.3 s reaction, rough timing) score a median of about 15 to 25, with the best runs in the hundreds.
+- The server checks the run can't be faster than about 3 animals a second, keeps Roo Run off the main boards and the Town Battle, and stores no per-round results, so it never skews the learning stats.
+
 ### Hard mode and Roos at Dusk (v1.6)
 
 - **🔥 Hard mode:** a menu toggle for players who find the game too easy. Classic and Journey rounds get 40% less time, gesture hints are off, multiple-choice answers are shuffled every round, and the music runs faster. Hard runs go on their own **🔥 Hard** leaderboard tab, so a quick player never pushes a first-timer off the main board. The server only accepts Hard runs in Classic and Journey, never together with Relaxed mode.

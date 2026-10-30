@@ -85,7 +85,7 @@ const STEPS = [
       return `<ul class="judge-list">
           <li>🗺️ <b>Journey:</b> a road trip from Darwin to Uluru, ${LOCATION_COUNT} stops, each with its own landscape and local hazards</li>
           <li>⚔️ <b>Live Booth Battle:</b> everyone at the booth scans a code and races the same 5 hazards, live on the big screen</li>
-          <li>🔥 <b>Hard mode:</b> 40% less time, no hints, shuffled answers and its own leaderboard, plus 🦘 <b>Roos at Dusk</b>, a one-button rhythm runner on the Stuart Highway</li>
+          <li>🔥 <b>Hard mode:</b> 40% less time, no hints, shuffled answers and its own leaderboard, plus 🦘 <b>Roos at Dusk</b>, a one-button rhythm runner on the Stuart Highway, and <b>Roo Run</b>, its endless, faster-every-roo version with its own leaderboard</li>
           <li>📅 <b>Daily Challenge:</b> same hazards for everyone each day, emoji result to share, day streaks</li>
           <li>⚔️ <b>Challenge a mate:</b> a link that says "Beat my 820"</li>
           <li>📍 <b>Town Battle:</b> ${towns || 'towns compete on the booth map'}</li>

@@ -159,7 +159,7 @@ export function makeRepo(db) {
     leaderboard({ day = null, limit = 20, client = null, mode = 'classic' } = {}) {
       // Relaxed-mode runs (slower timer) never go on the boards. Hard-mode runs have a board of their own.
       const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ' AND relaxed = 0' +
-        (mode === 'daily' ? ` AND mode = 'daily'` : mode === 'hard' ? ` AND hard = 1 AND mode IN ('classic', 'journey')` : ` AND hard = 0 AND mode IN ('classic', 'journey')`);
+        (mode === 'daily' ? ` AND mode = 'daily'` : mode === 'endless' ? ` AND mode = 'endless'` : mode === 'hard' ? ` AND hard = 1 AND mode IN ('classic', 'journey')` : ` AND hard = 0 AND mode IN ('classic', 'journey')`);
       const rows = db.prepare(`
         SELECT name, client_id, MAX(score) AS score, MAX(rounds) AS rounds, MIN(created_at) AS first_at
         FROM runs ${where}
@@ -251,7 +251,7 @@ export function makeRepo(db) {
       return db.prepare(`
         WITH best AS (
           SELECT town, client_id, MAX(score) AS score FROM runs
-          WHERE town IS NOT NULL AND relaxed = 0 AND mode != 'battle' ${day ? 'AND day = ?' : ''}
+          WHERE town IS NOT NULL AND relaxed = 0 AND mode NOT IN ('battle', 'endless') ${day ? 'AND day = ?' : ''}
           GROUP BY town, client_id
         )
         SELECT town, COUNT(*) AS players, SUM(score) AS points, MAX(score) AS best

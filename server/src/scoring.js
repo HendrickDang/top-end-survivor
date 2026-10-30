@@ -56,8 +56,32 @@ export function cleanClassName(raw) {
   return { name };
 }
 
+// Roo Run: the endless version of Roos at Dusk. One life; the score is how many animals you got past.
+// The run carries no per-round results (so it never skews the learning stats), just the count,
+// and it can't be faster than about 3 animals a second.
+export const ENDLESS_MIN_MS_PER_ANIMAL = 350;
+function validateEndless(body, today) {
+  const { clientId, durationMs } = body;
+  const dodged = body.dodged;
+  if (typeof clientId !== 'string' || clientId.length < 8 || clientId.length > 64) return { error: 'Invalid client id.' };
+  if (!Number.isInteger(dodged) || dodged < 0 || dodged > 5000) return { error: 'Invalid Roo Run score.' };
+  if (!Number.isFinite(durationMs) || durationMs < 1500 + dodged * ENDLESS_MIN_MS_PER_ANIMAL || durationMs > 4 * 3600 * 1000) return { error: 'Invalid duration.' };
+  if (body.who != null && !WHO_IDS.includes(body.who)) return { error: 'Invalid player group.' };
+  if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
+  return {
+    run: {
+      clientId, mode: 'endless', day: today, results: [], durationMs: Math.round(durationMs),
+      score: dodged, rounds: 1, wins: 0,
+      appVersion: typeof body.appVersion === 'string' ? body.appVersion.slice(0, 20) : null,
+      town: null, challengeOf: null, relaxed: false, hard: false,
+      who: body.who || null, classCode: body.classCode || null
+    }
+  };
+}
+
 export function validateRun(body, { today = darwinDay() } = {}) {
   if (!body || typeof body !== 'object') return { error: 'Invalid body.' };
+  if (body.mode === 'endless') return validateEndless(body, today);
   const { results, durationMs, clientId } = body;
   const mode = ['daily', 'journey'].includes(body.mode) ? body.mode : 'classic';
   if (typeof clientId !== 'string' || clientId.length < 8 || clientId.length > 64) return { error: 'Invalid client id.' };

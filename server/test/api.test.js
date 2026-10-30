@@ -225,6 +225,22 @@ test('learning: same-speed first vs later tries, and survived after a fail', asy
   assert.ok(l.nLater > before.nLater);
 });
 
+test('Roo Run (endless): its own board, no per-round results, speed-checked', async () => {
+  const before = (await (await fetch(base + '/api/stats')).json());
+  const ok = await post('/api/runs', { clientId: 'roorun-device-01', mode: 'endless', dodged: 23, durationMs: 30000, name: 'RooDodger' });
+  assert.equal(ok.status, 201);
+  assert.equal((await ok.json()).score, 23);
+  // too fast to be real: 100 animals in 10 seconds
+  assert.equal((await post('/api/runs', { clientId: 'roorun-device-01', mode: 'endless', dodged: 100, durationMs: 10000 })).status, 400);
+  assert.equal((await post('/api/runs', { clientId: 'roorun-device-01', mode: 'endless', dodged: -1, durationMs: 10000 })).status, 400);
+  const board = await (await fetch(base + '/api/leaderboard?period=endless')).json();
+  assert.ok(board.entries.some(e => e.name === 'RooDodger' && e.score === 23));
+  const today = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();
+  assert.ok(!today.entries.some(e => e.name === 'RooDodger'));
+  const after = (await (await fetch(base + '/api/stats')).json());
+  assert.equal(after.learning.nFirst + after.learning.nLater, before.learning.nFirst + before.learning.nLater);
+});
+
 test('hard mode runs get their own leaderboard', async () => {
   assert.equal((await post('/api/runs', { ...makeRun(6), clientId: 'hard-device-0001', hard: true, name: 'HardAsNails' })).status, 201);
   const today = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();

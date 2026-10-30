@@ -43,6 +43,26 @@ ROO_AUTOPILOT = """() => new Promise((done) => {
   };
   requestAnimationFrame(step);
 })"""
+# Roo Run autopilot: dodge `n` animals with the same rule as above, then stop braking and crash.
+ROO_RUN_AUTOPILOT = """(n) => new Promise((done) => {
+  const svg = document.querySelector('#stage svg'); const r = svg.__rooRun; let held = false;
+  const press = (on) => { if (on === held) return; held = on;
+    svg.dispatchEvent(new PointerEvent(on ? 'pointerdown' : 'pointerup', { bubbles: true, pointerId: 1 })); };
+  const step = () => {
+    if (!document.querySelector('#screen-game.active')) { press(false); return done(Number(document.querySelector('#hud-score').textContent)); }
+    const dodged = Number(document.querySelector('#hud-score').textContent);
+    let brake = false;
+    if (dodged < n) for (const a of r.actors) {
+      if (a.passed || a.Y - r.d > 480) continue;
+      const bandIn = a.start + a.C * ((220 - a.half) / 440), bandOut = bandIn + a.C * (2 * a.half / 440);
+      const tFront = r.t + Math.max(0, a.Y - 4 - r.d) / a.F, tBack = r.t + (a.Y + 92 - r.d) / a.F + .12;
+      if (tFront < bandOut + .08 && tBack > bandIn - .08 && tFront - r.t < .6) brake = true;
+    }
+    press(brake);
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+})"""
 CENTER = """(sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect();
   return [r.x + r.width / 2, r.y + r.height / 2]; }"""
 
@@ -493,6 +513,26 @@ def main():
             phones[1].screenshot(path=str(SHOTS / '46-battle-phone.png'))
             booth.wait_for_timeout(800); booth.screenshot(path=str(SHOTS / '47-battle-podium.png'))
         booth.close()
+
+        # Roo Run: endless Roos at Dusk with one life. Dodge 6, crash, get on the Roo Run board.
+        rr = ctx.new_page()
+        rr.on('pageerror', lambda e: errors.append(str(e)))
+        rr.goto(BASE + '/'); rr.wait_for_timeout(400)
+        rr.click('#btn-roorun')
+        rr.wait_for_function("document.querySelector('#stage svg') && document.querySelector('#stage svg').__rooRun")
+        if SHOTS: rr.wait_for_timeout(2500); rr.screenshot(path=str(SHOTS / '50-roorun.png'))
+        got = rr.evaluate(ROO_RUN_AUTOPILOT, 6)
+        rr.wait_for_selector('#screen-over.active', timeout=20000)
+        print('Roo Run: dodged', got, '|', rr.inner_text('#over-rounds'))
+        if got < 6: failures.append(f'roo run dodged only {got}')
+        if not rr.is_visible('#over-endless'): failures.append('roo run game over note')
+        rr.wait_for_timeout(1500)  # a saved name may auto-post first; then rename
+        rr.fill('#player-name', 'RooRunner'); rr.click('#submit-form button[type=submit]')
+        rr.wait_for_function("document.querySelector('#submit-msg').textContent.startsWith('On the board!')", timeout=8000)
+        board = rr.evaluate("fetch('/api/leaderboard?period=endless').then(r => r.json())")
+        if not any(e['name'] == 'RooRunner' and e['score'] == got for e in board['entries']): failures.append('roo run board')
+        if SHOTS: rr.screenshot(path=str(SHOTS / '51-roorun-over.png'), full_page=True)
+        rr.close()
         browser.close()
 
     print('JS errors:', errors or 'none')

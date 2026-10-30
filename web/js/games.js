@@ -953,6 +953,138 @@ function planRooRun({ seconds, round, hard, relaxed, bpm }) {
   return { F, items, D: pPrev + F * Math.max(.6, finishT - tPrev) };
 }
 
+// ---------- Roo Run: the endless version of Roos at Dusk ----------
+// One life, no timer, and it never ends: roos and the odd cow keep hopping across on the beat,
+// the ute gets faster and the beat gets quicker. The score is how many animals you get past.
+// Every stretch is planned like a Roos at Dusk round, so there is always a way through.
+export const RUN_START_SPEED = 230;
+function endlessPlanner() {
+  const rnd = Math.random, SPAN = 440;
+  let tPrev = 0, pPrev = 0, k = 0;
+  return () => {
+    const F = Math.min(640, RUN_START_SPEED + 9 * k);          // the ute speeds up with every animal
+    const bpm = Math.min(200, 132 + 2 * k);
+    const beat = 60 / bpm;
+    const beats = k < 8 ? pick([3, 3, 4]) : k < 20 ? pick([2, 3, 3]) : pick([2, 2, 3]);
+    const gap = beats * beat + (k === 0 ? 1.2 : 0);
+    const tArr = tPrev + gap, Y = pPrev + F * gap;
+    const cow = k >= 6 && rnd() < .15;
+    const C = cow ? Math.max(2.4, 3.4 - k * .02) : Math.max(1.05, 2 - k * .02) + rnd() * .4;
+    const half = cow ? 56 : 42;
+    const w = (2 * half) / (SPAN / C);
+    const decoy = k > 0 && rnd() < Math.min(.4, .15 + k * .01);
+    const a = decoy ? tArr - w - (.22 + rnd() * .18) : tArr - w * (.25 + rnd() * .5);
+    tPrev = decoy ? tArr : a + w + .42;
+    pPrev = Y;
+    // Like Flappy Bird there's no slowing down for free: be past each animal by its deadline or
+    // night falls. The plan drives flat out, so this is the spare time for braking, which grows a
+    // little with every animal passed.
+    const deadline = tPrev + 92 / F + Math.max(.4, 1 + .08 * Math.min(k, 15) - .015 * Math.max(0, k - 40));
+    k++;
+    return { Y, C, half, cow, dir: rnd() < .5 ? 1 : -1, start: a - (220 - half) / (SPAN / C), F, bpm, deadline };
+  };
+}
+
+// Draws Roo Run into ctx.svg. Call tick(dt) every frame (skip it while paused).
+// onDodge(count, item) fires as each animal is passed; onHit(item) once, when you hit one.
+export function rooRun(ctx, { onDodge = () => {}, onHit = () => {} } = {}) {
+  const { svg } = ctx;
+  const UTE_FRONT = 342;
+  const dashes = el('path', { d: 'M180 -260 V520', stroke: '#ffe9a8', 'stroke-width': 5, 'stroke-dasharray': '24 20', fill: 'none' });
+  const posts = el('path', { d: 'M102 -260 V520 M258 -260 V520', stroke: '#fffaf0', 'stroke-width': 4, 'stroke-dasharray': '7 113', fill: 'none' });
+  const tiles = [roadsideTile(1), roadsideTile(2)];
+  svg.append(
+    el('rect', { x: -200, y: -300, width: 760, height: 1000, fill: '#c4683a' }),
+    ...tiles,
+    el('rect', { x: 110, y: -300, width: 140, height: 1000, fill: '#4a4a52' }),
+    el('path', { d: 'M114 -300 V700 M246 -300 V700', stroke: '#f6e7c8', 'stroke-width': 3 }),
+    dashes, posts
+  );
+  const layer = g([]);
+  svg.append(layer);
+  const ute = uteTop();
+  place(ute.node, 180, UTE_FRONT + 46);
+  svg.append(ute.node);
+  // Dusk turns to night as you go.
+  const dusk = el('rect', { x: -200, y: -300, width: 760, height: 1000, fill: '#1d1440', opacity: .15, 'pointer-events': 'none' });
+  svg.append(dusk);
+  const speedo = text(W / 2, 452, '80 km/h', { size: 16, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+  const say = text(W / 2, 476, 'HOLD TO BRAKE · LET GO TO DRIVE', { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+  svg.append(speedo, say);
+
+  let braking = false;
+  const setBrake = (on) => { braking = on; ute.setBraking(on); };
+  svg.addEventListener('pointerdown', (e) => { e.preventDefault(); svg.setPointerCapture?.(e.pointerId); setBrake(true); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) svg.addEventListener(ev, () => setBrake(false));
+
+  const next = endlessPlanner();
+  const actors = [];
+  let t = 0, d = 0, v = RUN_START_SPEED, dodged = 0, over = false, topKmh = 80, spare = 2;
+  const spawn = () => {
+    const it = next();
+    const art = it.cow ? cowSide() : kangaroo();
+    const node = g([g([art], { transform: it.dir === 1 ? '' : 'scale(-1 1)' })]);
+    layer.append(node);
+    actors.push({ ...it, node, passed: false });
+  };
+  // Keep about two screens of road planned ahead.
+  const fill = () => { while (!actors.length || actors[actors.length - 1].Y < d + 900) spawn(); };
+  fill();
+  // For the automated tests.
+  svg.__rooRun = { get actors() { return actors; }, get d() { return d; }, get v() { return v; }, get t() { return t; } };
+
+  function tick(dt) {
+    if (over) return;
+    t += dt;
+    const ahead = actors.find(a => !a.passed);
+    const target = braking ? 0 : (ahead ? ahead.F : v);
+    v += (target - v) * Math.min(1, dt * (braking ? 9 : 4.5));
+    d += v * dt;
+    fill();
+    dashes.setAttribute('stroke-dashoffset', String(-d % 44));
+    posts.setAttribute('stroke-dashoffset', String(-d % 120));
+    tiles.forEach((tile, i) => tile.setAttribute('transform', `translate(0 ${((d + i * 480) % 960) - 480})`));
+    const beat = 60 / (ahead ? ahead.bpm : 140);
+    const phase = (t % beat) / beat;
+    dashes.setAttribute('opacity', (1 - .45 * phase).toFixed(2));
+    // Too slow: past this animal's deadline.
+    if (ahead && t > ahead.deadline) {
+      over = true; setBrake(false);
+      ctx.failTip = 'Too slow, and now it\'s dark: peak roo time. Plan long drives to finish before dusk.';
+      onHit(null);
+      return;
+    }
+    spare = ahead ? ahead.deadline - (t + Math.max(0, ahead.Y + 92 - d) / ahead.F) : 2;
+    const kmh = Math.round(v / RUN_START_SPEED * 80);
+    topKmh = Math.max(topKmh, kmh);
+    speedo.textContent = `${kmh} km/h`;
+    dusk.setAttribute('opacity', Math.min(.5, .15 + dodged * .006).toFixed(3));
+
+    for (let i = actors.length - 1; i >= 0; i--) {
+      const a = actors[i];
+      const y = UTE_FRONT - (a.Y - d);
+      if (y > 620) { a.node.remove(); actors.splice(i, 1); continue; }
+      const k = (t - a.start) / a.C;
+      const x = a.dir === 1 ? -40 + 440 * k : 400 - 440 * k;
+      const hop = a.cow ? Math.abs(Math.sin(t * 6)) * 2 : Math.abs(Math.sin(Math.PI * phase)) * 14;
+      a.node.setAttribute('transform', `translate(${x.toFixed(1)} ${(y - hop).toFixed(1)})`);
+      a.node.style.display = y < -260 ? 'none' : '';
+      if (!a.passed && Math.abs(x - 180) < a.half && d >= a.Y - 4 && d <= a.Y + 92) {
+        over = true;
+        setBrake(false);
+        ctx.failTip = a.cow
+          ? 'Wandering stock on the road! Slow down at dusk and brake firmly in a straight line.'
+          : 'Hit a roo! Roos are most active at dusk and dawn. Brake firmly in a straight line, and never swerve.';
+        onHit(a);
+        return;
+      }
+      if (!a.passed && d > a.Y + 92) { a.passed = true; dodged++; onDodge(dodged, a); }
+    }
+  }
+  // spare: seconds of braking you can still afford before the next deadline (for the timer bar).
+  return { tick, get dodged() { return dodged; }, get topKmh() { return topKmh; }, get spare() { return spare; } };
+}
+
 function boss(id, title, bg, failKind, steps) {
   return {
     id, boss: true, seconds: 15, failKind, prompt: '👑 BOSS: ' + title, bg,

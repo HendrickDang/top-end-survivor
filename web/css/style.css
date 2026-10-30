@@ -624,3 +624,14 @@ body.hard-mode .timer-bar:not(.urgent) { background: #ff8a3d; }
 body.hard-mode #hud-round::after { content: ' 🔥'; }
 body.demo .pause-btn { display: none; }
 #pause-sheet { z-index: 70; }
+
+/* ---------- v1.7: Roo Run (endless) ---------- */
+.btn-roorun { background: #5b3f8f; }
+.over-endless { background: #ece3f8; border-color: #5b3f8f; }
+body.endless-mode .timer-bar:not(.urgent) { background: #c9b6ee; }
+#screen-board .tabs { flex-wrap: wrap; }
+#screen-board .tabs .tab { flex: 1 1 30%; }
+.btn-roorun { position: relative; animation: roo-glow 2.4s ease-in-out infinite; }
+.new-tag { font-style: normal; font-size: .62rem; font-weight: 800; background: #ffd25e; color: var(--ink); border: 2px solid var(--ink); border-radius: 99px; padding: 1px 7px; vertical-align: 3px; margin-left: 4px; }
+@keyframes roo-glow { 50% { box-shadow: 0 4px 0 var(--ink), 0 0 0 5px rgba(255,210,94,.55); } }
+@media (prefers-reduced-motion: reduce) { .btn-roorun { animation: none; } }

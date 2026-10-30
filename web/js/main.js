@@ -1,5 +1,5 @@
 // Game engine: screens, round loop, scoring, offline leaderboard sync.
-import { GAMES } from './games.js';
+import { GAMES, rooRun } from './games.js';
 import { LESSONS, SOURCES, GAME_LABELS, GAME_ICONS } from './lessons.js';
 import { REGULAR, DAILY_ROUNDS, dailySequence, darwinDay, prevDay, isBoss, isBossRound, classicBossFor } from './daily.js';
 import { inSeason, inSeasonGames } from './season.js';
@@ -63,7 +63,7 @@ const store = {
 // ---------- relaxed mode & locals vs visitors ----------
 const isRelaxed = () => store.get('tes_relaxed', false) === true;
 // Battles are a race, so everyone plays at normal speed there.
-const relaxedNow = () => isRelaxed() && state.mode !== 'battle';
+const relaxedNow = () => isRelaxed() && state.mode !== 'battle' && state.mode !== 'endless';
 function renderRelaxed() {
   const on = isRelaxed();
   document.body.classList.toggle('relaxed', on);
@@ -90,7 +90,7 @@ function show(id) {
 }
 
 function renderLives() {
-  $('#hud-lives').innerHTML = Array.from({ length: MAX_LIVES }, (_, i) =>
+  $('#hud-lives').innerHTML = Array.from({ length: state.mode === 'endless' ? 1 : MAX_LIVES }, (_, i) =>
     `<span class="${i < state.lives ? '' : 'lost'}">${heartSVG()}</span>`).join('');
 }
 
@@ -197,6 +197,7 @@ function nextGame() {
 function startGame(mode = 'classic', challenge = null, battleInfo = null) {
   sfx.unlock();
   if (typeof mode !== 'string') mode = 'classic';
+  if (mode === 'endless') { startRooRun(); return; }
   // First game on this device: offer the optional 3-question safety check (once, skippable).
   // Never in a Booth Battle: the countdown waits for nobody.
   if (!DEMO && mode !== 'battle' && quiz.shouldOffer()) { quiz.offer(() => startGame(mode, challenge)); return; }
@@ -219,6 +220,8 @@ function startGame(mode = 'classic', challenge = null, battleInfo = null) {
 }
 
 function resetHud() {
+  // Roo Run has no rounds: the HUD says so instead of "Round 1".
+  $('.round-n').innerHTML = state.mode === 'endless' ? '🦘 <b id="hud-round">Roo Run</b>' : 'Round <b id="hud-round">1</b>';
   $('#hud-score').textContent = '0';
   renderStreak();
   renderLives();
@@ -227,6 +230,7 @@ function resetHud() {
   document.body.classList.toggle('journey-mode', state.mode === 'journey' || (adminMode && state.mode === 'test'));
   document.body.classList.toggle('battle-mode', state.mode === 'battle');
   document.body.classList.toggle('hard-mode', hardNow());
+  document.body.classList.toggle('endless-mode', state.mode === 'endless');
 }
 
 function playRound() {
@@ -442,6 +446,86 @@ function runRound() {
   raf = requestAnimationFrame(loop);
 }
 
+// ---------- Roo Run: endless Roos at Dusk, one life ----------
+// The ute speeds up with every animal and the beat gets quicker; the score is animals dodged.
+function startRooRun() {
+  sfx.unlock();
+  hints.resetRun();
+  social.startRun(null);
+  forcedGame = null; adminMode = false; kioskWho = null;
+  state.runId = (state.runId || 0) + 1;
+  Object.assign(state, {
+    mode: 'endless', dailyDay: null, round: 1, lives: 1, score: 0, results: [], challenge: null, battle: null,
+    startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [],
+    locationIndex: 0, roundInLocation: 0, pendingIntro: false
+  });
+  resetHud();
+  if (!DEMO) music.play('play');
+  const stage = $('#stage');
+  stage.innerHTML = '';
+  stage.style.pointerEvents = '';
+  show('screen-game');
+  const svg = scene('#c4683a');
+  stage.appendChild(svg);
+  const banner = $('#banner');
+  banner.textContent = 'HOW MANY ROOS?';
+  banner.classList.remove('boss', 'show'); void banner.offsetWidth; banner.classList.add('show');
+  sfx.go();
+  const bar = $('#timer-bar');
+  bar.classList.remove('urgent');
+
+  const runId = state.runId;
+  let finished = false, paused = false, raf = 0, last = performance.now();
+  const ctx = { svg, stage, sound: (name) => sfx[name] && sfx[name](), failTip: null };
+  state.ctx = ctx;
+  const run = rooRun(ctx, {
+    onDodge(n, a) {
+      state.score = n;
+      $('#hud-score').textContent = n;
+      music.setTempo(a.bpm);
+      if (n % 10 === 0) { floatText(stage, `${n}!`); confetti(30); sfx.coin(); } else sfx.tap();
+    },
+    async onHit() {
+      finished = true;
+      cancelAnimationFrame(raf);
+      stage.style.pointerEvents = 'none';
+      const ms = Math.round(performance.now() - state.startedAt);
+      state.results = [{ g: 'roo-dusk', ok: false, ms: Math.min(20000, ms) }];
+      state.lives = 0;
+      renderLives();
+      navigator.vibrate?.([80, 40, 120]);
+      shake(stage, 12);
+      music.duck(true);
+      const snd = await playFail('roo-dusk', svg);
+      (sfx[snd] || sfx.lose)();
+      await wait(1100);
+      if (runId !== state.runId) return;
+      showResultCard(byId('roo-dusk'), false);
+      $('#result-streak').textContent = `🦘 ${state.score} dodged · top speed ${run.topKmh} km/h`;
+      setTimeout(() => { if (runId === state.runId) gameOver(); }, 2600);
+    }
+  });
+  state.roundCtl = {
+    pause() { if (!finished) { paused = true; stage.style.pointerEvents = 'none'; } },
+    resume() { if (!finished && paused) { paused = false; last = performance.now(); stage.style.pointerEvents = ''; } },
+    abort() { finished = true; cancelAnimationFrame(raf); }
+  };
+  const grace = performance.now() + 900; // read the banner first
+  const loop = (now) => {
+    if (finished) return;
+    const dt = Math.min(.05, (now - last) / 1000);
+    last = now;
+    if (!paused && now > grace) {
+      run.tick(dt);
+      // The bar shows the braking time you can still afford: brake too much and night falls.
+      bar.style.transform = `scaleX(${Math.max(0, Math.min(1, run.spare / 2)).toFixed(3)})`;
+      bar.classList.toggle('urgent', run.spare < .6);
+    }
+    raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+
 function renderStreak() {
   const el = $('#hud-streak');
   if (!el) return;
@@ -537,7 +621,10 @@ function gameOver() {
     return;
   }
   const durationMs = Math.round(performance.now() - state.startedAt);
-  state.runLocalId = api.queueRun({
+  state.runLocalId = state.mode === 'endless' ? api.queueRun({
+    mode: 'endless', dodged: state.score, durationMs, results: [],
+    who: getWho() || undefined, classCode: api.myClass()?.code || undefined, appVersion: window.TES_CONFIG?.APP_VERSION
+  }) : api.queueRun({
     mode: state.mode,
     day: state.dailyDay || undefined,
     results: state.results.map(({ g, ok, ms }) => ({ g, ok, ms })),
@@ -554,7 +641,8 @@ function gameOver() {
 
   try {
     const best = Number(localStorage.getItem('tes_best') || 0);
-    if (state.mode !== 'daily' && state.score > best) localStorage.setItem('tes_best', String(state.score));
+    if (state.mode !== 'daily' && state.mode !== 'endless' && state.score > best) localStorage.setItem('tes_best', String(state.score));
+    if (state.mode === 'endless' && state.score > Number(localStorage.getItem('tes_roorun_best') || 0)) localStorage.setItem('tes_roorun_best', String(state.score));
   } catch { /* ignore */ }
 
   state.newBadges.push(...badges.evaluateRun(state.results, state.score));
@@ -571,13 +659,17 @@ function gameOver() {
   $('#over-relaxed').hidden = !relaxed;
   $('#over-hard').hidden = !hardNow();
   $('#submit-form').hidden = relaxed;
-  $('#btn-challenge').hidden = relaxed;
+  $('#btn-challenge').hidden = relaxed || state.mode === 'endless';
+  $('#over-endless').hidden = state.mode !== 'endless';
   $('#challenge-link').hidden = true;
   $('#over-score').textContent = state.score;
+  $('#over-unit').textContent = state.mode === 'endless' ? (state.score === 1 ? 'roo dodged' : 'roos dodged') : 'points';
   renderOverCoins();
   const survived = state.results.filter(r => r.ok).length;
   const stop = locationAt(state.locationIndex);
-  $('#over-rounds').textContent = state.mode === 'daily'
+  $('#over-rounds').textContent = state.mode === 'endless'
+    ? `Roo Run: you got past ${state.score} animal${state.score === 1 ? '' : 's'} on the Stuart Highway.`
+    : state.mode === 'daily'
     ? `Daily Challenge: you survived ${survived} of ${DAILY_ROUNDS} hazards.`
     : state.mode === 'journey'
       ? `You made it to ${stop.name}${state.locationIndex >= LOCATION_COUNT ? ' (lap 2!)' : ` (stop ${state.locationIndex + 1} of ${LOCATION_COUNT})`} and survived ${survived} of ${state.results.length} rounds.`
@@ -887,7 +979,7 @@ function renderOverHome(refetch = true) {
 
 function renderOverTown() {
   const box = $('#over-town');
-  if (KIOSK || relaxedNow()) { box.hidden = true; return; }
+  if (KIOSK || relaxedNow() || state.mode === 'endless') { box.hidden = true; return; }
   const t = social.getTown();
   box.hidden = false;
   box.innerHTML = t
@@ -952,7 +1044,8 @@ function renderOverCoins() {
   $('#over-char').innerHTML = characterSVG(profile.selected, state.lives > 0 ? 'win' : 'fail');
   const box = $('#over-coins');
   if (DEMO) { box.innerHTML = ''; return; }
-  const earned = Math.floor(state.score / COINS_PER_POINT_DIVISOR);
+  // Roo Run scores are animals dodged, not points: 5 coins each.
+  const earned = state.mode === 'endless' ? state.score * 5 : Math.floor(state.score / COINS_PER_POINT_DIVISOR);
   profile.addCoins(earned);
   const next = CHARACTERS.find(c => !profile.owns(c.id));
   const goal = !next ? 'You own every character!'
@@ -1144,6 +1237,7 @@ function init() {
   renderBest();
   renderLearn();
   $('#btn-play').addEventListener('click', () => startGame('classic'));
+  $('#btn-roorun').addEventListener('click', startRooRun);
   $('#btn-daily').addEventListener('click', () => startGame('daily'));
   $('#btn-journey').addEventListener('click', () => startGame('journey'));
   $('#btn-chars').addEventListener('click', showCharacters);
