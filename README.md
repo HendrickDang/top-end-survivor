@@ -6,6 +6,8 @@ Built for the **CDU IT Code Fair 2026, Coding Competition (Capable Coders, Group
 
 > Play on the web, install it as an app (PWA), or sideload the Android APK. It works fully offline, and scores sync when you get signal back.
 
+**▶ Play now: https://top-end-survivor.onrender.com** · **Judges' 60-second tour: https://top-end-survivor.onrender.com/?judge=1** · Booth screen: https://top-end-survivor.onrender.com/booth · Teacher dashboard: https://top-end-survivor.onrender.com/class
+
 ---
 
 ## Why
@@ -35,6 +37,7 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | GET OUT! | Drag everyone out of the rock hole | Only swim in signed swimming areas; crocs move into waterholes after the wet | Be Crocwise |
 | DUST STORM! | Drag the ute off the road | Slow down, lights and hazards on, pull over and wait in the car | RACV |
 | DRY RIVER! | Tap to climb the bank | Never camp or walk in a dry river bed; flash floods come fast | NTPFES |
+| ROOS AT DUSK! | Hold to brake, let go to drive, reach the roadhouse (also the endless **Roo Run** mode) | Roos are most active at dusk and dawn; brake in a straight line, never swerve | Transport for NSW |
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
 
