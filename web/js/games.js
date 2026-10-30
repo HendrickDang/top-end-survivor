@@ -841,6 +841,10 @@ function crocCreekScene() {
 }
 
 // A boss is a 3-step mini story. Each step shows a caption and two choices.
+// On a computer the brake is the Space bar (or holding the mouse button); on a phone, holding a finger.
+const brakeHint = () => (globalThis.matchMedia?.('(hover: hover) and (pointer: fine)').matches
+  ? 'HOLD SPACE TO BRAKE · LET GO TO DRIVE' : 'HOLD TO BRAKE · LET GO TO DRIVE');
+
 // ---------- Roos at Dusk: art ----------
 // A cartoon kangaroo, side on, facing right, origin at its feet.
 function kangaroo() {
@@ -1008,18 +1012,19 @@ export function rooRun(ctx, { onDodge = () => {}, onHit = () => {} } = {}) {
   // Dusk turns to night as you go.
   const dusk = el('rect', { x: -200, y: -300, width: 760, height: 1000, fill: '#1d1440', opacity: .15, 'pointer-events': 'none' });
   svg.append(dusk);
-  const speedo = text(W / 2, 452, '80 km/h', { size: 16, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
-  const say = text(W / 2, 476, 'HOLD TO BRAKE · LET GO TO DRIVE', { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+  // Game pace, not km/h: the lesson is to slow down, so no speedo bragging.
+  const speedo = text(W / 2, 452, 'PACE 1.0×', { size: 16, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+  const say = text(W / 2, 476, brakeHint(), { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
   svg.append(speedo, say);
 
   let braking = false;
   const setBrake = (on) => { braking = on; ute.setBraking(on); };
-  svg.addEventListener('pointerdown', (e) => { e.preventDefault(); svg.setPointerCapture?.(e.pointerId); setBrake(true); });
+  svg.addEventListener('pointerdown', (e) => { e.preventDefault(); try { svg.setPointerCapture(e.pointerId); } catch { /* keyboard or test pointer */ } setBrake(true); });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) svg.addEventListener(ev, () => setBrake(false));
 
   const next = endlessPlanner();
   const actors = [];
-  let t = 0, d = 0, v = RUN_START_SPEED, dodged = 0, over = false, topKmh = 80, spare = 2;
+  let t = 0, d = 0, v = RUN_START_SPEED, dodged = 0, over = false, topPace = 1, spare = 2;
   const spawn = () => {
     const it = next();
     const art = it.cow ? cowSide() : kangaroo();
@@ -1055,9 +1060,9 @@ export function rooRun(ctx, { onDodge = () => {}, onHit = () => {} } = {}) {
       return;
     }
     spare = ahead ? ahead.deadline - (t + Math.max(0, ahead.Y + 92 - d) / ahead.F) : 2;
-    const kmh = Math.round(v / RUN_START_SPEED * 80);
-    topKmh = Math.max(topKmh, kmh);
-    speedo.textContent = `${kmh} km/h`;
+    const pace = Math.round(v / RUN_START_SPEED * 10) / 10;
+    topPace = Math.max(topPace, pace);
+    speedo.textContent = `PACE ${pace.toFixed(1)}×`;
     dusk.setAttribute('opacity', Math.min(.5, .15 + dodged * .006).toFixed(3));
 
     for (let i = actors.length - 1; i >= 0; i--) {
@@ -1082,7 +1087,7 @@ export function rooRun(ctx, { onDodge = () => {}, onHit = () => {} } = {}) {
     }
   }
   // spare: seconds of braking you can still afford before the next deadline (for the timer bar).
-  return { tick, get dodged() { return dodged; }, get topKmh() { return topKmh; }, get spare() { return spare; } };
+  return { tick, get dodged() { return dodged; }, get topPace() { return topPace.toFixed(1); }, get spare() { return spare; } };
 }
 
 function boss(id, title, bg, failKind, steps) {
@@ -1213,7 +1218,8 @@ export const GAMES = [
         el('path', { d: 'M80 165 q30 20 60 0 t60 5', stroke: '#c8412f', 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round' }),
         el('path', { d: 'M90 195 q30 -15 60 0 t60 0', stroke: '#c8412f', 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round' })
       ]);
-      ctx.svg.append(welts, text(150, 120, 'OUCH!', { size: 26, fill: '#c8412f' }));
+      ctx.svg.append(welts, text(150, 120, 'OUCH!', { size: 26, fill: '#c8412f' }),
+        text(VIEW.w / 2, 26, 'OUT OF THE WATER, 000 CALLED. NOW:', { size: 13, fill: '#1d1a16', stroke: '#fffaf0', strokeWidth: 4 }));
       const opts = shuffle([['vinegar', true], ['freshwater', false], ['fizzy', false]]);
       opts.forEach(([key, ok], i) => {
         const node = items[key]();
@@ -1638,12 +1644,13 @@ export const GAMES = [
 
   // 14. Kakadu: rangers trap a problem croc at the ramp. One tap, right moment.
   {
-    id: 'croc-trap', prompt: 'TRAP IT!', bg: '#7fb8a8',
+    id: 'croc-trap', prompt: 'RANGER DRILL!', bg: '#7fb8a8',
     setup(ctx) {
       const { svg } = ctx, W = VIEW.w, H = VIEW.h;
       svg.append(
         water(240, 240, '#2f7f8f'),
-        text(W / 2, 44, 'ONE TAP - WHEN THE CROC IS IN THE TRAP', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
+        text(W / 2, 32, "YOU'RE THE RANGER (NEVER DO THIS YOURSELF)", { size: 12, fill: '#ffe9a8', stroke: '#1d1a16', strokeWidth: 4 }),
+        text(W / 2, 54, 'ONE TAP: WHEN THE CROC IS IN THE TRAP', { size: 14, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 })
       );
       const zx = 190, zy = 300, zr = 54;
       svg.append(el('circle', { cx: zx, cy: zy, r: zr, fill: 'rgba(255,233,168,.3)', stroke: '#ffe9a8', 'stroke-width': 4, 'stroke-dasharray': '9 9' }));
@@ -2010,13 +2017,13 @@ export const GAMES = [
         text(336, 455, '⛽', { size: 14 })
       ]);
       const marker = el('circle', { cx: 40, cy: 449, r: 7, fill: '#2f7fd0', stroke: '#fffaf0', 'stroke-width': 2.5 });
-      const say = text(W / 2, 476, 'HOLD TO BRAKE · LET GO TO DRIVE', { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
+      const say = text(W / 2, 476, brakeHint(), { size: 13, fill: '#fffaf0', stroke: '#1d1a16', strokeWidth: 4 });
       svg.append(bar, marker, say);
 
       // One button: hold anywhere to brake.
       let braking = false, done = false;
       const setBrake = (on) => { braking = on; ute.setBraking(on); };
-      svg.addEventListener('pointerdown', (e) => { e.preventDefault(); svg.setPointerCapture?.(e.pointerId); setBrake(true); });
+      svg.addEventListener('pointerdown', (e) => { e.preventDefault(); try { svg.setPointerCapture(e.pointerId); } catch { /* keyboard or test pointer */ } setBrake(true); });
       for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) svg.addEventListener(ev, () => setBrake(false));
 
       let d = 0, v = plan.F;

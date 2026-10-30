@@ -23,7 +23,7 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | STEP BACK! | Tap to back a fisher past the 5 m line | Stand at least 5 m from the water when fishing | Be Crocwise (NT Gov) |
 | SWIM? | Decide from the sign | Only swim in signed swimming areas | Be Crocwise |
 | PITCH IT FAR! | Drag the tent past 50 m | Camp at least 50 m from the water's edge | Be Crocwise |
-| TREAT THE STING! | Drag the right bottle onto a sting | Vinegar, never fresh water; call 000 | NT Health |
+| TREAT THE STING! | Drag the right bottle onto a sting (after the patient is out of the water and 000 is called) | Out of the water, call 000, CPR if needed, then vinegar; never fresh water | NT Health |
 | SUIT UP! | Pick the stinger suit | Stinger season is Oct to May | NT Health |
 | PACK THE KIT! | Tap only the essentials | Water, torch, battery radio, first aid | SecureNT |
 | FLOODED ROAD! | Turn around in time | If it's flooded, forget it | NTPFES |
@@ -41,9 +41,19 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
 
+### Reliability, honesty and keyboard play (v1.9)
+
+From an independent review before the competition:
+- **Scores are never lost or doubled.** When the server says "slow down" (429) or a request fails, the phone keeps the score and quiz answers and retries with back-off (honouring Retry-After). Every run carries its own key, so a retry after a lost reply returns the same record instead of a second one. Per-IP limits are sized for a whole venue on one Wi-Fi, and the load test has a `--shared-ip` mode to prove it.
+- **Verified scores.** Each game starts a server session; a run can't claim more play time than the server's clock saw, and a session works once. Runs the server can't verify (played offline, impossible timing) still count for the learning stats but stay off the leaderboards and Town Battle.
+- **Safety content.** Stinger first aid now follows the NT Health order (out of the water, call 000, CPR if needed, then vinegar; stings happen all year). The croc-trap round is clearly a ranger drill. Roo Run shows a pace meter instead of km/h.
+- **Fail screen.** After a fail, the cartoon and the real rule stay up until you tap "Next round" (it moves on by itself after 8 s; 4 s in Booth Battles).
+- **Keyboard play.** Tab, Enter or Space, number keys for answers, arrow keys to drag, hold Space to brake, Esc to pause. Prompts and results are announced to screen readers.
+- **Privacy note** on the Safety tips screen: what is stored, why, and how to ask for deletion.
+
 ### Roo Run: endless mode (v1.7)
 
-- **🦘 Roo Run:** Roos at Dusk with no timer and one life, Flappy Bird style. The ute gets faster with every animal you get past (80 km/h up to about 220 km/h on the speedo), the beat speeds up, roos cross faster and decoys get more common. You can't just sit on the brake: each animal has a deadline, and the bar at the top shows how much braking time you can still afford; run out and night falls. The score is animals dodged, worth 5 coins each, with its own **🦘 Roo Run** leaderboard tab, a record line on the booth screen and in the demo screen, and a ticker line ("Ava dodged 37 roos on the Roo Run").
+- **🦘 Roo Run:** Roos at Dusk with no timer and one life, Flappy Bird style. The ute gets faster with every animal you get past (the pace meter climbs from 1.0× to about 2.8×), the beat speeds up, roos cross faster and decoys get more common. You can't just sit on the brake: each animal has a deadline, and the bar at the top shows how much braking time you can still afford; run out and night falls. The score is animals dodged, worth 5 coins each, with its own **🦘 Roo Run** leaderboard tab, a record line on the booth screen and in the demo screen, and a ticker line ("Ava dodged 37 roos on the Roo Run").
 - Every stretch is planned like a Roos at Dusk round, so there is always a way through: in simulation a perfect driver never crashes, a driver who never brakes crashes at the first roo, and a driver who brakes for everything runs out of time within a few animals. Simulated human players (0.3 s reaction, rough timing) score a median of about 15 to 25, with the best runs in the hundreds.
 - The server checks the run can't be faster than about 3 animals a second, keeps Roo Run off the main boards and the Town Battle, and stores no per-round results, so it never skews the learning stats.
 
@@ -110,8 +120,8 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 
 - **Innovation**: safety education as a crowd game that measures its own impact. Every round played becomes data on which NT safety rules people actually get wrong, split by locals, newcomers and visitors. A live Booth Battle lets a whole crowd race the same hazards on their own phones, and Classroom mode gives a teacher a live report of what their class misses, with before → after quiz scores.
 - **Functionality**: 18 mini-games and 2 boss rounds across 8 NT locations, including a one-button rhythm runner; Classic, Daily, Journey and live Booth Battle modes, plus Hard and Relaxed modes; Classroom mode with a teacher dashboard; 7 unlockable characters and badge gear; leaderboards and Town Battle; booth screen with QR codes for playing, voting and taking the game home; a judge's tour; admin tools and CSV export; installable web app and Android app from one codebase; works fully offline.
-- **Usability**: one tap to play, no sign-up and no personal details; a ghost hand shows first-timers each gesture; Relaxed mode gives kids and older players more time and bigger text; 🆘 Real help lists checked NT emergency numbers; big touch targets, reduced-motion support, step-by-step install help for iPhone and Android, and it works with no signal.
-- **Scalability**: load-tested with 500 players finishing games plus 5 full Booth Battles (200 phones) racing at the same time: 5,615 requests, 0 errors, 95% under about 150 ms on a 2-core machine. The server re-scores every run, so it scales without trusting phones; rate limits are sized for a whole venue sharing one Wi-Fi; an offline outbox smooths spikes. Scores and runs live in SQLite behind one module (`server/src/db.js`), so Postgres is a drop-in swap; live battles are short-lived and kept in memory, so running several servers would move them to a shared store such as Redis. New mini-games are a single object in `web/js/games.js`, and new towns, locations and quiz questions are data files.
+- **Usability**: one tap to play, no sign-up and no real names needed; every round playable by keyboard (Tab, Enter or Space, number keys for answers, arrow keys to drag, hold Space to brake); a ghost hand shows first-timers each gesture; Relaxed mode gives kids and older players more time and bigger text; 🆘 Real help lists checked NT emergency numbers; big touch targets, reduced-motion support, step-by-step install help for iPhone and Android, and it works with no signal.
+- **Scalability**: load-tested with 500 players finishing games plus 5 full Booth Battles (200 phones) racing at the same time, with every phone on one shared IP address like a venue Wi-Fi: 6,115 requests, 0 errors, 95% under about 165 ms on a 2-core machine (a local test; the Render server is smaller and wasn't load-tested so it isn't hit on the day). The server re-scores every run, so it scales without trusting phones; rate limits are sized for a whole venue sharing one Wi-Fi, and phones keep scores queued and retry with back-off when told to slow down; a retried upload never makes a duplicate. Scores and runs live in SQLite behind one module (`server/src/db.js`), so moving to Postgres is contained work (not done or tested yet); live battles are short-lived and kept in memory, so running several servers would move them to a shared store such as Redis. New mini-games are a single object in `web/js/games.js`, and new towns, locations and quiz questions are data files.
 
 ## Architecture
 
@@ -130,7 +140,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 
 - **No build step.** The game is plain HTML, CSS and ES modules, so anyone on the team can edit it.
 - **Rate limits.** Writes are limited per IP address (`WRITE_LIMIT`, default 300 a minute; Booth Battle updates `BATTLE_LIMIT`, default 1,500). At an event most phones share the venue Wi-Fi, so they all look like one IP: raise these if the booth gets very busy.
-- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter.
+- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter. Each game also starts a server session, and a run can't claim more play time than the server's clock saw; runs that can't be verified (played offline, impossible timing, a reused session) are saved for the learning stats but kept off the leaderboards and Town Battle. This raises the bar a lot but isn't proof against someone who fakes inputs in real time; a server-run game would be the next step.
 - **Offline first.** Finished runs go into a localStorage outbox and upload when online. The service worker caches the whole game.
 
 ## Run it locally

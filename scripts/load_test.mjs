@@ -30,6 +30,8 @@ const PLAYERS = Number(arg('players', 500));
 const CONCURRENCY = Number(arg('concurrency', 50));
 const SAVE = !!arg('save', false);
 const BATTLES = Number(arg('battles', 5));
+// --shared-ip: every phone comes from ONE address, like a whole venue on the same Wi-Fi.
+const SHARED_IP = !!arg('shared-ip', false);
 const BATTLE_PLAYERS = 40; // MAX_PLAYERS in server/src/battles.js
 let battlesDone = 0;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -74,13 +76,15 @@ function toJourney(rounds) {
 
 async function player(n) {
   const clientId = `loadtest-${Date.now().toString(36)}-${n}`;
-  const ip = `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}`; // each player looks like a different phone
+  const ip = SHARED_IP ? '10.9.9.9' : `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}`; // each player looks like a different phone
   const journey = n % 2 === 1;
   const results = journey ? toJourney(fakeRun()) : fakeRun();
   await call('health', '/api/health', {}, ip);
+  // A real game starts a server session first (it stays unverified here: no real play time passes).
+  const sess = await call('start session', '/api/sessions', { method: 'POST', body: JSON.stringify({ clientId, mode: journey ? 'journey' : 'classic' }) }, ip);
   const run = await call('submit run', '/api/runs', {
     method: 'POST',
-    body: JSON.stringify({ clientId, mode: journey ? 'journey' : 'classic', results, durationMs: results.length * 4000, town: TOWN_IDS[n % TOWN_IDS.length] })
+    body: JSON.stringify({ clientId, runKey: `lt${n}x${Date.now().toString(36)}`, sessionId: sess?.sessionId, mode: journey ? 'journey' : 'classic', results, durationMs: results.length * 4000, town: TOWN_IDS[n % TOWN_IDS.length] })
   }, ip);
   if (run) {
     await call('add name', `/api/runs/${run.id}/name`, { method: 'POST', body: JSON.stringify({ clientId, name: `Load${n}` }) }, ip);
@@ -92,13 +96,13 @@ async function player(n) {
 
 // One Booth Battle: the booth screen plus 40 phones, all polling like the real pages do.
 async function battle(b) {
-  const boothIp = `10.200.${b}.1`;
+  const boothIp = SHARED_IP ? '10.9.9.9' : `10.200.${b}.1`;
   const made = await call('battle: open', '/api/battles', { method: 'POST', body: '{}' }, boothIp);
   if (!made) return;
   const code = made.battle.code;
   const phones = await Promise.all(Array.from({ length: BATTLE_PLAYERS }, async (_, i) => {
     const clientId = `loadtest-b${b}-${Date.now().toString(36)}-${i}`;
-    const ip = `10.201.${b}.${i + 1}`;
+    const ip = SHARED_IP ? '10.9.9.9' : `10.201.${b}.${i + 1}`;
     await sleep(Math.random() * 1500); // people scan the QR code at slightly different times
     const r = await call('battle: join', `/api/battles/${code}/join`, { method: 'POST', body: JSON.stringify({ clientId, name: `Racer${b}x${i}` }) }, ip);
     return r && { clientId, ip, playerId: r.playerId };
@@ -143,7 +147,8 @@ const rows = Object.entries(lat).map(([type, a]) => ({
 }));
 const summary = {
   when: new Date().toISOString(),
-  where: URL_BASE.includes('localhost') ? 'local server' : URL_BASE.replace(/^https?:\/\//, ''),
+  where: (URL_BASE.includes('localhost') ? 'local server' : URL_BASE.replace(/^https?:\/\//, '')) + (SHARED_IP ? ', every phone on one shared IP' : ''),
+  sharedIp: SHARED_IP,
   players: PLAYERS,
   concurrency: CONCURRENCY,
   battles: BATTLES,

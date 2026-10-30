@@ -60,6 +60,8 @@ export function cleanClassName(raw) {
 // The run carries no per-round results (so it never skews the learning stats), just the count,
 // and it can't be faster than about 3 animals a second.
 export const ENDLESS_MIN_MS_PER_ANIMAL = 350;
+// A device's own id for one finished run, sent again on every retry.
+export const RUN_KEY_RE = /^[A-Za-z0-9_-]{6,40}$/;
 function validateEndless(body, today) {
   const { clientId, durationMs } = body;
   const dodged = body.dodged;
@@ -68,8 +70,10 @@ function validateEndless(body, today) {
   if (!Number.isFinite(durationMs) || durationMs < 1500 + dodged * ENDLESS_MIN_MS_PER_ANIMAL || durationMs > 4 * 3600 * 1000) return { error: 'Invalid duration.' };
   if (body.who != null && !WHO_IDS.includes(body.who)) return { error: 'Invalid player group.' };
   if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
+  if (body.runKey != null && !RUN_KEY_RE.test(body.runKey)) return { error: 'Invalid run key.' };
   return {
     run: {
+      runKey: body.runKey || null, sessionId: typeof body.sessionId === 'string' ? body.sessionId : null, minPlayMs: dodged * ENDLESS_MIN_MS_PER_ANIMAL,
       clientId, mode: 'endless', day: today, results: [], durationMs: Math.round(durationMs),
       score: dodged, rounds: 1, wins: 0,
       appVersion: typeof body.appVersion === 'string' ? body.appVersion.slice(0, 20) : null,
@@ -116,12 +120,17 @@ export function validateRun(body, { today = darwinDay() } = {}) {
   if (body.challengeOf != null && !(Number.isInteger(body.challengeOf) && body.challengeOf > 0)) return { error: 'Invalid challenge.' };
   if (body.who != null && !WHO_IDS.includes(body.who)) return { error: 'Invalid player group.' };
   if (body.classCode != null && !CLASS_CODE_RE.test(body.classCode)) return { error: 'Invalid class code.' };
+  if (body.runKey != null && !RUN_KEY_RE.test(body.runKey)) return { error: 'Invalid run key.' };
   // Hard mode: Classic and Journey only, and never together with Relaxed mode.
   const hard = body.hard === true;
   if (hard && (mode === 'daily' || body.relaxed === true)) return { error: 'Hard mode is for Classic and Journey runs.' };
   return {
     run: {
       clientId,
+      runKey: body.runKey || null,
+      sessionId: typeof body.sessionId === 'string' ? body.sessionId : null,
+      // The play time the rounds themselves add up to: the server's clock must agree.
+      minPlayMs: results.reduce((t, r) => t + r.ms, 0),
       mode,
       day,
       results: results.map(r => ({ g: r.g, ok: r.ok, ms: Math.round(r.ms) })),

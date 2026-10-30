@@ -13,7 +13,7 @@ export const SOURCES = {
     title: 'Box jellyfish (stingers)',
     org: 'NT Health',
     url: 'https://health.nt.gov.au/media/pdf/phu/cdc-factsheets/box-jellyfish-nt-health-factsheet.pdf',
-    summary: 'Stinger season is roughly 1 October to 31 May. Best advice is to stay out of the sea; if you go in, wear a stinger suit. If stung: call 000 and pour vinegar on the sting. Do not use fresh water. CPR may be needed.'
+    summary: 'The official stinger season is 1 October to 1 June, but stings have been recorded in every month. Best advice is to stay out of the sea; if you go in, wear a stinger suit. If someone is stung: get them out of the water, call 000, start CPR if needed, then pour vinegar on the sting. Never use fresh water.'
   },
   cyclone: {
     title: 'Cyclone ready',
@@ -114,8 +114,8 @@ export const LESSONS = {
   'croc-edge':   { source: 'crocwise', win: 'Nice! Stand at least 5 m back from the water when fishing.', fail: 'Snapped! Crocs lunge from the edge. Stand 5 m back when fishing.' },
   'swim-sign':   { source: 'crocwise', win: 'Only swim where a sign says it is a swimming area.',            fail: 'No swimming sign means not safe. Any Top End water can hold crocs.' },
   'croc-camp':   { source: 'crocwise', win: 'Camp at least 50 m from the water\'s edge.',                    fail: 'Too close! Camp at least 50 m from the water\'s edge.' },
-  'stinger-vinegar': { source: 'stingers', win: 'Vinegar on the sting, then call 000.',                     fail: 'Never fresh water or soft drink. Vinegar on the sting and call 000.' },
-  'stinger-suit':    { source: 'stingers', win: 'Stinger season (Oct to May): stinger suit or stay out.',    fail: 'Stingers are nearly invisible. Wear a stinger suit or stay out of the sea.' },
+  'stinger-vinegar': { source: 'stingers', win: 'Right! Out of the water, call 000, CPR if needed, then vinegar. Never fresh water.', fail: 'Never fresh water or soft drink. Out of the water, call 000, then pour vinegar on the sting.' },
+  'stinger-suit':    { source: 'stingers', win: 'Stinger season is Oct to Jun, and stings happen all year: suit up or stay out.', fail: 'Stingers are nearly invisible. Wear a stinger suit or stay out of the sea.' },
   'cyclone-kit': { source: 'cyclone',  win: 'Water, torch, radio, batteries, first aid. Kit sorted!',       fail: 'A TV won\'t save you. Pack water, torch, battery radio and first aid.' },
   'flood-road':  { source: 'flood',    win: 'If it\'s flooded, forget it. Turn around.',                    fail: 'Washed away! If it\'s flooded, forget it.' },
   'heat-drink':  { source: 'heat',     win: 'Water, often, even before you feel thirsty.',                   fail: 'Cooked! Drink 2 to 3 L of water a day and skip sugary drinks.' },
@@ -126,7 +126,7 @@ export const LESSONS = {
   'sun-slip':       { source: 'sun',       win: 'Slip, slop, slap. Sun sorted!',                                        fail: 'Lobster mode! Slip on a shirt, slop on SPF50+ and slap on a hat.' },
   'boss-cyclone':   { source: 'cyclone',   win: 'Cyclone Night survived! Strongest room, away from windows, stay in during the eye.', fail: 'Shelter in the strongest room, away from windows, and stay inside when the eye goes over.' },
   'boss-croc':      { source: 'crocwise',  win: 'Croc Creek survived! You are properly Crocwise.',                       fail: 'Stay out of unsigned water, stand 5 m back, and never go in after a lure.' },
-  'croc-trap':   { source: 'crocwise', win: 'Nice timing! Leave it to the rangers: report croc sightings and never touch a croc trap.', fail: 'Missed it! Where a croc has been seen, stay out of the water and stand well back from the edge.' },
+  'croc-trap':   { source: 'crocwise', win: 'Ranger drill done! In real life only rangers trap crocs: report sightings and never touch a croc trap.', fail: 'Missed it! Only rangers trap crocs. Where one has been seen, stay out of the water and stand well back.' },
   'rock-hole':   { source: 'crocwise', win: 'Everyone out! Crocs can move into waterholes after the wet.',   fail: 'Too slow! Only swim where a sign says it is a swimming area: crocs can turn up in any Top End waterhole.' },
   'dust-storm':  { source: 'roads',    win: 'Pulled over, lights on. Wait out a dust storm in the car.',      fail: 'Never drive blind into dust. Slow down, lights and hazards on, pull over and wait.' },
   'flash-flood': { source: 'flood',    win: 'Back on the bank. A dry river bed can flood in minutes.',          fail: 'Swept away! Never camp in a dry river bed. Floodwater can arrive with little warning.' },

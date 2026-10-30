@@ -89,11 +89,13 @@
 
     <!-- BETWEEN ROUNDS -->
     <section class="screen" id="screen-result" aria-label="Round result">
-      <div class="result-card" id="result-card">
+      <div class="result-card" id="result-card" role="status" aria-live="polite">
         <div class="result-face" id="result-face"></div>
         <h2 id="result-title"></h2>
         <p class="result-streak" id="result-streak"></p>
         <p class="result-tip" id="result-tip"></p>
+        <button class="btn btn-primary result-next" id="result-next" hidden>Next round ▶</button>
+        <div class="result-wait" id="result-wait" hidden><i></i></div>
       </div>
     </section>
 
@@ -347,6 +349,11 @@
         <button class="btn btn-help btn-small" id="learn-help">🆘 Real help numbers</button>
         <div id="learn-list" class="learn-list"></div>
         <p class="sub small">This game is a learning tool, not medical advice. In an emergency call <b>000</b>.</p>
+        <div class="privacy-note">
+          <h3>🔒 Your data</h3>
+          <p>No sign-up and no real names needed. To run the leaderboards and the safety stats, the game stores a random ID for this device, your game results, and anything you choose to add: a nickname, your town, whether you're a local or visitor, and a class code. Nicknames show on the public leaderboard, so don't use your real full name.</p>
+          <p>It's kept for this CDU student project. To have your scores removed, ask Team CAP003 at the IT Code Fair or open an issue on our GitHub page. Clearing this site's data in your browser resets your device ID.</p>
+        </div>
         <button class="btn" data-back>Back</button>
       </div>
     </section>

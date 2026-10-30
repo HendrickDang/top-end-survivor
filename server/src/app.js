@@ -21,22 +21,33 @@ const WEB_DIR = path.resolve(__dirname, '../../web');
 const APK_PATH = process.env.APK_PATH || path.resolve(__dirname, '../downloads/top-end-survivor.apk');
 
 // Simple fixed-window rate limiter (per IP). Good enough for one booth + phones.
+// Phones retry after Retry-After seconds and keep the score queued meanwhile (see web/js/api.js).
 function rateLimit({ windowMs, max }) {
   const hits = new Map();
-  setInterval(() => hits.clear(), windowMs).unref();
+  let windowStart = Date.now();
+  setInterval(() => { hits.clear(); windowStart = Date.now(); }, windowMs).unref();
   return (req, res, next) => {
     const key = req.ip;
     const n = (hits.get(key) || 0) + 1;
     hits.set(key, n);
-    if (n > max) return res.status(429).json({ error: 'Too many requests, slow down.' });
+    if (n > max) {
+      res.set('Retry-After', String(Math.max(1, Math.ceil((windowStart + windowMs - Date.now()) / 1000))));
+      return res.status(429).json({ error: 'Too many requests, slow down.' });
+    }
     next();
   };
 }
+
+// How much a run's claimed play time may exceed what the server saw (network and clock slack).
+const SESSION_SLACK_MS = 5000;
 
 export function createApp(repo, opts = {}) {
   const adminToken = opts.adminToken ?? process.env.ADMIN_TOKEN ?? '';
   const publicUrl = opts.publicUrl ?? process.env.PUBLIC_URL ?? '';
   const now = opts.now || (() => new Date());
+  const clock = opts.clock || (() => Date.now()); // milliseconds, for game sessions
+  // requireSession: false (tests only) treats every run as verified.
+  const requireSession = opts.requireSession ?? true;
 
   const app = express();
   app.set('trust proxy', 1);
@@ -53,10 +64,11 @@ export function createApp(repo, opts = {}) {
     next();
   });
 
-  // Per IP. At an event most phones share the venue Wi-Fi (one public IP), so keep this generous.
-  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? (Number(process.env.WRITE_LIMIT) || 300) });
+  // Per IP. At an event most phones share the venue Wi-Fi (one public IP): 40 phones each sending a
+  // session, a run, a name, a town and a group answer a minute is about 200 writes, so allow plenty.
+  const writeLimit = rateLimit({ windowMs: 60_000, max: opts.writeLimit ?? (Number(process.env.WRITE_LIMIT) || 3000) });
   // Booth Battles send a small update every round from every phone at once.
-  const battleLimit = rateLimit({ windowMs: 60_000, max: opts.battleLimit ?? (Number(process.env.BATTLE_LIMIT) || 1500) });
+  const battleLimit = rateLimit({ windowMs: 60_000, max: opts.battleLimit ?? (Number(process.env.BATTLE_LIMIT) || 6000) });
   const battles = opts.battles || createBattles({ onFinish: (run, name) => repo.addRun(run, name, today()) });
   const today = () => darwinDay(now());
 
@@ -67,10 +79,35 @@ export function createApp(repo, opts = {}) {
     res.download(APK_PATH, 'top-end-survivor.apk', { headers: { 'Content-Type': 'application/vnd.android.package-archive' } });
   });
 
+  // Start a game session: the server notes the time, so the finished run can be checked against it.
+  app.post('/api/sessions', writeLimit, (req, res) => {
+    const { clientId } = req.body || {};
+    if (typeof clientId !== 'string' || clientId.length < 8 || clientId.length > 64) return res.status(400).json({ error: 'Invalid client id.' });
+    const mode = ['classic', 'daily', 'journey', 'endless'].includes(req.body.mode) ? req.body.mode : 'classic';
+    const id = crypto.randomBytes(16).toString('hex');
+    repo.startSession(id, clientId, mode, clock());
+    res.status(201).json({ sessionId: id });
+  });
+
   // Submit a finished run (name optional, can be attached later).
   app.post('/api/runs', writeLimit, (req, res) => {
     const v = validateRun(req.body, { today: today() });
     if (v.error) return res.status(400).json({ error: v.error });
+    // A retry of a run we already saved (the phone lost our reply): answer with the same record.
+    const dup = repo.findRunByKey(v.run.clientId, v.run.runKey);
+    if (dup) return res.json({ id: dup.id, score: dup.score, rounds: dup.rounds, verified: !!dup.verified, duplicate: true });
+    // Verified: played inside a session this device started, no faster than the server's clock allows.
+    // Unverified runs (offline play, no session, impossible timing) still count for the learning
+    // stats but stay off the leaderboards.
+    let verified = !requireSession;
+    if (requireSession && v.run.sessionId) {
+      const s = repo.getSession(v.run.sessionId);
+      const elapsed = s ? clock() - s.created_ms : -1;
+      verified = !!s && !s.used && s.client_id === v.run.clientId && s.mode === v.run.mode &&
+        v.run.durationMs <= elapsed + SESSION_SLACK_MS && v.run.minPlayMs <= elapsed + SESSION_SLACK_MS &&
+        repo.useSession(s.id);
+    }
+    v.run.verified = verified;
     let name = null;
     if (req.body.name != null) {
       const c = cleanName(req.body.name);
@@ -79,8 +116,14 @@ export function createApp(repo, opts = {}) {
     }
     if (v.run.challengeOf && !repo.getChallenge(v.run.challengeOf)) v.run.challengeOf = null;
     if (v.run.classCode && !repo.getClass(v.run.classCode)) v.run.classCode = null;
-    const id = repo.addRun(v.run, name, today());
-    res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds });
+    let id;
+    try { id = repo.addRun(v.run, name, today()); } catch (e) {
+      // Two copies of the same run arriving at once: the unique run key keeps just one.
+      const again = repo.findRunByKey(v.run.clientId, v.run.runKey);
+      if (!again) throw e;
+      return res.json({ id: again.id, score: again.score, rounds: again.rounds, verified: !!again.verified, duplicate: true });
+    }
+    res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds, verified });
   });
 
   // Attach a name to a run you submitted (same device only).

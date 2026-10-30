@@ -707,3 +707,21 @@ body.endless-mode .timer-bar:not(.urgent) { background: #c9b6ee; }
   .judge-panel { padding-top: 12px; }
   .judge-panel h2 { font-size: 1.6rem; }
 }
+
+/* ---------- v1.9 ---------- */
+/* Round buttons (sound, pause) press down like every other button. */
+.mute-btn { transition: transform .06s, box-shadow .06s, background .1s; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.mute-btn:active { transform: translateY(3px) scale(.94); box-shadow: 0 0 0 rgba(0,0,0,.35); background: rgba(255,255,255,.32); }
+.mute-btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+/* After a fail: "Next round" and a bar showing when it moves on by itself. */
+.result-next { margin-top: 14px; width: 100%; font-size: 1.2rem; }
+.result-next[hidden], .result-wait[hidden] { display: none; }
+.result-wait { height: 6px; margin-top: 8px; background: rgba(29,26,22,.12); border-radius: 99px; overflow: hidden; }
+.result-wait i { display: block; height: 100%; background: var(--ochre); transform-origin: left; }
+/* Keyboard focus on things in the scene. */
+.stage svg [tabindex]:focus { outline: none; }
+.stage svg [tabindex]:focus-visible { filter: drop-shadow(0 0 3px #2f7fd0) drop-shadow(0 0 7px #2f7fd0); }
+.choice-row .btn:focus-visible { outline: 4px solid #2f7fd0; outline-offset: 2px; }
+.privacy-note { background: var(--white); border: 2px dashed var(--sand-2); border-radius: 14px; padding: 10px 14px; font-size: .9rem; line-height: 1.35; }
+.privacy-note h3 { margin: 0 0 4px; }
+.privacy-note p { margin: 0 0 6px; }

@@ -214,6 +214,7 @@ function startGame(mode = 'classic', challenge = null, battleInfo = null) {
     startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [],
     locationIndex: 0, roundInLocation: 0, pendingIntro: true
   });
+  beginSession();
   resetHud();
   if (!DEMO) music.play('play');
   playRound();
@@ -337,11 +338,10 @@ function runRound() {
         const b = document.createElement('button');
         b.className = 'btn' + (ok ? ' choice-ok' : ' choice-bad');
         b.textContent = label;
-        b.addEventListener('pointerdown', (e) => {
-          e.preventDefault(); e.stopPropagation();
-          if (finished) return;
-          onPick ? onPick() : finish(ok);
-        });
+        const choose = () => { if (finished) return; onPick ? onPick() : finish(ok); };
+        b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); choose(); });
+        // Keyboard and screen readers: Enter or Space on a focused answer (a click with no pointer).
+        b.addEventListener('click', (e) => { if (e.detail === 0) choose(); });
         row.appendChild(b);
       });
       stage.appendChild(row);
@@ -365,7 +365,7 @@ function runRound() {
         e.preventDefault(); e.stopPropagation();
         const p = toSvg(e);
         grab = { dx: p.x - pos.x, dy: p.y - pos.y, id: e.pointerId };
-        svg.setPointerCapture?.(e.pointerId);
+        try { svg.setPointerCapture(e.pointerId); } catch { /* keyboard or test pointer */ }
         node.classList.add('dragging');
         svg.appendChild(node); // bring to front
         sfx.tap();
@@ -389,6 +389,22 @@ function runRound() {
       };
       svg.addEventListener('pointerup', drop);
       svg.addEventListener('pointercancel', drop);
+      // Keyboard: Tab to it, arrow keys move it (Shift for big steps), Enter or Space drops it.
+      makeFocusable(node, 'Drag item: arrow keys to move, Enter to drop');
+      node.addEventListener('keydown', (e) => {
+        const step = e.shiftKey ? 72 : 24;
+        const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+        if (moves[e.key]) {
+          e.preventDefault(); e.stopPropagation();
+          pos = { x: Math.max(0, Math.min(VIEW.w, pos.x + moves[e.key][0])), y: Math.max(0, Math.min(VIEW.h, pos.y + moves[e.key][1])) };
+          put(pos, scale * 1.1);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault(); e.stopPropagation();
+          put(pos);
+          const r = onDrop && onDrop(pos.x, pos.y);
+          if (r === 'reset' && !finished) { pos = { ...home }; put(pos); }
+        }
+      });
     }
   };
 
@@ -405,6 +421,7 @@ function runRound() {
     abort() { finished = true; cancelAnimationFrame(raf); }
   };
   game.setup(ctx);
+  keyboardTargets(svg);
   if (DEMO) demoBot(ctx, () => finished);
   // First time meeting this game? A ghost hand shows how to play it (and the timer waits a moment).
   const hintGrace = !DEMO && !hard && hints.needHint(game.id, { perRun: KIOSK || relaxedNow() }) ? hints.showHint(ctx, game.id) : 0;
@@ -446,6 +463,78 @@ function runRound() {
   raf = requestAnimationFrame(loop);
 }
 
+// ---------- keyboard play ----------
+// Every round can be played without a mouse or touch screen:
+//   Tab / Shift+Tab   move between answers and things to tap or drag
+//   Enter or Space    press the focused thing (or tap the scene when nothing is focused)
+//   1 2 3             pick an answer button
+//   arrow keys        move a focused drag item; Enter drops it
+//   hold Space        brake in Roos at Dusk and Roo Run
+//   Esc               pause
+let usingKeyboard = false;
+function makeFocusable(node, label) {
+  node.setAttribute('tabindex', '0');
+  node.setAttribute('role', 'button');
+  if (label && !node.getAttribute('aria-label')) node.setAttribute('aria-label', label);
+}
+// Things to tap in the scene (they carry data-ok) get Tab focus; Enter or Space taps them.
+function keyboardTargets(svg) {
+  svg.querySelectorAll('[data-ok], .tap-target').forEach((n) => {
+    if (n.classList.contains('draggable') || n.hasAttribute('tabindex')) return;
+    const words = [...n.querySelectorAll('text')].map(t => t.textContent.trim()).filter(Boolean).join(' ');
+    makeFocusable(n, words ? `Tap: ${words}` : 'Tap this');
+    n.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault(); e.stopPropagation();
+      tapAt(n);
+    });
+  });
+  // Keyboard players start on the first answer or target, so Enter works straight away.
+  if (usingKeyboard) setTimeout(() => $('#stage').querySelector('.choice-row button, [tabindex="0"]')?.focus({ preventScroll: true }), 60);
+}
+// A pretend finger press in the middle of a thing (games read pointer positions).
+function tapAt(node, type = 'pointerdown') {
+  const r = node.getBoundingClientRect();
+  node.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+}
+function initKeyboardPlay() {
+  addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' || e.key.startsWith('Arrow')) usingKeyboard = true;
+    if (!$('#screen-game').classList.contains('active') || !$('#pause-sheet').hidden) return;
+    const stage = $('#stage'), svg = stage.querySelector('svg');
+    if (!svg || stage.style.pointerEvents === 'none') return;
+    // 1, 2, 3: pick an answer button.
+    if (/^[1-4]$/.test(e.key)) {
+      const btn = stage.querySelectorAll('.choice-row button')[Number(e.key) - 1];
+      if (btn) { e.preventDefault(); usingKeyboard = true; btn.click(); }
+      return;
+    }
+    // Space or Enter with nothing in the scene focused: tap the scene (hold Space to brake).
+    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+      const f = document.activeElement;
+      if (f && f !== document.body && (stage.contains(f) || f.closest('.hud'))) return; // the focused thing handles it
+      e.preventDefault();
+      tapAt(svg);
+    }
+  });
+  addEventListener('keyup', (e) => {
+    if ((e.key === ' ' || e.key === 'Enter') && $('#screen-game').classList.contains('active')) {
+      const svg = $('#stage svg');
+      if (svg) tapAt(svg, 'pointerup');
+    }
+  });
+}
+
+// Ask the server to note the start of this game, so the finished score can go on the leaderboard.
+// (Never for the sandbox, the demo or Booth Battles, which the server times itself.)
+function beginSession() {
+  state.sessionId = null;
+  if (DEMO || adminMode || state.mode === 'battle') return;
+  const runId = state.runId;
+  api.startSession(state.mode).then((id) => { if (id && runId === state.runId) state.sessionId = id; });
+}
+
 // ---------- Roo Run: endless Roos at Dusk, one life ----------
 // The ute speeds up with every animal and the beat gets quicker; the score is animals dodged.
 function startRooRun() {
@@ -459,6 +548,7 @@ function startRooRun() {
     startedAt: performance.now(), bag: [], last: null, runLocalId: null, streak: 0, newBadges: [],
     locationIndex: 0, roundInLocation: 0, pendingIntro: false
   });
+  beginSession();
   resetHud();
   if (!DEMO) music.play('play');
   const stage = $('#stage');
@@ -501,8 +591,9 @@ function startRooRun() {
       await wait(1100);
       if (runId !== state.runId) return;
       showResultCard(byId('roo-dusk'), false);
-      $('#result-streak').textContent = `🦘 ${state.score} dodged · top speed ${run.topKmh} km/h`;
-      setTimeout(() => { if (runId === state.runId) gameOver(); }, 2600);
+      $('#result-streak').textContent = `🦘 ${state.score} dodged · top pace ${run.topPace}×`;
+      await waitForNext({ label: 'See my score ▶', ms: 8000 });
+      if (runId === state.runId) gameOver();
     }
   });
   state.roundCtl = {
@@ -577,12 +668,34 @@ async function endRound(game, ok, ms) {
 
   const dailyDone = state.mode === 'daily' && state.round >= DAILY_ROUNDS;
   const battleDone = state.mode === 'battle' && state.round >= BATTLE_ROUNDS;
-  setTimeout(() => {
-    if (runId !== state.runId) return; // quit from the pause menu
-    if (battleDone) battleOver();
-    else if (state.lives <= 0 || dailyDone) gameOver();
-    else playRound();
-  }, ok ? 1500 : 2300);
+  const ending = battleDone || state.lives <= 0 || dailyDone;
+  // A win moves on by itself. After a fail the real rule stays up until the player taps on:
+  // there's a lot to read. (Booth Battles are a race, so they move on sooner.)
+  if (ok) await wait(1500);
+  else await waitForNext({ label: ending ? 'See my score ▶' : 'Next round ▶', ms: state.mode === 'battle' ? 4000 : 8000 });
+  if (runId !== state.runId) return; // quit from the pause menu
+  if (battleDone) battleOver();
+  else if (state.lives <= 0 || dailyDone) gameOver();
+  else playRound();
+}
+
+// Shows the "Next round" button on the result card with a draining bar; resolves on tap or after ms.
+function waitForNext({ label = 'Next round ▶', ms = 8000 } = {}) {
+  if (DEMO) return wait(2300);
+  const btn = $('#result-next'), bar = $('#result-wait');
+  btn.textContent = label;
+  btn.hidden = false; bar.hidden = false;
+  const fill = bar.firstElementChild;
+  fill.style.transition = 'none'; fill.style.transform = 'scaleX(1)';
+  void fill.offsetWidth;
+  fill.style.transition = `transform ${ms}ms linear`; fill.style.transform = 'scaleX(0)';
+  setTimeout(() => btn.focus({ preventScroll: true }), 50);
+  return new Promise((resolve) => {
+    let done = false;
+    const go = () => { if (done) return; done = true; clearTimeout(t); btn.hidden = true; bar.hidden = true; btn.removeEventListener('click', go); sfx.tap(); resolve(); };
+    const t = setTimeout(go, ms);
+    btn.addEventListener('click', go);
+  });
 }
 
 // Win: your character celebrates. Fail: a looping cartoon of that hazard, starring your character.
@@ -604,7 +717,8 @@ async function endAdminRound(game, ok, svg) {
   showResultCard(game, ok);
   adminLastGame = game.id;
   $('#result-streak').textContent = '🛠️ Sandbox test round: nothing was saved';
-  setTimeout(() => showAdmin(`Tested ${GAME_LABELS[game.id] || game.id}. Nothing was saved.`), ok ? 1500 : 2300);
+  if (ok) await wait(1500); else await waitForNext({ label: 'Back to the tester ▶', ms: 4000 });
+  showAdmin(`Tested ${GAME_LABELS[game.id] || game.id}. Nothing was saved.`);
 }
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -622,10 +736,11 @@ function gameOver() {
   }
   const durationMs = Math.round(performance.now() - state.startedAt);
   state.runLocalId = state.mode === 'endless' ? api.queueRun({
-    mode: 'endless', dodged: state.score, durationMs, results: [],
+    mode: 'endless', dodged: state.score, durationMs, results: [], sessionId: state.sessionId || undefined,
     who: getWho() || undefined, classCode: api.myClass()?.code || undefined, appVersion: window.TES_CONFIG?.APP_VERSION
   }) : api.queueRun({
     mode: state.mode,
+    sessionId: state.sessionId || undefined,
     day: state.dailyDay || undefined,
     results: state.results.map(({ g, ok, ms }) => ({ g, ok, ms })),
     durationMs,
@@ -700,6 +815,9 @@ function armKioskReset() {
   kioskTimer = setTimeout(() => { if ($('#screen-over').classList.contains('active')) show('screen-menu'); }, 45000);
 }
 
+// A run the server couldn't time (it started with no connection) is saved, but not ranked.
+const OFF_BOARD = 'Saved! This game started without a connection, so it counts towards the safety stats but not the leaderboard.';
+
 async function autoSubmitName(name) {
   const runId = state.runLocalId;
   api.setRunName(runId, name);
@@ -709,6 +827,7 @@ async function autoSubmitName(name) {
   if (state.runLocalId !== runId) return; // they've already started another game
   const st = api.runStatus(runId);
   $('#submit-msg').textContent =
+    st.state === 'sent' && !st.verified ? OFF_BOARD :
     st.state === 'sent' ? `On the board as ${name}. Type a new name and tap Change to rename.` :
     st.state === 'rejected' ? `Not accepted: ${st.error}` :
     `Saved offline as ${name}. It will upload when you are back online.`;
@@ -730,6 +849,7 @@ async function submitName(e) {
   await api.flush();
   const st = api.runStatus(state.runLocalId);
   $('#submit-msg').textContent =
+    st.state === 'sent' && !st.verified ? OFF_BOARD :
     st.state === 'sent' ? 'On the board! Check the leaderboard.' :
     st.state === 'rejected' ? `Not accepted: ${st.error}` :
     'Saved offline. It will upload when you are back online.';
@@ -1236,6 +1356,7 @@ function init() {
   renderJourney();
   renderBest();
   renderLearn();
+  initKeyboardPlay();
   $('#btn-play').addEventListener('click', () => startGame('classic'));
   $('#btn-roorun').addEventListener('click', startRooRun);
   $('#btn-daily').addEventListener('click', () => startGame('daily'));

@@ -1,106 +1,115 @@
 {
-  "when": "2026-10-29T04:06:54.864Z",
-  "where": "local server",
+  "when": "2026-10-30T15:42:38.377Z",
+  "where": "local server, every phone on one shared IP",
+  "sharedIp": true,
   "players": 500,
   "concurrency": 50,
   "battles": 5,
   "battlePlayers": 200,
   "battlesFinished": 5,
-  "requests": 5615,
-  "seconds": 12.3,
-  "requestsPerSecond": 455,
-  "p50ms": 68,
-  "p95ms": 144,
-  "p99ms": 205,
+  "requests": 6115,
+  "seconds": 12.5,
+  "requestsPerSecond": 490,
+  "p50ms": 65,
+  "p95ms": 164,
+  "p99ms": 317,
   "errors": 0,
   "byRequest": [
     {
       "request": "health",
       "count": 500,
-      "p50": 87,
-      "p95": 157,
-      "p99": 217,
-      "max": 544
+      "p50": 85,
+      "p95": 197,
+      "p99": 277,
+      "max": 987
     },
     {
-      "request": "battle: open",
-      "count": 5,
-      "p50": 131,
-      "p95": 135,
-      "p99": 135,
-      "max": 135
+      "request": "start session",
+      "count": 500,
+      "p50": 83,
+      "p95": 224,
+      "p99": 853,
+      "max": 1266
     },
     {
       "request": "submit run",
       "count": 500,
-      "p50": 87,
-      "p95": 158,
-      "p99": 220,
-      "max": 646
+      "p50": 83,
+      "p95": 203,
+      "p99": 402,
+      "max": 1429
     },
     {
       "request": "add name",
       "count": 500,
       "p50": 83,
-      "p95": 155,
-      "p99": 205,
-      "max": 233
+      "p95": 175,
+      "p99": 1073,
+      "max": 1419
     },
     {
-      "request": "battle: join",
-      "count": 200,
-      "p50": 73,
-      "p95": 133,
-      "p99": 175,
-      "max": 177
+      "request": "battle: open",
+      "count": 5,
+      "p50": 281,
+      "p95": 392,
+      "p99": 392,
+      "max": 392
     },
     {
       "request": "leaderboard",
       "count": 500,
-      "p50": 85,
-      "p95": 176,
-      "p99": 447,
-      "max": 696
+      "p50": 83,
+      "p95": 221,
+      "p99": 445,
+      "max": 1002
     },
     {
       "request": "town battle",
       "count": 500,
-      "p50": 87,
-      "p95": 152,
-      "p99": 186,
-      "max": 730
+      "p50": 84,
+      "p95": 169,
+      "p99": 278,
+      "max": 778
+    },
+    {
+      "request": "battle: join",
+      "count": 200,
+      "p50": 61,
+      "p95": 101,
+      "p99": 163,
+      "max": 180
     },
     {
       "request": "stats",
       "count": 500,
-      "p50": 89,
-      "p95": 163,
-      "p99": 224,
-      "max": 644
+      "p50": 90,
+      "p95": 187,
+      "p99": 245,
+      "max": 1091
     },
     {
       "request": "battle: poll",
       "count": 1405,
-      "p50": 2,
-      "p95": 125,
-      "p99": 173,
-      "max": 400
+      "p50": 1,
+      "p95": 113,
+      "p99": 159,
+      "max": 529
     },
     {
       "request": "battle: start",
       "count": 5,
-      "p50": 84,
-      "p95": 106,
-      "p99": 106,
-      "max": 106
+      "p50": 63,
+      "p95": 89,
+      "p99": 89,
+      "max": 89
     },
     {
       "request": "battle: round",
       "count": 1000,
       "p50": 2,
-      "p95": 10,
-      "p99": 25,
-      "max": 44
+      "p95": 11,
+      "p99": 28,
+      "max": 43
     }
   ]
 }

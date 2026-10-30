@@ -19,7 +19,7 @@ jobs:
         run: npm ci --prefix server
       - name: API tests
         run: npm test --prefix server
-      - name: Browser smoke test (plays all 10 mini-games)
+      - name: Browser smoke test (plays every mini-game and mode)
         run: |
           pip install playwright
           python -m playwright install --with-deps chromium

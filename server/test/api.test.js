@@ -11,7 +11,8 @@ let server, base;
 const CLIENT = 'test-client-123456';
 
 before(async () => {
-  const app = createApp(makeRepo(openDb(':memory:')), { adminToken: 'secret', writeLimit: 1000 });
+  // Most tests post runs directly; the game-session checks have their own tests below.
+  const app = createApp(makeRepo(openDb(':memory:')), { adminToken: 'secret', writeLimit: 1000, requireSession: false });
   server = app.listen(0);
   await new Promise(r => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -314,7 +315,7 @@ test('booth battle: join, start, race, podium, saved for stats', async () => {
   let clock = 1_000_000;
   const repo = makeRepo(openDb(':memory:'));
   const battles = createBattles({ now: () => clock, onFinish: (run, name) => repo.addRun(run, name, '2026-11-05') });
-  const app = createApp(repo, { battles, writeLimit: 1000 });
+  const app = createApp(repo, { battles, writeLimit: 1000, requireSession: false });
   const srv = app.listen(0);
   await new Promise(r => srv.once('listening', r));
   const b2 = `http://127.0.0.1:${srv.address().port}`;
@@ -430,4 +431,85 @@ test('admin endpoints need the token', async () => {
   assert.equal((await post('/api/admin/reset', {}, { 'X-Admin-Token': 'secret' })).status, 200);
   const st = await (await fetch(base + '/api/stats?period=all')).json();
   assert.equal(st.runs, 0);
+});
+
+// ---- v1.9: reliability and verified sessions ----
+async function withApp(opts, fn) {
+  const app = createApp(makeRepo(openDb(':memory:')), opts);
+  const srv = app.listen(0);
+  await new Promise(r => srv.once('listening', r));
+  const b = `http://127.0.0.1:${srv.address().port}`;
+  const p = (path, body) => fetch(b + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try { await fn(b, p); } finally { srv.close(); }
+}
+
+test('a retried upload with the same run key never makes a second record', async () => {
+  const run = { ...makeRun(4), clientId: 'retry-device-001', runKey: 'r1abcdef', name: 'Retry' };
+  const a = await post('/api/runs', run);
+  assert.equal(a.status, 201);
+  const first = await a.json();
+  const b = await post('/api/runs', run);
+  assert.equal(b.status, 200);
+  const second = await b.json();
+  assert.equal(second.id, first.id);
+  assert.equal(second.duplicate, true);
+  const board = await (await fetch(base + '/api/leaderboard?period=today&limit=50')).json();
+  assert.equal(board.entries.filter(e => e.name === 'Retry').length, 1);
+  assert.equal((await post('/api/runs', { ...run, runKey: 'bad key!' })).status, 400);
+});
+
+test('rate limit answers 429 with Retry-After', async () => {
+  await withApp({ writeLimit: 2, requireSession: false }, async (b, p) => {
+    const run = (k) => ({ ...makeRun(2), clientId: 'limit-device-01', runKey: 'limit' + k + 'xx' });
+    assert.equal((await p('/api/runs', run(1))).status, 201);
+    assert.equal((await p('/api/runs', run(2))).status, 201);
+    const r = await p('/api/runs', run(3));
+    assert.equal(r.status, 429);
+    assert.ok(Number(r.headers.get('retry-after')) >= 1);
+  });
+});
+
+test('verified sessions: real play time on the server clock puts a score on the board', async () => {
+  let t = 1_000_000;
+  await withApp({ clock: () => t }, async (b, p) => {
+    const clientId = 'session-device-01';
+    const start = async (mode = 'classic') => (await (await p('/api/sessions', { clientId, mode })).json()).sessionId;
+    const board = async (q = 'today') => (await (await fetch(b + '/api/leaderboard?period=' + q + '&limit=50')).json()).entries.map(e => e.name);
+
+    // 1. Played for real: 30 s pass on the server between start and finish.
+    let sid = await start();
+    t += 30_000;
+    let r = await (await p('/api/runs', { ...makeRun(4), clientId, sessionId: sid, runKey: 'sess-ok-1', name: 'RealPlayer' })).json();
+    assert.equal(r.verified, true);
+    assert.ok((await board()).includes('RealPlayer'));
+
+    // 2. The same session can't be used twice.
+    t += 30_000;
+    r = await (await p('/api/runs', { ...makeRun(4), clientId, sessionId: sid, runKey: 'sess-ok-2', name: 'Reuser' })).json();
+    assert.equal(r.verified, false);
+
+    // 3. Posted instantly: claims 7 rounds of play, but no time passed on the server.
+    sid = await start();
+    r = await (await p('/api/runs', { ...makeRun(4), clientId, sessionId: sid, runKey: 'sess-fast-1', name: 'TooFast' })).json();
+    assert.equal(r.verified, false);
+
+    // 4. No session at all (played offline): saved for learning, kept off the board.
+    r = await (await p('/api/runs', { ...makeRun(4), clientId, runKey: 'sess-none-1', name: 'NoSession' })).json();
+    assert.equal(r.verified, false);
+    const names = await board();
+    for (const n of ['Reuser', 'TooFast', 'NoSession']) assert.ok(!names.includes(n), n);
+
+    // 5. Roo Run: 5000 animals needs about 29 minutes on the server clock, so a quick fake is unverified.
+    sid = await start('endless');
+    t += 60_000;
+    r = await (await p('/api/runs', { clientId, mode: 'endless', dodged: 5000, durationMs: 1_800_000, sessionId: sid, runKey: 'sess-roo-1', name: 'FakeRoo' })).json();
+    assert.equal(r.verified, false);
+    assert.ok(!(await board('endless')).includes('FakeRoo'));
+
+    // 6. A session from another device or another mode doesn't count.
+    sid = await start('daily');
+    t += 30_000;
+    r = await (await p('/api/runs', { ...makeRun(4), clientId, sessionId: sid, runKey: 'sess-mode-1' })).json();
+    assert.equal(r.verified, false);
+  });
 });

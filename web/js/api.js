@@ -32,9 +32,36 @@ async function request(path, opts = {}) {
       headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) { const err = new Error(body.error || `HTTP ${res.status}`); err.status = res.status; throw err; }
+    if (!res.ok) {
+      const err = new Error(body.error || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.retryAfter = Number(res.headers.get('Retry-After')) || 0;
+      throw err;
+    }
     return body;
   } finally { clearTimeout(t); }
+}
+
+// Worth trying again later: no connection, a timeout, "slow down" (429) or a server hiccup (5xx).
+// Anything else (a 400 "this run is invalid") will never succeed, so it's dropped.
+const temporary = (e) => !e.status || e.status === 408 || e.status === 429 || e.status >= 500;
+
+// When a send fails for a temporary reason, try again by itself after a growing pause
+// (3 s, 6 s, 12 s... up to a minute), or after the server's Retry-After.
+let retryTimer = 0, retryDelay = 0;
+function scheduleRetry(e) {
+  retryDelay = Math.min(60_000, retryDelay ? retryDelay * 2 : 3000);
+  const wait = Math.max(retryDelay, (e && e.retryAfter ? e.retryAfter * 1000 : 0));
+  clearTimeout(retryTimer);
+  retryTimer = setTimeout(() => { flush(); flushQuiz(); }, wait + Math.random() * 1000);
+}
+const retryWorked = () => { retryDelay = 0; };
+
+// Game sessions: the server notes when a game starts, so the finished score can be checked against
+// its clock and go on the leaderboard. Without one (offline), the run still counts for the learning stats.
+export async function startSession(mode) {
+  try { return (await request('/api/sessions', { method: 'POST', body: JSON.stringify({ clientId: clientId(), mode }) })).sessionId; }
+  catch { return null; }
 }
 
 // Queue a finished run. Returns the local id so a name can be attached later.
@@ -83,6 +110,7 @@ export function flush() {
           const res = await request('/api/runs', {
             method: 'POST',
             body: JSON.stringify({
+              runKey: r.localId, sessionId: r.sessionId || undefined,
               clientId: r.clientId, results: r.results, durationMs: r.durationMs,
               mode: r.mode || 'classic', day: r.day,
               town: r.town || undefined, challengeOf: r.challengeOf || undefined,
@@ -90,7 +118,11 @@ export function flush() {
               name: r.name || undefined, appVersion: r.appVersion
             })
           });
-          r.serverId = res.id; r.score = res.score; r.nameSent = !!r.name; r.townSent = true; r.whoSent = true; changed = true;
+          r.serverId = res.id; r.score = res.score; r.verified = res.verified !== false; changed = true;
+          // A duplicate means our first copy got there but its reply was lost: that copy may not have
+          // carried the name, town or group added since, so send those separately.
+          if (res.duplicate) { r.nameSent = false; r.townSent = !r.town; r.whoSent = !r.who; }
+          else { r.nameSent = !!r.name; r.townSent = true; r.whoSent = true; }
         }
         if (r.serverId && r.name && !r.nameSent) {
           await request(`/api/runs/${r.serverId}/name`, {
@@ -111,10 +143,11 @@ export function flush() {
           r.whoSent = true; changed = true;
         }
       } catch (e) {
-        if (e.status && e.status >= 400 && e.status < 500) { r.dead = true; r.error = e.message; changed = true; }
-        else break; // offline or server down: try again later
+        if (!temporary(e)) { r.dead = true; r.error = e.message; changed = true; }
+        else { scheduleRetry(e); break; } // offline, busy or server down: keep it and try again soon
       }
     }
+    if (!outbox.some(needsWork)) retryWorked();
     if (!changed) return outbox;
     // Merge into a fresh copy: the player may have typed a name while we were sending.
     const done = new Map(outbox.map(r => [r.localId, r]));
@@ -125,6 +158,7 @@ export function flush() {
         ...f,
         serverId: f.serverId || p.serverId,
         score: p.score ?? f.score,
+        verified: p.verified ?? f.verified,
         nameSent: f.nameSent || (p.nameSent && p.name === f.name),
         townSent: f.townSent === false && p.townSent && p.town === f.town ? true : f.townSent,
         whoSent: f.whoSent === false && p.whoSent && p.who === f.who ? true : f.whoSent,
@@ -145,7 +179,7 @@ export function runStatus(localId) {
   const r = load(KEY_OUTBOX, []).find(x => x.localId === localId);
   if (!r) return { state: 'unknown' };
   if (r.dead) return { state: 'rejected', error: r.error };
-  if (r.serverId && !needsWork(r)) return { state: 'sent', serverId: r.serverId };
+  if (r.serverId && !needsWork(r)) return { state: 'sent', serverId: r.serverId, verified: r.verified !== false };
   return { state: 'queued', serverId: r.serverId || null };
 }
 
@@ -154,18 +188,25 @@ const KEY_QUIZ = 'tes_quiz_outbox_v1';
 export function queueQuiz(payload) {
   const q = load(KEY_QUIZ, []);
   const cls = myClass();
-  q.push({ ...payload, clientId: clientId(), classCode: cls ? cls.code : undefined });
+  q.push({ ...payload, clientId: clientId(), classCode: cls ? cls.code : undefined, qk: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
   save(KEY_QUIZ, q.slice(-4));
   flushQuiz();
 }
-export async function flushQuiz() {
-  const q = load(KEY_QUIZ, []);
-  const left = [];
-  for (const item of q) {
-    try { await request('/api/quiz', { method: 'POST', body: JSON.stringify(item) }); }
-    catch (e) { if (!(e.status >= 400 && e.status < 500)) left.push(item); }
-  }
-  save(KEY_QUIZ, left);
+// Sends queued answers in order. A temporary failure keeps that answer (and the ones after it, so
+// the "after" check never arrives before the "before" one); answers queued meanwhile are never lost.
+let quizBusy = null;
+export function flushQuiz() {
+  if (quizBusy) return quizBusy;
+  quizBusy = (async () => {
+    const q = load(KEY_QUIZ, []);
+    const done = new Set();
+    for (const item of q) {
+      try { const { qk, ...body } = item; await request('/api/quiz', { method: 'POST', body: JSON.stringify(body) }); done.add(item.qk); }
+      catch (e) { if (temporary(e)) { scheduleRetry(e); break; } done.add(item.qk); } // a 400 will never work: drop it
+    }
+    if (done.size) save(KEY_QUIZ, load(KEY_QUIZ, []).filter(x => !done.has(x.qk)));
+  })().finally(() => { quizBusy = null; });
+  return quizBusy;
 }
 
 export const getLeaderboard = (period = 'today', limit = 20) => request(`/api/leaderboard?period=${period}&limit=${limit}&client=${encodeURIComponent(clientId())}`);

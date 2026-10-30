@@ -61,6 +61,21 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
   if (!cols.includes('class_code')) db.exec('ALTER TABLE runs ADD COLUMN class_code TEXT');
   // v1.6: Hard mode (shorter timers) has its own leaderboard.
   if (!cols.includes('hard')) db.exec('ALTER TABLE runs ADD COLUMN hard INTEGER NOT NULL DEFAULT 0');
+  // v1.9: a retried upload carries the same run key, so it never makes a second record.
+  if (!cols.includes('run_key')) db.exec('ALTER TABLE runs ADD COLUMN run_key TEXT');
+  // v1.9: verified = played inside a game session the server started (see sessions below).
+  // Runs from before sessions existed count as verified.
+  if (!cols.includes('verified')) db.exec('ALTER TABLE runs ADD COLUMN verified INTEGER NOT NULL DEFAULT 1');
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_key ON runs(client_id, run_key) WHERE run_key IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS sessions (
+      id         TEXT PRIMARY KEY,
+      client_id  TEXT NOT NULL,
+      mode       TEXT NOT NULL,
+      created_ms INTEGER NOT NULL,
+      used       INTEGER NOT NULL DEFAULT 0
+    );
+  `);
   const qcols = db.prepare('PRAGMA table_info(quiz)').all().map(c => c.name);
   if (!qcols.includes('class_code')) db.exec('ALTER TABLE quiz ADD COLUMN class_code TEXT');
   db.exec(`
@@ -82,8 +97,8 @@ export function openDb(file = process.env.DB_PATH || 'data/tes.sqlite') {
 const rate = (fails, plays) => (plays ? +(fails / plays).toFixed(3) : null);
 
 export function makeRepo(db) {
-  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day, mode, town, challenge_of, relaxed, who, class_code, hard)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insRun = db.prepare(`INSERT INTO runs (client_id, name, score, rounds, wins, duration_ms, app_version, day, mode, town, challenge_of, relaxed, who, class_code, hard, run_key, verified)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
   // Fail rates per game, optionally for one day and/or one class.
   function gameRates({ day = null, classCode = null } = {}) {
@@ -132,11 +147,24 @@ export function makeRepo(db) {
   const insRes = db.prepare('INSERT INTO results (run_id, idx, game, ok, ms) VALUES (?, ?, ?, ?, ?)');
 
   return {
+    // The run already saved under this device's run key, if any (a retried upload).
+    findRunByKey: (clientId, runKey) => (runKey ? db.prepare('SELECT id, score, rounds, verified FROM runs WHERE client_id = ? AND run_key = ?').get(clientId, runKey) : null),
+
+    // ---- game sessions: the server notes when a game started, so a score can't claim
+    // more play time than really passed on the server's clock ----
+    startSession(id, clientId, mode, nowMs) {
+      if (Math.random() < .02) db.prepare('DELETE FROM sessions WHERE created_ms < ?').run(nowMs - 2 * 86400_000);
+      db.prepare('INSERT INTO sessions (id, client_id, mode, created_ms) VALUES (?, ?, ?, ?)').run(id, clientId, mode, nowMs);
+    },
+    getSession: (id) => db.prepare('SELECT * FROM sessions WHERE id = ?').get(id),
+    useSession: (id) => db.prepare('UPDATE sessions SET used = 1 WHERE id = ? AND used = 0').run(id).changes === 1,
+
     addRun(run, name, day) {
       db.exec('BEGIN');
       try {
         const { lastInsertRowid } = insRun.run(run.clientId, name || null, run.score, run.rounds, run.wins, run.durationMs, run.appVersion ?? null,
-          run.day || day, run.mode || 'classic', run.town || null, run.challengeOf || null, run.relaxed ? 1 : 0, run.who || null, run.classCode || null, run.hard ? 1 : 0);
+          run.day || day, run.mode || 'classic', run.town || null, run.challengeOf || null, run.relaxed ? 1 : 0, run.who || null, run.classCode || null, run.hard ? 1 : 0,
+          run.runKey || null, run.verified === false ? 0 : 1);
         const id = Number(lastInsertRowid);
         run.results.forEach((r, i) => insRes.run(id, i, r.g, r.ok ? 1 : 0, r.ms));
         db.exec('COMMIT');
@@ -158,7 +186,8 @@ export function makeRepo(db) {
     // The main boards mix Classic and Journey runs (same scoring); the Daily board is separate.
     leaderboard({ day = null, limit = 20, client = null, mode = 'classic' } = {}) {
       // Relaxed-mode runs (slower timer) never go on the boards. Hard-mode runs have a board of their own.
-      const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ' AND relaxed = 0' +
+      // Only verified runs (played in a server session) make the boards.
+      const where = (day ? 'WHERE name IS NOT NULL AND day = ?' : 'WHERE name IS NOT NULL') + ' AND relaxed = 0 AND verified = 1' +
         (mode === 'daily' ? ` AND mode = 'daily'` : mode === 'endless' ? ` AND mode = 'endless'` : mode === 'hard' ? ` AND hard = 1 AND mode IN ('classic', 'journey')` : ` AND hard = 0 AND mode IN ('classic', 'journey')`);
       const rows = db.prepare(`
         SELECT name, client_id, MAX(score) AS score, MAX(rounds) AS rounds, MIN(created_at) AS first_at
@@ -251,7 +280,7 @@ export function makeRepo(db) {
       return db.prepare(`
         WITH best AS (
           SELECT town, client_id, MAX(score) AS score FROM runs
-          WHERE town IS NOT NULL AND relaxed = 0 AND mode NOT IN ('battle', 'endless') ${day ? 'AND day = ?' : ''}
+          WHERE town IS NOT NULL AND relaxed = 0 AND verified = 1 AND mode NOT IN ('battle', 'endless') ${day ? 'AND day = ?' : ''}
           GROUP BY town, client_id
         )
         SELECT town, COUNT(*) AS players, SUM(score) AS points, MAX(score) AS best

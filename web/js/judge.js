@@ -107,11 +107,12 @@ const STEPS = [
           <div><b>${lt.errors}</b><span>errors</span></div>
         </div><p class="small">Load test: ${Number(lt.requests) || 0} requests, ${Number(lt.concurrency) || 0} at a time${lt.battles ? `, plus ${Number(lt.battles)} full Booth Battles (${Number(lt.battlePlayers) || 0} phones) racing at once, ${Number(lt.battlesFinished) || 0} of ${Number(lt.battles)} finished cleanly` : ''} (${app.escapeHtml(lt.where || '')}).</p>` : '';
       return `${load}<ul class="judge-list">
-          <li>🛡️ Server re-scores every run from per-round results: the leaderboard can't be faked</li>
+          <li>🛡️ Server re-scores every run, checks it follows the rules, and times it against its own clock (a game session started by the server); runs it can't verify still count for learning but stay off the boards</li>
           <li>📶 Offline first: runs queue on the phone and sync later (remote NT has patchy signal)</li>
-          <li>🧪 26 API tests + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
+          <li>🧪 Automated API tests (including lost replies, "slow down" responses and fake scores) + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
+          <li>⌨️ Every round can be played with a keyboard: Tab, Enter or Space, number keys for answers, arrow keys to drag</li>
           <li>⚔️ Booth Battles run in memory with server-side scoring; finished races still feed the learning stats</li>
-          <li>🧩 One codebase for web, installable app and Android; SQLite today, Postgres-ready</li>
+          <li>🧩 One codebase for web, installable app and Android; SQLite behind one module, so a move to Postgres is contained work</li>
         </ul>`;
     }
   },
