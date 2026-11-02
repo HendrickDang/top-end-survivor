@@ -213,7 +213,7 @@
           <svg id="ntmap" viewBox="0 0 560 900" aria-label="Map of the Northern Territory with town scores"></svg>
           <ol class="tlist" id="tlist"></ol>
         </div>
-        <p class="note">Each player's best score today counts for their town. Pick yours on the game's menu!</p>
+        <p class="note">All time: each player's best score counts once for their town. Pick yours on the game's menu!</p>
       </div>
       <div class="panel-v" data-panel="learning">
         <h2>🧠 Is it teaching people?</h2>
@@ -486,7 +486,7 @@
           fetch(`${api}/api/leaderboard?period=all&limit=10`).then(r => r.json()),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
           fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
-          fetch(`${api}/api/towns?period=today`).then(r => r.json()),
+          fetch(`${api}/api/towns?period=all`).then(r => r.json()),
           fetch(`${api}/api/leaderboard?period=endless&scope=all&limit=1`).then(r => r.json()).catch(() => ({ entries: [] })),
           fetch(`${api}/api/stats?period=all`).then(r => r.json())
         ]);

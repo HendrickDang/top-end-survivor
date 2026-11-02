@@ -87,7 +87,7 @@ Minh's Journey, characters, fail cartoons and music, merged with everything from
 ### Friends, towns and proof it works (v1.3)
 
 - **Challenge a mate:** game over gives a link like `/?vs=42`. Your mate sees "Hendrick challenged you! Beat 820", plays with your score as a 🎯 target, and gets a "You beat Hendrick by 120!" (or a Rematch button). Your menu then shows who took you on.
-- **Town Battle:** pick your town (Darwin, Palmerston, Litchfield, Katherine, Alice Springs...). Each player's best score today counts for their town. New *Towns* tab on the leaderboard and a live NT map on the booth screen.
+- **Town Battle:** pick your town (Darwin, Palmerston, Litchfield, Katherine, Alice Springs...). Each player's best score counts once for their town, all time (it no longer resets at midnight). New *Towns* tab on the leaderboard and a live NT map on the booth screen.
 - **Wardrobe:** every badge unlocks gear for your character (croc hat, stinger suit, hi-vis, boss crown, graduate cap...). 23 badges, 27 pieces of gear.
 - **Optional quick safety check:** 3 questions before your first game and the same 3 after it, once per device, always skippable. Plus a zero-effort measure: survival rate the first time someone meets a hazard vs. later tries. Both show live on the booth.
 - **Judge's tour** (`/?judge=1`, or the link on the menu): 6 steps, about 60 seconds, with a live demo, live learning numbers, load test results and the team.

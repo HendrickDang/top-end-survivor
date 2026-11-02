@@ -1117,6 +1117,21 @@ function renderOverTown() {
 }
 
 // ---------- leaderboard ----------
+// What each tab counts, so an empty Daily tab next to a busy Today tab makes sense.
+const BOARD_NOTES = {
+  today: 'Classic and Journey games played today (Darwin time). Resets at midnight.',
+  daily: "Today's Daily Challenge only: the 📅 Daily button on the menu. Resets at midnight.",
+  hard: 'Classic and Journey games played today in 🔥 Hard mode.',
+  endless: 'Animals dodged in 🦘 Roo Run today.',
+  all: 'Best Classic and Journey scores ever.'
+};
+const BOARD_EMPTY = {
+  today: 'No Classic or Journey scores today yet. Be the first!',
+  daily: "Nobody has finished today's Daily Challenge yet. Tap 📅 Daily on the menu: the same 10 hazards for everyone today.",
+  hard: 'No Hard mode scores today yet. Turn on 🔥 Hard mode on the menu.',
+  endless: 'No Roo Run scores today yet. Tap 🦘 Roo Run on the menu.',
+  all: 'No scores yet. Be the first!'
+};
 async function showBoard(period = 'today') {
   show('screen-board');
   document.querySelectorAll('#screen-board .tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
@@ -1129,7 +1144,7 @@ async function showBoard(period = 'today') {
     const data = await api.getLeaderboard(period);
     list.innerHTML = data.entries.map(e =>
       `<li class="${e.mine ? 'me' : ''}"><span class="n">${escapeHtml(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
-    msg.textContent = data.entries.length ? '' : 'No scores yet. Be the first!';
+    msg.textContent = data.entries.length ? BOARD_NOTES[period] : BOARD_EMPTY[period];
   } catch {
     msg.textContent = 'Leaderboard needs internet. Your scores are saved and will upload later.';
   }

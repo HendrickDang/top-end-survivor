@@ -49,7 +49,8 @@ export function openTownPicker(onPick) {
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
 
 export async function renderTownsBoard(list, msg) {
-  const data = await api.getTowns('today');
+  // All time: a town's total keeps growing across days (each player's best score counts once).
+  const data = await api.getTowns('all');
   const mine = getTown();
   const max = Math.max(1, ...data.entries.map(e => e.points));
   list.innerHTML = data.entries.map(e => `
@@ -58,7 +59,7 @@ export async function renderTownsBoard(list, msg) {
         <i class="tbar" style="width:${Math.round(num(e.points) / max * 100)}%"></i></span>
       <span class="s">${num(e.points)}</span>
     </li>`).join('');
-  msg.textContent = data.entries.length ? 'Each player\'s best score today counts for their town.' : 'No towns on the board yet. Put yours there!';
+  msg.textContent = data.entries.length ? 'All time: each player\'s best score counts once for their town. Your town is remembered on this phone.' : 'No towns on the board yet. Put yours there!';
 }
 
 // ---------- Challenge a mate ----------
