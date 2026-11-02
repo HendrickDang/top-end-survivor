@@ -671,8 +671,14 @@ async function endRound(game, ok, ms) {
   const ending = battleDone || state.lives <= 0 || dailyDone;
   // A win moves on by itself. After a fail the real rule stays up until the player taps on:
   // there's a lot to read. (Booth Battles are a race, so they move on sooner.)
-  if (ok) await wait(1500);
-  else await waitForNext({ label: ending ? 'See my score ▶' : 'Next round ▶', ms: state.mode === 'battle' ? 4000 : 8000 });
+  // Wins wait a little (5 s) and fails longer (8 s), with a button to move on sooner.
+  // Booth Battles are a race, so they move on faster.
+  const battleRace = state.mode === 'battle';
+  await waitForNext({
+    label: ending ? 'See my score ▶' : 'Next round ▶',
+    ms: ok ? (battleRace ? 2500 : 5000) : (battleRace ? 4000 : 8000),
+    demoMs: ok ? 1500 : 2300
+  });
   if (runId !== state.runId) return; // quit from the pause menu
   if (battleDone) battleOver();
   else if (state.lives <= 0 || dailyDone) gameOver();
@@ -680,8 +686,8 @@ async function endRound(game, ok, ms) {
 }
 
 // Shows the "Next round" button on the result card with a draining bar; resolves on tap or after ms.
-function waitForNext({ label = 'Next round ▶', ms = 8000 } = {}) {
-  if (DEMO) return wait(2300);
+function waitForNext({ label = 'Next round ▶', ms = 8000, demoMs = 2300 } = {}) {
+  if (DEMO) return wait(demoMs);
   const btn = $('#result-next'), bar = $('#result-wait');
   btn.textContent = label;
   btn.hidden = false; bar.hidden = false;
@@ -1417,6 +1423,8 @@ function init() {
   });
   // Switching apps mid-round pauses the game instead of quietly losing a life.
   document.addEventListener('visibilitychange', () => { if (document.hidden) openPause(); });
+  // Leave the safety check at any time (it is optional).
+  $('#quiz-exit').addEventListener('click', () => { if (!DEMO) music.play('menu'); show('screen-menu'); });
   $('#hard-chip').addEventListener('click', () => {
     const on = !isHard();
     store.set('tes_hard', on);

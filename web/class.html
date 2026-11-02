@@ -13,6 +13,8 @@
     body { margin: 0; font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif; background: var(--teal); color: var(--ink); }
     main { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 16px; }
     header { color: var(--white); }
+    .topnav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .topnav a { font-size: .95rem; padding: 6px 14px; }
     header h1 { margin: 0; font-size: 2.4rem; line-height: 1; text-shadow: 0 4px 0 var(--ink); }
     header h1 span { color: #ffe9a8; }
     header p { margin: 6px 0 0; font-size: 1.05rem; max-width: 60ch; }
@@ -67,6 +69,10 @@
 </head>
 <body>
   <main>
+    <nav class="topnav noprint" aria-label="Site">
+      <a class="btn" href="./">⌂ Main menu</a>
+      <a class="btn" href="./?judge=1">👩‍⚖️ Judges' tour</a>
+    </nav>
     <header>
       <h1>🏫 Top End Survivor <span>in class</span></h1>
       <p>Students play on their own phones or school devices. You see how the class is going, which NT safety rules they miss, and what they learned. No accounts, no student details: just a class code. <a href="./">Play the game</a></p>

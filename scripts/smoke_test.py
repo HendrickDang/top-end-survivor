@@ -63,6 +63,8 @@ ROO_RUN_AUTOPILOT = """(n) => new Promise((done) => {
   };
   requestAnimationFrame(step);
 })"""
+NEXT_TAPPER = """setInterval(() => { const b = document.querySelector('#result-next:not([hidden])');
+  if (b && !b.dataset.seen) { b.dataset.seen = 1; setTimeout(() => { if (!b.hidden) b.click(); delete b.dataset.seen; }, 500); } }, 150);"""
 CENTER = """(sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect();
   return [r.x + r.width / 2, r.y + r.height / 2]; }"""
 
@@ -163,6 +165,8 @@ def main():
                                   permissions=['clipboard-read', 'clipboard-write'])
         # The optional quick safety check is tested separately below; skip it here.
         ctx.add_init_script("if (!localStorage.getItem('tes_quiz_v1')) localStorage.setItem('tes_quiz_v1', JSON.stringify({status: 'skipped'}))")
+        # A fast reader: taps "Next round" half a second after the result card offers it (keeps CI quick).
+        ctx.add_init_script(NEXT_TAPPER)
         page = ctx.new_page()
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.on('console', lambda m: m.type == 'error' and 'Failed to load resource' not in m.text and errors.append(m.text))
@@ -299,6 +303,7 @@ def main():
         if '?vs=' not in link: failures.append('challenge link')
         mate_ctx = browser.new_context(viewport={'width': 390, 'height': 844})
         mate_ctx.add_init_script("localStorage.setItem('tes_quiz_v1', JSON.stringify({status: 'skipped'}))")
+        mate_ctx.add_init_script(NEXT_TAPPER)
         mate = mate_ctx.new_page()
         mate.on('pageerror', lambda e: errors.append('mate: ' + str(e)))
         mate.goto(link.replace('http://localhost:8099', BASE)); mate.wait_for_timeout(800)
@@ -486,6 +491,7 @@ def main():
         for name in ('Ava', 'Ben'):
             bctx = browser.new_context(viewport={'width': 390, 'height': 844})
             bctx.add_init_script("localStorage.setItem('tes_quiz_v1', JSON.stringify({status: 'skipped'}))")
+            bctx.add_init_script(NEXT_TAPPER)
             ph = bctx.new_page()
             ph.on('pageerror', lambda e, n=name: errors.append(f'{n}: ' + str(e)))
             ph.goto(BASE + '/?battle=' + code); ph.wait_for_timeout(500)

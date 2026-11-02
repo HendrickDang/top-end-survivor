@@ -126,6 +126,7 @@
     .gbar .na { opacity: .45; }
     /* Live Booth Battle */
     .bbtn[hidden] { display: none; }
+    .bhome { position: fixed; top: calc(.3 * var(--u)); right: calc(21 * var(--u)); z-index: 13; font-size: calc(1.05 * var(--u)); border: 3px solid var(--ink); border-radius: 10px; background: var(--white); color: var(--ink); padding: calc(.1 * var(--u)) calc(.7 * var(--u)); font-weight: 700; text-decoration: none; }
     .bbtn { position: fixed; top: calc(.3 * var(--u)); right: calc(10 * var(--u)); z-index: 13; font-size: calc(1.05 * var(--u)); border: 3px solid var(--ink); border-radius: 10px; background: #c8412f; color: var(--white); padding: calc(.1 * var(--u)) calc(.8 * var(--u)); cursor: pointer; font-family: inherit; font-weight: 800; }
     .battle { position: fixed; inset: 0; z-index: 11; display: none; flex-direction: column; background: radial-gradient(circle at 50% 30%, #7a2a1f, #3a1410 75%); color: var(--white); padding: calc(2.5 * var(--u)) calc(3 * var(--u)) calc(3 * var(--u)); }
     .battle.show { display: flex; animation: fadein .4s ease; }
@@ -232,6 +233,7 @@
   <div class="ticker"><div class="lab">💥 JUST NOW</div><div class="track" id="ticker"><span>Scan the QR code and see how long you survive the Top End...</span></div></div>
   <div class="record" id="record"><h3>NEW #1!</h3><p id="record-who"></p></div>
   <button class="snd" id="snd">🔇 Sound off</button>
+  <a class="bhome" href="./" title="Back to the game's main menu">⌂ Menu</a>
   <button class="bbtn" id="bbtn" title="Start a Booth Battle (B)">⚔️ Booth Battle</button>
   <div class="battle" id="battle" data-view="lobby" aria-live="polite">
     <div class="bview bv-lobby">
