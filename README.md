@@ -239,7 +239,6 @@ web/                 the game (also the Android app's content)
 server/              Express API + SQLite (src/battles.js: live Booth Battles, in memory)
 android/             Capacitor Android project
 scripts/             smoke test (plays every game), icon generator
-docs/DEMO.md         submission checklist and demo-day plan
 ```
 
 ## Sources
