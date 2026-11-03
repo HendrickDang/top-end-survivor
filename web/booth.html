@@ -164,6 +164,18 @@
     .lane .cells i { height: calc(3 * var(--u)); border-radius: calc(.7 * var(--u)); border: calc(.25 * var(--u)) solid var(--ink); background: rgba(255,250,240,.2); font-style: normal; display: grid; place-items: center; font-size: calc(1.6 * var(--u)); }
     .lane .cells i.ok { background: var(--leaf); } .lane .cells i.bad { background: var(--red); }
     .lane .sc { text-align: right; color: #ffe9a8; }
+    /* Big crowds: smaller lobby chips, and the live race in two compact columns (top 20 shown). */
+    .bplayers.many .bp { font-size: calc(1.3 * var(--u)); gap: calc(.35 * var(--u)); }
+    .bplayers.many .bp .av { width: calc(2.6 * var(--u)); height: calc(2.6 * var(--u)); }
+    .bplayers.crowd { gap: calc(.6 * var(--u)); }
+    .bplayers.crowd .bp { font-size: calc(1.05 * var(--u)); border-width: calc(.22 * var(--u)); padding-right: calc(.8 * var(--u)); }
+    .bplayers.crowd .bp .av { width: calc(2 * var(--u)); height: calc(2 * var(--u)); }
+    .blanes.dense { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: calc(.45 * var(--u)) calc(1.2 * var(--u)); }
+    .blanes.dense .lane { grid-template-columns: calc(2.6 * var(--u)) calc(2.6 * var(--u)) calc(9 * var(--u)) 1fr calc(4.2 * var(--u)); gap: calc(.5 * var(--u)); padding: calc(.15 * var(--u)) calc(.6 * var(--u)); font-size: calc(1.25 * var(--u)); }
+    .blanes.dense .lane .av { width: calc(2.6 * var(--u)); height: calc(2.6 * var(--u)); }
+    .blanes.dense .lane .cells { gap: calc(.3 * var(--u)); }
+    .blanes.dense .lane .cells i { height: calc(2 * var(--u)); font-size: calc(1.1 * var(--u)); border-width: calc(.18 * var(--u)); }
+    .bmore { grid-column: 1 / -1; text-align: center; font-size: calc(1.3 * var(--u)); font-weight: 700; opacity: .8; }
     .bv-done { flex-direction: column; align-items: center; gap: calc(1.5 * var(--u)); }
     .bpodium { display: flex; align-items: flex-end; gap: calc(1.5 * var(--u)); }
     .bpod { width: calc(18 * var(--u)); display: flex; flex-direction: column; align-items: center; background: var(--sand); color: var(--ink); border: calc(.4 * var(--u)) solid var(--ink); border-radius: calc(1.5 * var(--u)) calc(1.5 * var(--u)) 0 0; padding: calc(1 * var(--u)) calc(1 * var(--u)) calc(1.5 * var(--u)); }
@@ -606,6 +618,9 @@
           $('#bplayers').insertAdjacentHTML('beforeend', fresh.map(p => `<span class="bp">${avatar(p)}${esc(p.name)}</span>`).join(''));
         }
         $('#bcount').textContent = b.players.length ? `${b.players.length} player${b.players.length > 1 ? 's' : ''} ready!` : 'Waiting for players...';
+        // Shrink the name chips as the crowd grows, so all 40 fit on screen.
+        $('#bplayers').classList.toggle('many', b.players.length > 16 && b.players.length <= 28);
+        $('#bplayers').classList.toggle('crowd', b.players.length > 28);
         $('#bstart').disabled = !b.players.length;
       } else if (b.status === 'live' && startIn > 0) {
         bview('count');
@@ -616,10 +631,14 @@
         bview('live');
         const left = Math.max(0, Math.ceil((b.endsAt - (Date.now() + bt.offset)) / 1000));
         $('#bleft').textContent = `${b.players.filter(p => p.done).length}/${b.players.length} finished · ${left}s`;
-        $('#blanes').innerHTML = b.players.slice(0, 12).map((p, i) => `<div class="lane ${i === 0 && p.score > 0 ? 'lead' : ''}">
+        // Up to 8 racers: big lanes. More: two compact columns with the top 20, and a count of the rest.
+        const dense = b.players.length > 8, shown = dense ? 20 : 8;
+        $('#blanes').classList.toggle('dense', dense);
+        const more = b.players.length - shown;
+        $('#blanes').innerHTML = b.players.slice(0, shown).map((p, i) => `<div class="lane ${i === 0 && p.score > 0 ? 'lead' : ''}">
           <span class="rk">${i === 0 && p.score > 0 ? '👑' : '#' + p.rank}</span>${avatar(p)}<span class="nm">${esc(p.name)}</span>
           <span class="cells">${b.games.map((g, k) => `<i class="${k < p.marks.length ? (p.marks[k] ? 'ok' : 'bad') : ''}">${GAME_ICONS[g] || ''}</i>`).join('')}</span>
-          <span class="sc">${num(p.score)}</span></div>`).join('');
+          <span class="sc">${num(p.score)}</span></div>`).join('') + (more > 0 ? `<p class="bmore">+ ${more} more racing on their phones</p>` : '');
       } else if (b.status === 'done') {
         bview('done');
         if (bt.celebrated) return;
