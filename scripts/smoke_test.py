@@ -469,10 +469,12 @@ def main():
 
         # Shared booth device: big "take it home" QR (and a vote QR once VOTE_URL is set).
         kctx = browser.new_context(viewport={'width': 390, 'height': 844})
+        # The vote link comes from the server (it is the source of truth), so pretend one is set there.
+        kctx.route('**/api/config', lambda r: r.fulfill(status=200, content_type='application/json', body='{"voteUrl":"https://example.com/vote"}'))
         kiosk = kctx.new_page()
         kiosk.on('pageerror', lambda e: errors.append('kiosk: ' + str(e)))
         kiosk.goto(BASE + '/?kiosk=1'); kiosk.wait_for_timeout(400)
-        kiosk.evaluate("window.TES_CONFIG.VOTE_URL = 'https://example.com/vote'; window.__TES_FORCE__ = 'flood-road'")
+        kiosk.evaluate("window.__TES_FORCE__ = 'flood-road'")
         kiosk.click('#btn-play')
         if not kiosk.query_selector('#stage .hint-badge'): failures.append('kiosk hint')
         kiosk.wait_for_selector('#screen-over.active', timeout=60000); kiosk.wait_for_timeout(600)

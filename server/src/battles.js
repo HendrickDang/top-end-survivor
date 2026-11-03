@@ -11,6 +11,11 @@ const COUNTDOWN_MS = 4000;      // "3, 2, 1, GO" on every phone
 const MAX_LIVE_MS = 90_000;     // a battle ends after 90 s even if someone wandered off
 const KEEP_MS = 30 * 60_000;    // forget battles after 30 minutes
 const MAX_BATTLES = 300;
+// Timing check for claimed rounds: the round times plus the shortest possible gap between rounds
+// (the win animation) must fit inside the time since GO by the server's clock, give or take
+// SLACK_MS for network delay and the phone's countdown sync.
+const MIN_GAP_MS = 500;
+const SLACK_MS = 2000;
 export const MAX_PLAYERS = 40;
 
 const pick = (arr, n) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
@@ -66,10 +71,13 @@ export function createBattles({ now = () => Date.now(), onFinish = () => {} } = 
       sweep();
       // Full (for example someone scripted lots of empty battles): make room by dropping the oldest
       // battle that isn't racing right now, so the booth can always open a new one.
+      // A finished battle or an empty lobby goes first; a lobby people have joined is never dropped.
       if (battles.size >= MAX_BATTLES) {
-        const idle = [...battles.values()].filter(x => tick(x).status !== 'live').sort((x, y) => x.createdAt - y.createdAt)[0];
+        const all = [...battles.values()].map(tick);
+        const oldest = (list) => list.sort((x, y) => x.createdAt - y.createdAt)[0];
+        const idle = oldest(all.filter(x => x.status === 'done')) || oldest(all.filter(x => x.status === 'lobby' && !x.players.size));
         if (idle) battles.delete(idle.code);
-        else return { error: 'Too many battles right now. Try again in a minute.' };
+        else return { error: 'Too many battles right now. Try again in a minute.', status: 503 };
       }
       const b = {
         code: newCode(), hostKey: crypto.randomBytes(12).toString('hex'), status: 'lobby',
@@ -121,7 +129,10 @@ export function createBattles({ now = () => Date.now(), onFinish = () => {} } = 
       const v = validateBattleResults(results, b.games);
       if (v.error) return { error: v.error, status: 400 };
       // Results only ever grow: earlier rounds can't be changed.
-      if (v.results.length < p.results.length || p.results.some((r, i) => r.ok !== v.results[i].ok)) return { error: 'Results can only be added.', status: 400 };
+      if (v.results.length < p.results.length || p.results.some((r, i) => r.ok !== v.results[i].ok || r.ms !== v.results[i].ms)) return { error: 'Results can only be added.', status: 400 };
+      // Can't finish faster than the clock allows (five "wins" sent a moment after GO).
+      const needMs = v.results.reduce((t, r) => t + r.ms, 0) + (v.results.length - 1) * MIN_GAP_MS;
+      if (needMs > now() - b.startsAt + SLACK_MS) return { error: 'Those rounds came in faster than they could be played.', status: 400 };
       p.results = v.results;
       p.score = scoreOf(p.results);
       if (p.results.length === BATTLE_ROUNDS) {

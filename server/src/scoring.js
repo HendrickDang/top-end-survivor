@@ -12,6 +12,9 @@ export const GAME_IDS = [...REGULAR, ...BOSSES];
 export { REGULAR, BOSSES, dailySequence, darwinDay };
 export const MAX_LIVES = 3;
 export const BOSS_BONUS = 200; // must match web/js/main.js
+// Longest a single round can last: a 15 s boss in Relaxed mode (x1.6) plus a first-time hint and a
+// pause fits well inside this. Round times don't change the score; they're only sanity checks.
+export const MAX_ROUND_MS = 60000;
 
 // Must match web/js/main.js pointsFor()
 export const pointsFor = (round) => 100 + 10 * (round - 1);
@@ -92,16 +95,21 @@ export function validateRun(body, { today = darwinDay() } = {}) {
   if (!Array.isArray(results) || results.length < 1 || results.length > 300) return { error: 'Invalid results.' };
   for (const r of results) {
     if (!r || !GAME_IDS.includes(r.g) || typeof r.ok !== 'boolean') return { error: 'Invalid result entry.' };
-    if (!Number.isFinite(r.ms) || r.ms < 0 || r.ms > 20000) return { error: 'Invalid round time.' };
+    if (!Number.isFinite(r.ms) || r.ms < 0 || r.ms > MAX_ROUND_MS) return { error: 'Invalid round time.' };
     if (r.ok && r.ms < 120) return { error: 'Round too fast.' };
   }
   const losses = results.filter(r => !r.ok).length;
-  let day = today;
+  let day = today, late = false;
 
   if (mode === 'daily') {
     // Daily: the fixed sequence for that day, 10 rounds or until the 3rd life is lost.
     day = typeof body.day === 'string' ? body.day : '';
-    if (day !== today && day !== prevDay(today)) return { error: 'That Daily Challenge has expired.' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > today) return { error: 'Invalid Daily Challenge day.' };
+    // Played offline days ago? Its learning data still counts, but only today's and yesterday's
+    // runs can go on a leaderboard (late = saved unranked).
+    const ageDays = (Date.parse(today + 'T00:00:00Z') - Date.parse(day + 'T00:00:00Z')) / 86400000;
+    if (!(ageDays <= 60)) return { error: 'That Daily Challenge has expired.' };
+    if (day !== today && day !== prevDay(today)) late = true;
     const seq = dailySequence(day);
     if (results.length > DAILY_ROUNDS || results.some((r, i) => r.g !== seq[i])) return { error: 'Results do not match the Daily Challenge.' };
     if (losses > MAX_LIVES) return { error: 'Too many lives lost.' };
@@ -145,7 +153,8 @@ export function validateRun(body, { today = darwinDay() } = {}) {
       relaxed: body.relaxed === true,
       who: body.who || null,
       classCode: body.classCode || null,
-      hard
+      hard,
+      late
     }
   };
 }
@@ -157,7 +166,7 @@ export function validateBattleResults(results, games) {
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
     if (!r || r.g !== games[i] || typeof r.ok !== 'boolean') return { error: 'Results do not match the battle.' };
-    if (!Number.isFinite(r.ms) || r.ms < 0 || r.ms > 20000) return { error: 'Invalid round time.' };
+    if (!Number.isFinite(r.ms) || r.ms < 0 || r.ms > MAX_ROUND_MS) return { error: 'Invalid round time.' };
     if (r.ok && r.ms < 120) return { error: 'Round too fast.' };
   }
   return { results: results.map(r => ({ g: r.g, ok: r.ok, ms: Math.round(r.ms) })) };

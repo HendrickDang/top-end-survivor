@@ -65,7 +65,8 @@ body {
   transition: transform .06s, box-shadow .06s;
 }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.btn-primary { background: var(--ochre); color: var(--white); text-shadow: 0 2px 0 var(--ochre-dark); }
+/* Button colours are a shade darker than the brand colours so white text passes WCAG AA contrast. */
+.btn-primary { background: #b05c12; color: var(--white); text-shadow: 0 2px 0 #7a3f0b; }
 .btn-big { font-size: 1.6rem; padding: 18px 48px; }
 .btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; }
 
@@ -73,7 +74,7 @@ body {
   display: inline-block; font-size: .8rem; padding: 2px 10px; border-radius: 99px;
   background: rgba(255,255,255,.18); color: var(--white);
 }
-.pill.online { background: var(--leaf); }
+.pill.online { background: #437a32; }
 
 /* ---------- menu ---------- */
 #screen-menu { background: linear-gradient(#f7b267 0%, #f4845f 45%, #c8412f 100%); color: var(--white); }
@@ -214,9 +215,9 @@ body {
 .result-streak:empty { display: none; }
 .result-card { animation: card-in .35s cubic-bezier(.2,1.5,.4,1); }
 @keyframes card-in { from { transform: scale(.6) rotate(-4deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.btn-share { background: #2f7fd0; color: var(--white); }
+.btn-share { background: #2a6fb8; color: var(--white); }
 .vote-nudge { text-align: center; margin: 4px 0 0; font-size: 1.05rem; }
-.vote-nudge b { color: var(--ochre-dark); }
+.vote-nudge b { color: #8f4a0e; }
 .over-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #ffe9a8; border: 3px solid var(--ink); border-radius: 14px; padding: 10px 12px; }
 .over-badges b { width: 100%; }
 .medal { display: inline-flex; align-items: center; gap: 6px; background: var(--white); border: 2px solid var(--ink); border-radius: 99px; padding: 2px 12px 2px 4px; font-weight: 700; }
@@ -226,18 +227,20 @@ body {
 @keyframes pop-in { from { transform: scale(0); } }
 .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .badge { background: var(--white); border: 3px solid var(--ink); border-radius: 16px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
-.badge.locked { opacity: .55; filter: grayscale(.8); }
+.badge.locked { background: #f3ede2; }
+.badge.locked .medal-big { opacity: .55; filter: grayscale(.8); }
+.badge.locked b, .badge.locked small { color: #5e574b; opacity: 1; }
 .badge.have { background: #fff4cc; box-shadow: 0 4px 0 var(--ink); }
 .medal-big { font-size: 2.4rem; line-height: 1.2; }
 .badge small { font-size: .8rem; line-height: 1.15; opacity: .8; }
 .over-badges[hidden] { display: none; }
 
 /* ---------- v1.2: daily, bosses, install, demo ---------- */
-.btn-daily { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #2f7fd0; color: var(--white); min-width: 240px; }
-.btn-daily small { font-size: .8rem; font-weight: 600; opacity: .9; }
+.btn-daily { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #2a6fb8; color: var(--white); min-width: 240px; }
+.btn-daily small { font-size: .8rem; font-weight: 600; }
 .chips { margin: 0; min-height: 0; font-weight: 800; color: #ffe9a8; text-shadow: 0 2px 0 var(--ink); }
 .chips:empty, .chips span:empty { display: none; }
-.btn-install { background: #4f8a3c; color: var(--white); }
+.btn-install { background: #437a32; color: var(--white); }
 .btn-install[hidden] { display: none; }
 .season-chip { margin: 0; font-size: .85rem; font-weight: 700; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
 .season-chip:empty { display: none; }
@@ -329,8 +332,8 @@ body.daily-mode .hud { background: #2f7fd0; }
 /* ---------- v1.4: Journey, Territory Characters, coins, fail cartoons, admin ---------- */
 .mode-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
 .mode-row .btn { flex: 1; min-width: 0; padding: 10px 6px; font-size: 1.1rem; }
-.mode-row .btn small { font-size: .74rem; font-weight: 600; opacity: .92; line-height: 1.1; }
-.btn-journey { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #4f8a3c; color: var(--white); }
+.mode-row .btn small { font-size: .74rem; font-weight: 600; line-height: 1.1; }
+.btn-journey { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #437a32; color: var(--white); }
 .menu-grid > .btn:last-child:nth-child(odd), .menu-grid > .btn:nth-last-child(2):nth-child(odd):has(+ [hidden]) { grid-column: 1 / -1; }
 .menu-grid [hidden] { display: none; }
 
@@ -501,7 +504,7 @@ body.journey-mode .hud { background: #3f7a2e; }
 /* ---------- v1.5: Booth Battle, gesture hints, relaxed mode, real help, classroom, locals vs visitors ---------- */
 [hidden] { display: none !important; }
 .btn-battle { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; max-width: 340px; background: #c8412f; color: var(--white); padding: 9px 12px; font-size: 1.15rem; }
-.btn-battle small { font-size: .74rem; font-weight: 600; opacity: .92; }
+.btn-battle small { font-size: .74rem; font-weight: 600; }
 .btn-help { background: #fbe0d8; }
 .menu-links { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; }
 .menu-links a.linkish { color: inherit; }
@@ -725,3 +728,4 @@ body.endless-mode .timer-bar:not(.urgent) { background: #c9b6ee; }
 .privacy-note { background: var(--white); border: 2px dashed var(--sand-2); border-radius: 14px; padding: 10px 14px; font-size: .9rem; line-height: 1.35; }
 .privacy-note h3 { margin: 0 0 4px; }
 .privacy-note p { margin: 0 0 6px; }
+.judge-kpis b small { display: block; font-size: .55em; font-weight: 700; color: #5e574b; line-height: 1.2; }

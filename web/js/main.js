@@ -90,6 +90,8 @@ function show(id) {
 }
 
 function renderLives() {
+  const max = state.mode === 'endless' ? 1 : MAX_LIVES;
+  $('#hud-lives').setAttribute('aria-label', state.mode === 'battle' ? 'No lives in a Booth Battle' : `Lives: ${Math.max(0, state.lives)} of ${max}`);
   $('#hud-lives').innerHTML = Array.from({ length: state.mode === 'endless' ? 1 : MAX_LIVES }, (_, i) =>
     `<span class="${i < state.lives ? '' : 'lost'}">${heartSVG()}</span>`).join('');
 }
@@ -390,8 +392,9 @@ function runRound() {
       svg.addEventListener('pointerup', drop);
       svg.addEventListener('pointercancel', drop);
       // Keyboard: Tab to it, arrow keys move it (Shift for big steps), Enter or Space drops it.
-      makeFocusable(node, 'Drag item: arrow keys to move, Enter to drop');
+      makeFocusable(node, `Drag ${node.dataset.name || 'item'}: arrow keys to move, Enter to drop`);
       node.addEventListener('keydown', (e) => {
+        if (finished || paused) return;
         const step = e.shiftKey ? 72 : 24;
         const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
         if (moves[e.key]) {
@@ -481,12 +484,16 @@ function makeFocusable(node, label) {
 function keyboardTargets(svg) {
   svg.querySelectorAll('[data-ok], .tap-target').forEach((n) => {
     if (n.classList.contains('draggable') || n.hasAttribute('tabindex')) return;
-    const words = [...n.querySelectorAll('text')].map(t => t.textContent.trim()).filter(Boolean).join(' ');
+    const words = n.dataset.name || [...n.querySelectorAll('text')].map(t => t.textContent.trim()).filter(Boolean).join(' ');
     makeFocusable(n, words ? `Tap: ${words}` : 'Tap this');
     n.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault(); e.stopPropagation();
+      // Already collected, paused or round over: a touch couldn't press it, so a key can't either
+      // (otherwise pressing Enter three times on one item would count it three times).
+      if (e.repeat || getComputedStyle(n).pointerEvents === 'none') return;
       tapAt(n);
+      if (getComputedStyle(n).pointerEvents === 'none') { n.removeAttribute('tabindex'); n.setAttribute('aria-disabled', 'true'); }
     });
   });
   // Keyboard players start on the first answer or target, so Enter works straight away.
@@ -580,7 +587,7 @@ function startRooRun() {
       cancelAnimationFrame(raf);
       stage.style.pointerEvents = 'none';
       const ms = Math.round(performance.now() - state.startedAt);
-      state.results = [{ g: 'roo-dusk', ok: false, ms: Math.min(20000, ms) }];
+      state.results = [{ g: 'roo-dusk', ok: false, ms: Math.min(60000, Math.round(ms)) }];
       state.lives = 0;
       renderLives();
       navigator.vibrate?.([80, 40, 120]);
@@ -630,7 +637,7 @@ async function endRound(game, ok, ms) {
   const svg = stage.querySelector('svg');
   if (adminMode && state.mode === 'test') return endAdminRound(game, ok, svg);
   // Record the result immediately (the animations below are only cosmetic).
-  state.results.push({ g: game.id, ok, ms: Math.round(ms) });
+  state.results.push({ g: game.id, ok, ms: Math.min(60000, Math.round(ms)) }); // server limit: MAX_ROUND_MS
   let bonus = 0;
   if (ok) {
     state.streak++;
@@ -673,10 +680,11 @@ async function endRound(game, ok, ms) {
   // there's a lot to read. (Booth Battles are a race, so they move on sooner.)
   // Wins wait a little (5 s) and fails longer (8 s), with a button to move on sooner.
   // Booth Battles are a race, so they move on faster.
+  // Relaxed mode is for reading at your own pace: the card stays up until you tap Next.
   const battleRace = state.mode === 'battle';
   await waitForNext({
     label: ending ? 'See my score ▶' : 'Next round ▶',
-    ms: ok ? (battleRace ? 2500 : 5000) : (battleRace ? 4000 : 8000),
+    ms: relaxedNow() ? (KIOSK ? 60000 : 0) : ok ? (battleRace ? 2500 : 5000) : (battleRace ? 4000 : 8000),
     demoMs: ok ? 1500 : 2300
   });
   if (runId !== state.runId) return; // quit from the pause menu
@@ -690,16 +698,17 @@ function waitForNext({ label = 'Next round ▶', ms = 8000, demoMs = 2300 } = {}
   if (DEMO) return wait(demoMs);
   const btn = $('#result-next'), bar = $('#result-wait');
   btn.textContent = label;
-  btn.hidden = false; bar.hidden = false;
+  // ms 0: no countdown, the card waits for a tap (Relaxed mode).
+  btn.hidden = false; bar.hidden = !ms;
   const fill = bar.firstElementChild;
   fill.style.transition = 'none'; fill.style.transform = 'scaleX(1)';
   void fill.offsetWidth;
-  fill.style.transition = `transform ${ms}ms linear`; fill.style.transform = 'scaleX(0)';
+  if (ms) { fill.style.transition = `transform ${ms}ms linear`; fill.style.transform = 'scaleX(0)'; }
   setTimeout(() => btn.focus({ preventScroll: true }), 50);
   return new Promise((resolve) => {
     let done = false;
     const go = () => { if (done) return; done = true; clearTimeout(t); btn.hidden = true; bar.hidden = true; btn.removeEventListener('click', go); sfx.tap(); resolve(); };
-    const t = setTimeout(go, ms);
+    const t = ms ? setTimeout(go, ms) : 0;
     btn.addEventListener('click', go);
   });
 }
@@ -818,7 +827,11 @@ function gameOver() {
 let kioskTimer = 0;
 function armKioskReset() {
   clearTimeout(kioskTimer);
-  kioskTimer = setTimeout(() => { if ($('#screen-over').classList.contains('active')) show('screen-menu'); }, 45000);
+  kioskTimer = setTimeout(() => {
+    if (!$('#screen-over').classList.contains('active')) return;
+    api.newClientId(); // the next person at the booth is a new player
+    show('screen-menu');
+  }, 45000);
 }
 
 // A run the server couldn't time (it started with no connection) is saved, but not ranked.
@@ -833,6 +846,7 @@ async function autoSubmitName(name) {
   if (state.runLocalId !== runId) return; // they've already started another game
   const st = api.runStatus(runId);
   $('#submit-msg').textContent =
+    st.state === 'sent' && st.nameError ? `Your score is saved, but that name wasn't accepted: ${st.nameError}` :
     st.state === 'sent' && !st.verified ? OFF_BOARD :
     st.state === 'sent' ? `On the board as ${name}. Type a new name and tap Change to rename.` :
     st.state === 'rejected' ? `Not accepted: ${st.error}` :
@@ -855,11 +869,12 @@ async function submitName(e) {
   await api.flush();
   const st = api.runStatus(state.runLocalId);
   $('#submit-msg').textContent =
+    st.state === 'sent' && st.nameError ? `Your score is saved, but that name wasn't accepted: ${st.nameError}` :
     st.state === 'sent' && !st.verified ? OFF_BOARD :
     st.state === 'sent' ? 'On the board! Check the leaderboard.' :
     st.state === 'rejected' ? `Not accepted: ${st.error}` :
     'Saved offline. It will upload when you are back online.';
-  if (st.state === 'rejected') btn.disabled = false;
+  if (st.state === 'rejected' || st.nameError) btn.disabled = false;
   if (KIOSK) armKioskReset();
 }
 
@@ -883,7 +898,7 @@ async function doShare() {
     let name = '';
     try { name = $('#player-name').value.trim(); } catch { /* ignore */ }
     const r = await shareCard({
-      score: state.score, rounds: state.results.length,
+      score: state.score, rounds: state.results.length, mode: state.mode,
       survived: state.results.filter(x => x.ok).length,
       name: /^[A-Za-z0-9 _-]{2,16}$/.test(name) ? name : '',
       badgeIds: Object.keys(badges.unlocked())
@@ -1089,11 +1104,10 @@ function renderOverWho() {
 function renderOverHome(refetch = true) {
   const cfg = window.TES_CONFIG || {};
   // Pick up a vote link set on the server since this page loaded.
-  if (refetch) api.getConfig().then(c => { if (c.voteUrl && c.voteUrl !== cfg.VOTE_URL) { cfg.VOTE_URL = c.voteUrl; renderOverHome(false); } }).catch(() => {});
+  // An empty link from the server means voting was switched off: hide the buttons again.
+  if (refetch) api.getConfig().then(c => { const v = c.voteUrl || ''; if (v !== (cfg.VOTE_URL || '')) { cfg.VOTE_URL = v; renderOverHome(false); } }).catch(() => {});
   const voteUrl = cfg.VOTE_URL || '';
-  const vote = $('#btn-vote');
-  vote.hidden = !voteUrl || KIOSK;
-  if (voteUrl) vote.href = voteUrl;
+  renderVoteLinks();
   const box = $('#over-home');
   box.hidden = !KIOSK;
   if (!KIOSK) return;
@@ -1101,6 +1115,16 @@ function renderOverHome(refetch = true) {
   $('#home-qr').src = qr(playUrlSafe());
   $('#vote-qr-box').hidden = !voteUrl;
   if (voteUrl) $('#vote-qr').src = qr(voteUrl);
+}
+
+// Every "Vote for us" button (game over, Booth Battle results) follows the server's vote link.
+// Shared booth phones don't open it: people vote on their own phone via the QR instead.
+function renderVoteLinks() {
+  const url = (window.TES_CONFIG && window.TES_CONFIG.VOTE_URL) || '';
+  document.querySelectorAll('a[data-vote]').forEach((a) => {
+    a.hidden = !url || KIOSK;
+    if (url) a.href = url; else a.removeAttribute('href');
+  });
 }
 
 function renderOverTown() {
@@ -1363,7 +1387,10 @@ async function updateNet() {
     pill.classList.add('online');
     api.flush();
   } catch {
-    pill.textContent = 'Offline ready';
+    // "Offline ready" only when the game is really cached on this device.
+    let cached = false;
+    try { cached = !!navigator.serviceWorker?.controller && (await caches.keys()).some(k => k.startsWith('tes-')); } catch { /* no cache API */ }
+    pill.textContent = cached ? 'Offline: solo games still work' : 'Offline';
     pill.classList.remove('online');
   }
 }
@@ -1470,7 +1497,7 @@ function init() {
   if (!DEMO) joinFromUrl(PARAMS);
   // People's Choice link: set on the server on the day (no code change). Not taken from the page
   // address, so a crafted link can't swap in a different "vote" site.
-  api.getConfig().then(c => { if (c.voteUrl) window.TES_CONFIG.VOTE_URL = c.voteUrl; }).catch(() => { /* offline: keep config.js */ });
+  api.getConfig().then(c => { window.TES_CONFIG.VOTE_URL = c.voteUrl || ''; renderVoteLinks(); }).catch(() => { /* offline: keep config.js */ });
   if (!DEMO && /^[A-Za-z]{4}$/.test(PARAMS.get('battle') || '')) battle.openJoin(PARAMS.get('battle'));
   social.renderChallengeResults();
   $('#btn-share').addEventListener('click', doShare);

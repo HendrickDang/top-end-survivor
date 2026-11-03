@@ -11,6 +11,10 @@ import { LOCATION_COUNT } from './locations.js';
 const $ = (s) => document.querySelector(s);
 let app = null, step = 0;
 const pct = (x) => (x == null ? '-' : Math.round(x * 100) + '%');
+// A rate from a handful of rounds says nothing, so small samples show the count instead of a %.
+const MIN_N = 20, MIN_QUIZ = 5;
+const enough = (n, min = MIN_N) => (Number(n) || 0) >= min;
+const soFar = (n) => `<small>collecting: ${Number(n) || 0} so far</small>`;
 
 function outfits() {
   const looks = [
@@ -46,7 +50,7 @@ const STEPS = [
     async body() {
       const hazards = GAMES.filter(g => !g.boss).length, bosses = GAMES.filter(g => g.boss).length;
       return `<p><b>The problem:</b> newcomers, students and tourists in the NT rarely read safety PDFs, but the Top End's hazards are deadly and seasonal.</p>
-        <p><b>Our answer:</b> ${hazards} five-second mini-games and ${bosses} boss rounds. Every one is built from official NT advice (NT Government, NT Health, SecureNT, NTPFES) and links to its source.</p>
+        <p><b>Our answer:</b> ${hazards} five-second mini-games and ${bosses} boss rounds. Every one is built from official safety advice (mostly NT Government, NT Health, SecureNT and NTPFES, plus national experts such as AVRU and Cancer Council) and links to its source.</p>
         <p class="judge-big">Fail, laugh, learn the real rule.</p>`;
     }
   },
@@ -64,12 +68,12 @@ const STEPS = [
         const st = await api.getStats('all');
         const l = st.learning || {}, q = st.quiz || {};
         return `<div class="judge-kpis">
-            <div><b>${pct(l.afterFail)}</b><span>fail a hazard, then survive it the next time (after seeing the real rule)</span></div>
-            <div><b>${pct(l.firstTry)} → ${pct(l.laterTries)}</b><span>survival on a hazard, first time → later tries, at the same speed</span></div>
-            <div><b>${q.n ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : '-'}</b><span>optional safety check, before → after one game (${Number(q.n) || 0} players)</span></div>
+            <div><b>${enough(l.nAfterFail) ? pct(l.afterFail) : soFar(l.nAfterFail)}</b><span>fail a hazard, then survive it the next time (after seeing the real rule)</span></div>
+            <div><b>${enough(l.nFirst) && enough(l.nLater) ? `${pct(l.firstTry)} → ${pct(l.laterTries)}` : soFar(Math.min(l.nFirst || 0, l.nLater || 0))}</b><span>survival on a hazard, first time → later tries (early rounds only, where timers are similar)</span></div>
+            <div><b>${enough(q.n, MIN_QUIZ) ? pct(q.preAvg) + ' → ' + pct(q.postAvg) : soFar(q.n)}</b><span>optional safety check, before → after one game (${Number(q.n) || 0} player${Number(q.n) === 1 ? '' : 's'})</span></div>
             ${groupKpi(st.groups)}
           </div>
-          <p class="small">Live from ${Number(st.rounds) || 0} rounds played by ${Number(st.players) || 0} players. Measured with no extra effort from players, plus an optional 3-question check and an optional "local or visitor?" tap.</p>
+          <p class="small">Live from ${Number(st.rounds) || 0} rounds played by ${Number(st.players) || 0} players. Measured with no extra effort from players, plus an optional 3-question check and an optional "local or visitor?" tap. These are early signs from game play, not a controlled study: practice also helps, and one device can be several players.</p>
           <ul class="judge-list"><li>🏫 <b>Classroom mode:</b> a teacher gets a class code and a live report of the hazards their class misses, with before → after quiz scores (<a href="class.html" target="_blank" rel="noopener">try it</a>)</li></ul>`;
       } catch { return '<p>Live numbers appear here when the server is online.</p>'; }
     }
@@ -92,7 +96,7 @@ const STEPS = [
           <li>🪙 <b>Coins</b> from every game unlock 7 cheeky Territory Characters:</li>
         </ul>${characters()}
         <ul class="judge-list"><li>🏅 <b>${BADGES.length} badges</b> that unlock gear they wear in every mini-game:</li></ul>${outfits()}
-        <p class="small">For everyone: a ghost hand shows first-timers how to play, Relaxed mode gives kids and older players more time and bigger text, and 🆘 Real help lists checked NT emergency numbers. Installable on any phone, plays fully offline, Android app from the same code.</p>`;
+        <p class="small">For everyone: a ghost hand shows first-timers how to play, Relaxed mode gives kids and older players more time and bigger text, and 🆘 Real help lists checked NT emergency numbers. Installable on any phone, solo games work offline once loaded, Android app from the same code.</p>`;
     }
   },
   {
@@ -109,7 +113,7 @@ const STEPS = [
       return `${load}<ul class="judge-list">
           <li>🛡️ Server re-scores every run, checks it follows the rules, and times it against its own clock (a game session started by the server); runs it can't verify still count for learning but stay off the boards</li>
           <li>📶 Offline first: runs queue on the phone and sync later (remote NT has patchy signal)</li>
-          <li>🧪 Automated API tests (including lost replies, "slow down" responses and fake scores) + a robot that plays all ${GAMES.length} games and every mode in a real browser on every push, then builds the Android app</li>
+          <li>🧪 Automated API tests (including lost replies, "slow down" responses and fake scores) + a robot that plays all ${GAMES.length} games in Classic, Daily, Journey, Roo Run, a two-phone Booth Battle and the teacher flow in a real browser on every push, then builds the Android app</li>
           <li>⌨️ Every round can be played with a keyboard: Tab, Enter or Space, number keys for answers, arrow keys to drag</li>
           <li>⚔️ Booth Battles run in memory with server-side scoring; finished races still feed the learning stats</li>
           <li>🧩 One codebase for web, installable app and Android; SQLite behind one module, so a move to Postgres is contained work</li>
@@ -130,12 +134,15 @@ const STEPS = [
   }
 ];
 
+let renderId = 0;
 async function render() {
-  const s = STEPS[step];
+  const s = STEPS[step], my = ++renderId;
   $('#judge-title').textContent = s.title;
   $('#judge-dots').innerHTML = STEPS.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('');
   $('#judge-body').innerHTML = '<p class="small">Loading...</p>';
-  $('#judge-body').innerHTML = await s.body();
+  const html = await s.body();
+  if (my !== renderId) return; // tapped Next again while this step was loading
+  $('#judge-body').innerHTML = html;
   $('#judge-prev').textContent = step === 0 ? 'Menu' : 'Back';
   $('#judge-next').textContent = step === STEPS.length - 1 ? 'Done' : 'Next';
   $('#judge-play')?.addEventListener('click', () => app.startGame('classic'));

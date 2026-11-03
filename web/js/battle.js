@@ -14,6 +14,9 @@ let app = null;   // { show, startGame, escapeHtml, kiosk, isDemo, getWho }
 let me = null;    // { code, playerId, name }
 let phase = null; // 'lobby' | 'count' | 'playing' | 'result'
 let pollTimer = 0, countTimer = 0, homeTimer = 0, offset = 0, lastKey = '', celebrated = false, final = null;
+// The latest results not yet confirmed by the server. Kept until they get through, and resent
+// by the poll loop, so a busy moment (429) or a dropped reply never leaves a score half-counted.
+let unsent = null, sending = false, resendTimer = 0;
 
 export const inBattle = () => !!me;
 
@@ -73,8 +76,8 @@ function view(v) {
 export function leaveBattle() { leave(); }
 
 function leave() {
-  clearTimeout(pollTimer); clearTimeout(countTimer); clearTimeout(homeTimer);
-  me = null; phase = null;
+  clearTimeout(pollTimer); clearTimeout(countTimer); clearTimeout(homeTimer); clearTimeout(resendTimer);
+  me = null; phase = null; unsent = null;
   app.show('screen-menu');
 }
 
@@ -93,6 +96,7 @@ function poll() {
       clearTimeout(pollTimer); me = null;
     }
   }).finally(() => {
+    if (unsent && !sending) pushProgress();
     if (me && phase !== 'result-final') pollTimer = setTimeout(poll, phase === 'playing' ? 2000 : 1000);
   });
 }
@@ -147,12 +151,33 @@ function startCountdown(b) {
 // main.js calls this after every round, so the booth screen can show the race live.
 export function sendProgress(results) {
   if (!me) return;
-  const { code, playerId } = me;
-  const body = results.map(({ g, ok, ms }) => ({ g, ok, ms }));
-  const attempt = (n) => api.battle.progress(code, playerId, body)
-    .then(({ battle }) => { if (phase === 'result') showResult(battle); })
-    .catch((e) => { if (!e.status && n < 4) setTimeout(() => attempt(n + 1), 800); });
-  attempt(0);
+  // Results are cumulative, so only the newest list matters.
+  unsent = { code: me.code, playerId: me.playerId, body: results.map(({ g, ok, ms }) => ({ g, ok, ms })) };
+  if (!sending) pushProgress();
+}
+
+let backoff = 0;
+function pushProgress() {
+  const job = unsent;
+  if (!job || !me || me.code !== job.code) return;
+  sending = true;
+  clearTimeout(resendTimer);
+  api.battle.progress(job.code, job.playerId, job.body)
+    .then(({ battle }) => {
+      backoff = 0;
+      if (unsent === job) unsent = null;
+      if (phase === 'result') showResult(battle);
+    })
+    .catch((e) => {
+      const temporary = !e.status || e.status === 408 || e.status === 429 || e.status >= 500;
+      if (!temporary) { if (unsent === job) unsent = null; return; } // e.g. the battle closed: nothing to retry
+      backoff = Math.min(8000, backoff ? backoff * 2 : 700);
+      resendTimer = setTimeout(pushProgress, Math.max(backoff, (e.retryAfter || 0) * 1000) + Math.random() * 300);
+    })
+    .finally(() => {
+      sending = false;
+      if (unsent && unsent !== job) pushProgress(); // a newer round finished while this one was sending
+    });
 }
 
 // main.js calls this when all 5 rounds are played.

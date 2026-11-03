@@ -369,6 +369,18 @@ export const items = {
   ])
 };
 
+// Spoken names for keyboard and screen-reader players ("Tap: sunscreen", "Drag: vinegar").
+const ITEM_NAMES = {
+  water: 'water bottle', firstaid: 'first aid kit', batteries: 'spare batteries', tv: 'TV', beachball: 'beach ball',
+  console: 'games console', duck: 'rubber duck', freshwater: 'fresh water', fizzy: 'soft drink', suit: 'stinger suit',
+  sunnies: 'sunglasses', floaty: 'pool floaty', longshirt: 'long-sleeved shirt', repellent: 'insect repellent',
+  icecream: 'ice cream', stormcloud: 'storm cloud', bolt: 'lightning bolt'
+};
+for (const k of Object.keys(items)) {
+  const make = items[k];
+  items[k] = (...a) => { const n = make(...a); n.setAttribute('data-name', ITEM_NAMES[k] || k); return n; };
+}
+
 function bottle(fill, label, labelFill) {
   return g([
     el('rect', { x: -21, y: -24, width: 42, height: 50, rx: 9, fill, stroke: INK, 'stroke-width': 3 }),

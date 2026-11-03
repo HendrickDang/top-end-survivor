@@ -2,10 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f3b3a">
   <meta name="description" content="Top End Survivor - a fast, funny micro-game that teaches real Northern Territory safety: crocs, stingers, cyclones, floods, heat, snakes and bushfire.">
   <title>Top End Survivor</title>
+  <!-- Link previews (Messenger, WhatsApp, Teams) when someone shares the game or a challenge link. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Top End Survivor">
+  <meta property="og:title" content="Top End Survivor: can you survive the Top End?">
+  <meta property="og:description" content="Crocs, stingers, cyclones and roos: real NT safety rules in 5-second games. Free, no sign-up, play on your phone.">
+  <meta property="og:url" content="https://top-end-survivor.onrender.com/">
+  <meta property="og:image" content="https://top-end-survivor.onrender.com/icons/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="apple-mobile-web-app-title" content="Top End Survivor">
   <meta name="application-name" content="Top End Survivor">
   <link rel="manifest" href="manifest.webmanifest">
@@ -53,7 +63,7 @@
         <div class="challenge-results" id="challenge-results" hidden></div>
         <button class="btn btn-install" data-install hidden>📲 Install the game · free badge</button>
         <p class="season-chip" id="season-chip"></p>
-        <p class="menu-foot"><span class="coin-total" id="menu-coins"></span> <span id="net-status" class="pill">Offline ready</span> <span id="best-score"></span></p>
+        <p class="menu-foot"><span class="coin-total" id="menu-coins"></span> <span id="net-status" class="pill">Connecting...</span> <span id="best-score"></span></p>
         <p class="menu-links"><button class="linkish judge-link" id="btn-judge">👩‍⚖️ Judges: 60-second tour</button> <a class="linkish" id="teacher-link" href="class.html">🏫 Teachers: use it in class</a></p>
         </div>
       </div>
@@ -66,7 +76,7 @@
     <!-- GAME -->
     <section class="screen" id="screen-game" aria-label="Game">
       <header class="hud">
-        <div class="lives" id="hud-lives" aria-label="Lives"></div>
+        <div class="lives" id="hud-lives" role="img" aria-label="Lives"></div>
         <div class="round"><span class="round-n">Round <b id="hud-round">1</b></span><span class="hud-loc"><b id="hud-location">Darwin</b><small id="hud-step">1/5</small></span> <span class="streak" id="hud-streak"></span></div>
         <div class="score"><span class="target" id="hud-target"></span><b id="hud-score">0</b> <button class="mute-btn" data-mute aria-label="Mute">🔊</button> <button class="mute-btn pause-btn" id="btn-pause" aria-label="Pause"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5" fill="#fffaf0"/><rect x="14" y="4" width="5" height="16" rx="1.5" fill="#fffaf0"/></svg></button></div>
       </header>
@@ -107,6 +117,8 @@
         <h2 id="over-title">Game over</h2>
         <p class="big-score"><span id="over-score">0</span><small id="over-unit">points</small></p>
         <p class="sub" id="over-rounds"></p>
+        <p class="vote-nudge vote-top">Enjoyed it? Vote for us: <b>Team CAP003</b> 🐊</p>
+        <a class="btn btn-vote" id="btn-vote" data-vote hidden target="_blank" rel="noopener">🗳️ Vote for us: People's Choice</a>
         <p class="coin-total over-coins" id="over-coins"></p>
         <div class="over-challenge" id="over-challenge" hidden></div>
         <div class="over-daily" id="over-daily" hidden>
@@ -126,7 +138,7 @@
         </div>
         <input class="challenge-link" id="challenge-link" readonly hidden aria-label="Challenge link">
         <form id="submit-form" class="submit-form" autocomplete="off" novalidate>
-          <label for="player-name">Add your name to get on the leaderboard</label>
+          <label for="player-name">Add a nickname for the public leaderboard (not your real name)</label>
           <div class="row">
             <input id="player-name" maxlength="16" placeholder="e.g. CrocDodger" required pattern="[A-Za-z0-9 _\-]{2,16}">
             <button class="btn btn-primary" type="submit">Submit</button>
@@ -151,8 +163,7 @@
           <button class="btn" id="btn-over-menu">Menu</button>
         </div>
         <button class="btn btn-install" data-install hidden>📲 Play every day: install the game</button>
-        <a class="btn btn-vote" id="btn-vote" hidden target="_blank" rel="noopener">🗳️ Vote for us: People's Choice</a>
-        <p class="vote-nudge">Enjoyed it? Vote for us: <b>Team CAP003</b> 🐊 · <button class="linkish" id="over-help">🆘 Real help numbers</button></p>
+        <p class="vote-nudge"><button class="linkish" id="over-help">🆘 Real help numbers</button></p>
         </div>
       </div>
     </section>
@@ -274,6 +285,8 @@
           <p class="battle-wait" id="battle-wait"></p>
           <div class="battle-podium" id="battle-podium"></div>
           <ol class="battle-standings" id="battle-standings"></ol>
+          <p class="vote-nudge">Enjoyed it? Vote for us: <b>Team CAP003</b> 🐊</p>
+          <a class="btn btn-vote" data-vote hidden target="_blank" rel="noopener">🗳️ Vote for us: People's Choice</a>
           <div class="menu-row"><button class="btn btn-primary" id="battle-again">Join the next battle</button><button class="btn" id="battle-menu">Menu</button></div>
         </div>
       </div>
@@ -346,7 +359,7 @@
     <section class="screen" id="screen-learn" aria-label="Safety tips and sources">
       <div class="panel">
         <h2>The real rules</h2>
-        <p class="sub">Every mini-game is based on official Northern Territory safety advice. Tap a source to read more.</p>
+        <p class="sub">Every mini-game is based on official safety advice, mostly from the Northern Territory Government. Tap a source to read more.</p>
         <button class="btn btn-help btn-small" id="learn-help">🆘 Real help numbers</button>
         <div id="learn-list" class="learn-list"></div>
         <p class="sub small">This game is a learning tool, not medical advice. In an emergency call <b>000</b>.</p>

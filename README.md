@@ -4,7 +4,7 @@ A fast, funny micro-game that teaches real Northern Territory safety rules in te
 
 Built for the **CDU IT Code Fair 2026, Coding Competition (Capable Coders, Group, ID CAP003)** by Van Hoi (Hendrick) Dang, Le Nhat Minh Tran and Phuong Vy Ho.
 
-> Play on the web, install it as an app (PWA), or sideload the Android APK. It works fully offline, and scores sync when you get signal back.
+> Play on the web, install it as an app (PWA), or sideload the Android APK. Solo games work offline once the game has loaded, and scores sync when you get signal back. Booth Battles, leaderboards and the dashboards need a connection.
 
 **▶ Play now: https://top-end-survivor.onrender.com** · **Judges' 60-second tour: https://top-end-survivor.onrender.com/?judge=1** · Booth screen: https://top-end-survivor.onrender.com/booth · Teacher dashboard: https://top-end-survivor.onrender.com/class
 
@@ -12,18 +12,18 @@ Built for the **CDU IT Code Fair 2026, Coding Competition (Capable Coders, Group
 
 ## Why
 
-Every year newcomers and visitors to the Top End get hurt by hazards locals take for granted. Official safety advice exists, but it lives in PDFs and media releases that few people read. Short, playful games are proven to make safety messages stick, so Top End Survivor turns each official rule into a five-second challenge you can't help replaying.
+Every year newcomers and visitors to the Top End get hurt by hazards locals take for granted. Official safety advice exists, but it lives in PDFs and media releases that few people read. Short, playful games get attention that PDFs don't, so Top End Survivor turns each official rule into a five-second challenge you can't help replaying. We measure what we can from play (see below) and treat it as an early sign, not proof of learning.
 
-Each mini-game maps to one official source (NT Government, NT Health, SecureNT, NTPFES, AVRU, Cancer Council, RACV). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
+Each mini-game maps to one official or expert source: mostly NT Government, NT Health, SecureNT and NTPFES, plus national sources (AVRU, Cancer Council, RACV, Transport for NSW, Swimming NT). After every round the player sees the real rule, and the game-over screen lists the lessons they "learned the hard way" with links to the source.
 
 ## The mini-games
 
 | Mini-game | You must... | Real rule it teaches | Source |
 |---|---|---|---|
 | STEP BACK! | Tap to back a fisher past the 5 m line | Stand at least 5 m from the water when fishing | Be Crocwise (NT Gov) |
-| SWIM? | Decide from the sign | Only swim in signed swimming areas | Be Crocwise |
+| CAN YOU SWIM HERE? | Read the sign: Yes or No | Only swim in signed swimming areas | Be Crocwise |
 | PITCH IT FAR! | Drag the tent past 50 m | Camp at least 50 m from the water's edge | Be Crocwise |
-| TREAT THE STING! | Drag the right bottle onto a sting (after the patient is out of the water and 000 is called) | Out of the water, call 000, CPR if needed, then vinegar; never fresh water | NT Health |
+| TREAT THE STING! | Drag the right bottle onto a sting (the patient is out of the water, 000 is called and they are breathing) | Out of the water, call 000, CPR if needed, then vinegar; never fresh water | NT Health |
 | SUIT UP! | Pick the stinger suit | Stinger season is Oct to May | NT Health |
 | PACK THE KIT! | Tap only the essentials | Water, torch, battery radio, first aid | SecureNT |
 | FLOODED ROAD! | Turn around in time | If it's flooded, forget it | NTPFES |
@@ -38,13 +38,30 @@ Each mini-game maps to one official source (NT Government, NT Health, SecureNT, 
 | DUST STORM! | Drag the ute off the road | Slow down, lights and hazards on, pull over and wait in the car | RACV |
 | DRY RIVER! | Tap to climb the bank | Never camp or walk in a dry river bed; flash floods come fast | NTPFES |
 | ROOS AT DUSK! | Hold to brake, let go to drive, reach the roadhouse (also the endless **Roo Run** mode) | Roos are most active at dusk and dawn; brake in a straight line, never swerve | Transport for NSW |
-| BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room, stay in during the eye | SecureNT cyclone shelter advice | SecureNT |
+| BOSS: Cyclone Night | 3 decisions: kit and radio, strongest room when told to shelter at home, stay in during the eye | Follow official advice to shelter or evacuate; SecureNT cyclone shelter advice | SecureNT |
 | BOSS: Croc Creek | 3 decisions: no swimming, 5 m back, never wade in for a lure | Be Crocwise | NT Government |
+
+### Pre-showcase review fixes (v1.9.6)
+
+Two more full reviews before the showcase found these, now fixed:
+- **Server can't be stopped by one bad request.** The QR endpoint rejects over-long or non-web links and catches errors, and the server logs any stray async error instead of exiting.
+- **Safety content.** "Can you swim here?" asks about the sign, so staying dry is never punished. The stinger round says the patient is breathing, and both stinger lessons give the same order (out of the water, 000, CPR if needed, vinegar). Cyclone Night says to follow official advice to shelter or evacuate, and sets the shelter question at home after being told to shelter there. The snake bite link points to AVRU's current page.
+- **Scores.** Booth Battle progress is kept until the server confirms it and retried after a busy (429) or failed reply. The server rejects battle rounds that arrive faster than they could be played. A Relaxed boss round (15 s × 1.6) is accepted. A town or group picked while a score is uploading is sent too. A rude nickname no longer sinks the run: the score is saved and the player picks another name. Runs still waiting to upload are never trimmed, and if storage is blocked the result is kept in memory while the page is open. A Daily Challenge played offline days ago still uploads, unranked. A full Booth Battle pool never drops a lobby people have joined.
+- **Keyboard.** Pressing Enter again on an item you already collected no longer counts it twice; items have spoken names; pinch zoom is allowed.
+- **Voting.** "Vote for us: Team CAP003" sits beside every score (game over and Booth Battle results), on the booth's podium and on the demo screen, each with a QR once the link is set. Removing the link hides it everywhere.
+- **Honest numbers.** "Same speed" is now "early rounds", the learning panels say practice also helps, the locals vs visitors headline needs 10 attempts and 3 players per group, a shared booth phone starts a fresh anonymous id for each new visitor, and "Offline ready" only shows when the game is really cached.
+- **Admin token** is never put in a URL the server sees (see Admin below), and only goes in a header.
+- **Relaxed mode** waits for you to tap Next after every round.
+- **Accessibility scan.** An automated WCAG 2 AA check (axe-core) on every screen now passes: button colours are a shade darker so white text has enough contrast, and the lives counter is read out ("Lives: 2 of 3").
+- **No numbers from tiny samples.** The learning panels and the judges' tour show "collecting" until a measure has at least 20 attempts (5 for the quick check), instead of a misleading percentage.
+- **Sources re-checked.** Heat advice now links to NT Government's *Living in the heat* page (2 to 3 litres a day, avoid alcohol and caffeine); the dust storm link points to RACV's current tips; the flood summary only says what the sources say.
+- **Sharing.** Links to the game show a preview card with the title and characters in Messenger, WhatsApp and Teams.
+- **Server.** QR codes are drawn once and cached, public stats are cached for 3 seconds, basic browser security headers are set, and the teacher key is only accepted in a header.
 
 ### Reliability, honesty and keyboard play (v1.9)
 
 From an independent review before the competition:
-- **Scores are never lost or doubled.** When the server says "slow down" (429) or a request fails, the phone keeps the score and quiz answers and retries with back-off (honouring Retry-After). Every run carries its own key, so a retry after a lost reply returns the same record instead of a second one. Per-IP limits are sized for a whole venue on one Wi-Fi, and the load test has a `--shared-ip` mode to prove it.
+- **Scores survive retries and aren't doubled.** When the server says "slow down" (429) or a request fails, the phone keeps the score and quiz answers and retries with back-off (honouring Retry-After). Every run carries its own key, so a retry after a lost reply returns the same record instead of a second one. Per-IP limits are sized for a whole venue on one Wi-Fi, and the load test has a `--shared-ip` mode to prove it.
 - **Verified scores.** Each game starts a server session; a run can't claim more play time than the server's clock saw, and a session works once. Runs the server can't verify (played offline, impossible timing) still count for the learning stats but stay off the leaderboards and Town Battle.
 - **Safety content.** Stinger first aid now follows the NT Health order (out of the water, call 000, CPR if needed, then vinegar; stings happen all year). The croc-trap round is clearly a ranger drill. Roo Run shows a pace meter instead of km/h.
 - **Fail screen.** After a fail, the cartoon and the real rule stay up until you tap "Next round" (it moves on by itself after 8 s; 4 s in Booth Battles).
@@ -65,12 +82,12 @@ From an independent review before the competition:
 ### Booth Battle, classrooms and help for everyone (v1.5)
 
 - **Live Booth Battle:** press `B` (or the ⚔️ button) on the booth screen. It shows a join QR and a 4-letter code; everyone who scans (or taps ⚔️ Booth Battle on the menu) appears in the lobby with their character. Press Enter and every phone counts down together, then plays the same 5 hazards. The big screen shows a live race (green and red squares per round) and a podium with confetti. No lives: everyone plays all 5, highest score wins. The server keeps score and saves every finished race for the learning stats.
-- **Locals vs visitors:** after a game, one optional tap: Local, New to the NT, or Visiting. The booth's new panel shows which safety topics each group gets wrong, with a headline like "Visitors fail croc rounds N× as often as locals", and the judge tour shows it too. On shared booth devices the answer is asked every game and never remembered.
+- **Locals vs visitors:** after a game, one optional tap: Local, New to the NT, or Visiting. The booth's new panel shows which safety topics each group gets wrong, with a headline comparing the two groups once each has enough attempts (with the numbers behind it), and the judge tour shows it too. On shared booth devices the answer is asked every game and never remembered.
 - **Gesture hints:** the first time someone meets a mini-game, a ghost hand shows the gesture (tap, keep tapping, drag, or pick a button) and the timer waits an extra second. Hints never show the answer, only how to play. On shared booth devices (`?kiosk=1`) and in Relaxed mode they show every run.
 - **Relaxed mode:** a menu toggle for kids, older players and anyone who wants it: 60% more time every round and bigger text. Relaxed scores stay off the leaderboards and Town Battle but still count in the learning stats.
 - **🆘 Real help:** one tap from the menu, Safety tips and game over: 000, NT Emergency Service 132 500, Poisons Information 13 11 26, healthdirect 1800 022 222, NT Police 131 444, urgent croc reporting lines for Darwin and Katherine, plus SecureNT, BOM, Road Report NT and the PFES incident map. Every number was checked against the official sites in October 2026.
 - **Classroom mode:** a teacher opens `/class`, names the class and gets a QR code and class code. Students join by scanning (no accounts). The teacher's live dashboard shows students, games, the hazards the class misses most (with the rule and the official source), quick check before → after, first try vs later tries, top scores, a print button and a 15-minute lesson plan. The teacher link (`/class#t=CODE.KEY`) opens the dashboard on another device; without the key nobody else can see the report.
-- **People's Choice and take it home:** when the committee gives you the voting link (even on the day), open `/booth?vote=<link>&token=<ADMIN_TOKEN>` once on the booth laptop. The link is saved on the server, so the booth shows a "Vote for Team CAP003" QR and every phone shows a vote button at game over, with no code change and no redeploy. (Alternatives: the `VOTE_URL` environment variable on Render, or `VOTE_URL` in `web/js/config.js`.) On shared booth devices the game over screen shows big "Take it home" and "Vote for us" QR codes, so people vote and install on their own phone.
+- **People's Choice and take it home:** when the committee gives you the voting link (even on the day), open `/booth#token=<ADMIN_TOKEN>&vote=<link>` once on the booth laptop (`&vote=off` removes it). The link is saved on the server, so the booth shows a "Vote for Team CAP003" QR and every phone shows a vote button at game over, with no code change and no redeploy. (Alternatives: the `VOTE_URL` environment variable on Render, or `VOTE_URL` in `web/js/config.js`.) On shared booth devices the game over screen shows big "Take it home" and "Vote for us" QR codes, so people vote and install on their own phone.
 
 ### Road trip, characters and a soundtrack (v1.4)
 
@@ -129,7 +146,7 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
  Phone / tablet / Android app                    Server (Node 22 + Express)
  ┌──────────────────────────┐   HTTPS JSON   ┌──────────────────────────────┐
  │ web/  (vanilla JS PWA)   │ ─────────────► │ POST /api/runs  validate +   │
- │  games.js  19 mini-games │                │                 rescore      │
+ │  games.js  20 mini-games │                │                 rescore      │
  │  main.js   engine        │ ◄───────────── │ GET  /api/leaderboard        │
  │  api.js    offline outbox│                │ GET  /api/stats (analytics)  │
  │  sw.js     offline cache │                │ GET  /api/qr.svg             │
@@ -139,9 +156,9 @@ All characters and art (including Frilly the frill-neck lizard, who runs the cha
 ```
 
 - **No build step.** The game is plain HTML, CSS and ES modules, so anyone on the team can edit it.
-- **Rate limits.** Writes are limited per IP address (`WRITE_LIMIT`, default 300 a minute; Booth Battle updates `BATTLE_LIMIT`, default 1,500). At an event most phones share the venue Wi-Fi, so they all look like one IP: raise these if the booth gets very busy.
-- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter. Each game also starts a server session, and a run can't claim more play time than the server's clock saw; runs that can't be verified (played offline, impossible timing, a reused session) are saved for the learning stats but kept off the leaderboards and Town Battle. This raises the bar a lot but isn't proof against someone who fakes inputs in real time; a server-run game would be the next step.
-- **Offline first.** Finished runs go into a localStorage outbox and upload when online. The service worker caches the whole game.
+- **Rate limits.** Writes are limited per IP address (`WRITE_LIMIT`, default 3,000 a minute; Booth Battle updates `BATTLE_LIMIT`, default 6,000). At an event most phones share the venue Wi-Fi, so they all look like one IP: raise these if the booth gets very busy.
+- **Anti-cheat.** The server ignores the client's score and recomputes it from per-round results; runs must end on the third life, bosses must be on rounds 10, 20, 30, Daily runs must match the day's sequence, Journey rounds must come from the stop they were played at, rounds can't be faster than humanly possible, and names pass a profanity filter. Each game also starts a server session, and a run can't claim more play time than the server's clock saw; runs that can't be verified (played offline, impossible timing, a reused session) are saved for the learning stats but kept off the leaderboards and Town Battle. Booth Battle rounds must also fit inside the time since GO by the server's clock. This raises the bar a lot but isn't cheat-proof: the phone still reports whether each round was won, so a server-run game would be the next step.
+- **Offline first.** Finished runs go into a localStorage outbox and upload when online. The service worker caches the game for solo play; Booth Battles, leaderboards and dashboards need a connection.
 
 ## Run it locally
 
@@ -156,10 +173,10 @@ npm test                      # API tests
 
 Phones on the same Wi-Fi can play via `http://<your-laptop-ip>:8080`.
 
-## Deploy (free)
+## Deploy
 
 1. Push this repo to GitHub.
-2. On [render.com](https://render.com): New > Blueprint > select the repo. `render.yaml` sets everything up.
+2. On [render.com](https://render.com): New > Blueprint > select the repo. `render.yaml` sets everything up. It uses the Starter plan with a 1 GB disk (about US$7 a month plus the disk) so scores survive restarts; for a free trial, set `plan: free` and remove the disk (scores then reset when the server restarts).
 3. Copy the URL Render gives you, put it in `render.yaml` (`PUBLIC_URL`) and `web/js/config.js` (`ANDROID_API_BASE`), and push again.
 
 Any Docker host works too: `docker build -t tes . && docker run -p 8080:8080 -v tes-data:/data tes`.
@@ -199,7 +216,7 @@ Kiosk mode for a shared tablet: open `/?kiosk=1` (clears the name box, skips the
 
 Booth Battle: on the booth screen press `B` (or click ⚔️ Booth Battle), wait for players, press Enter to start, Esc to close.
 
-Classroom dashboard: `/class`. People's Choice QR: open `/booth?vote=<link>&token=<ADMIN_TOKEN>` once (saved for every device), or `curl -X POST -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" -d '{"voteUrl":"<link>"}' https://<host>/api/admin/config`.
+Classroom dashboard: `/class`. People's Choice QR: open `/booth#token=<ADMIN_TOKEN>&vote=<link>` once (saved for every device; the part after `#` never reaches the server), or `curl -X POST -H "X-Admin-Token: $TOKEN" -H "Content-Type: application/json" -d '{"voteUrl":"<link>"}' https://<host>/api/admin/config`.
 
 Mini-game tester: `/admin` (or `/?admin=1`). Search any mini-game, pick a location for the backdrop, start a full Classic / Daily / Journey sandbox run, slow the round timer down, and turn on the debug overlay. Scores, lives, coins, badges and the leaderboard are untouched.
 

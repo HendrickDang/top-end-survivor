@@ -1157,9 +1157,10 @@ export const GAMES = [
     }
   },
 
-  // 2. To swim or not: only jump in where the sign says swimming area.
+  // 2. Read the sign: is swimming allowed here? Only a SWIMMING AREA sign says yes.
+  // Asked as a question about the sign, so choosing to stay dry is never punished.
   {
-    id: 'swim-sign', prompt: 'SWIM?', bg: '#cfeef0', ownBackdrop: true,
+    id: 'swim-sign', prompt: 'CAN YOU SWIM HERE?', bg: '#cfeef0', ownBackdrop: true,
     setup(ctx) {
       const safe = Math.random() < 0.4;
       const variant = safe ? 'safe' : pick(['croc', 'none']);
@@ -1175,8 +1176,8 @@ export const GAMES = [
       ctx.svg.append(person({ x: 300, y: 304, s: .9 }));
       if (variant !== 'safe' && Math.random() < 0.5) ctx.svg.append(crocEyes({ x: 200, y: 352, s: .6 }));
       ctx.buttons([
-        { label: 'Jump in', ok: ctx.correct === 'swim' },
-        { label: 'Stay out', ok: ctx.correct === 'stay' }
+        { label: 'Yes, swimming area', ok: ctx.correct === 'swim' },
+        { label: 'No, stay out', ok: ctx.correct === 'stay' }
       ]);
     },
     // If the player freezes, staying out is the safe outcome.
@@ -1219,7 +1220,8 @@ export const GAMES = [
         el('path', { d: 'M90 195 q30 -15 60 0 t60 0', stroke: '#c8412f', 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round' })
       ]);
       ctx.svg.append(welts, text(150, 120, 'OUCH!', { size: 26, fill: '#c8412f' }),
-        text(VIEW.w / 2, 26, 'OUT OF THE WATER, 000 CALLED. NOW:', { size: 13, fill: '#1d1a16', stroke: '#fffaf0', strokeWidth: 4 }));
+        text(VIEW.w / 2, 24, 'OUT OF THE WATER, 000 CALLED,', { size: 13, fill: '#1d1a16', stroke: '#fffaf0', strokeWidth: 4 }),
+        text(VIEW.w / 2, 42, 'THEY ARE BREATHING. NOW:', { size: 13, fill: '#1d1a16', stroke: '#fffaf0', strokeWidth: 4 }));
       const opts = shuffle([['vinegar', true], ['freshwater', false], ['fizzy', false]]);
       opts.forEach(([key, ok], i) => {
         const node = items[key]();
@@ -1586,11 +1588,11 @@ export const GAMES = [
       draw(svg) { svg.append(place(items.radio(), 180, 260, 2)); svg.append(swirlAt(70, 330)); },
       choices: [
         { label: 'Check the kit & listen to the radio', ok: true },
-        { label: 'Drive to the beach to watch', ok: false, tip: 'When a cyclone is coming, stay home, check your kit and listen to the radio for updates.' }
+        { label: 'Drive to the beach to watch', ok: false, tip: 'Never go sightseeing in a cyclone. Check your kit, listen to the radio and follow official advice to shelter or evacuate.' }
       ]
     },
     {
-      caption: ['The wind is howling!', 'Where do you shelter?'],
+      caption: ['Told to shelter at home.', 'Where do you go?'],
       draw(svg) { svg.append(houseInside()); },
       choices: [
         { label: 'Strongest room, away from windows', ok: true },

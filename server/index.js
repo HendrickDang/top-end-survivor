@@ -3,7 +3,10 @@ import { createApp } from './src/app.js';
 
 const port = Number(process.env.PORT) || 8080;
 const repo = makeRepo(openDb());
-const app = createApp(repo);
+const app = createApp(repo, { cacheMs: Number(process.env.STATS_CACHE_MS ?? 3000) });
+
+// Safety net: log a stray async error instead of letting it stop the server for everyone.
+process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err));
 
 app.listen(port, () => {
   console.log(`Top End Survivor running on http://localhost:${port}`);

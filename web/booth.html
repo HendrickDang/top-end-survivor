@@ -89,6 +89,12 @@
     .apkqr { display: none; align-items: center; gap: calc(.8 * var(--u)); background: #fffaf0; border: 3px solid var(--ink); border-radius: 12px; padding: calc(.4 * var(--u)) calc(.8 * var(--u)); font-size: calc(1.1 * var(--u)); font-weight: 700; }
     .apkqr img { width: calc(5 * var(--u)); height: calc(5 * var(--u)); }
     .apkqr.show { display: flex; }
+    .bvote { margin: 0; font-size: calc(2 * var(--u)); font-weight: 800; color: var(--white); display: flex; align-items: center; gap: calc(1.2 * var(--u)); }
+    .bvote b { color: #ffe9a8; }
+    .bvote img, .attract-vote img { display: none; width: calc(7 * var(--u)); height: calc(7 * var(--u)); background: var(--white); border: calc(.4 * var(--u)) solid var(--ink); border-radius: calc(.8 * var(--u)); padding: calc(.3 * var(--u)); }
+    .has-vote .bvote img, .has-vote .attract-vote img { display: block; }
+    .attract-vote { margin: calc(.6 * var(--u)) 0 0; font-size: calc(1.3 * var(--u)); font-weight: 800; display: flex; align-items: center; gap: calc(1 * var(--u)); }
+    .attract-vote b { color: #ffe9a8; }
     .card.rot { position: relative; }
     .panel-v { display: none; flex-direction: column; min-height: 0; flex: 1; }
     .panel-v.show { display: flex; animation: fadein .5s ease; }
@@ -108,6 +114,7 @@
     .lrow .vals { display: flex; align-items: center; gap: calc(1 * var(--u)); font-size: calc(3.4 * var(--u)); font-weight: 800; line-height: 1.1; }
     .lrow .vals .arrow { color: var(--ochre); }
     .lrow .vals .up { color: var(--leaf); }
+    .lrow .vals .na { font-size: .5em; opacity: .55; }
     .lrow small { display: block; font-size: calc(1 * var(--u)); opacity: .7; }
     .status { position: fixed; bottom: calc(6.6 * var(--u)); right: calc(1 * var(--u)); font-size: calc(.9 * var(--u)); color: var(--white); opacity: .6; }
     .voteqr { background: #e9e3fb; }
@@ -230,7 +237,7 @@
       <div class="panel-v" data-panel="learning">
         <h2>🧠 Is it teaching people?</h2>
         <div class="learn-big" id="learn-big"></div>
-        <p class="note">Live from every round played since launch. "Same speed" compares rounds with the same timer, because rounds get faster the further you go.</p>
+        <p class="note">Live from every round since launch. "Later tries" only counts each game's early rounds, where timers are similar. Practice helps too, so this is an early sign, not proof.</p>
       </div>
       <div class="panel-v" data-panel="groups">
         <h2>🧳 Locals vs visitors</h2>
@@ -270,6 +277,7 @@
       <h2>🏆 <span>WINNERS</span></h2>
       <div class="bpodium" id="bpodium"></div>
       <div class="brest" id="brest"></div>
+      <p class="bvote"><img id="bvote-img" alt="QR code to vote for Team CAP003"><span>🗳️ Enjoyed it? Vote for us: <b>Team CAP003</b> 🐊</span></p>
       <div class="bbuttons"><button class="bstart" id="bagain">⚔️ New battle</button><button class="bclose" id="bclose2">✕ Close</button></div>
     </div>
   </div>
@@ -282,6 +290,7 @@
         <p>18 deadly-funny Top End hazards on a road trip from Darwin to Uluru. Real NT safety rules.</p>
         <div class="attract-qr"><img id="attract-qr" alt="QR code to play"><b>Scan to play<br>on your phone 📱</b></div>
         <p id="attract-challenge" class="attract-challenge"></p>
+        <p class="attract-vote"><img id="attract-vote-img" alt="QR code to vote for Team CAP003"><span>🗳️ Enjoyed it? Vote for <b>Team CAP003</b></span></p>
       </div>
       <section class="card attract-board">
         <h2>🏆 All-time top survivors</h2>
@@ -305,8 +314,10 @@
     // ---- rotating stats panels: hazards -> town battle -> learning ----
     const PANELS = ['hazards', 'towns', 'learning', 'groups'];
     let panel = 0;
+    const emptyPanels = new Set(); // panels with nothing to show yet are skipped
     function showPanel(i) {
       panel = (i + PANELS.length) % PANELS.length;
+      for (let k = 0; k < PANELS.length && emptyPanels.has(PANELS[panel]); k++) panel = (panel + 1) % PANELS.length;
       document.querySelectorAll('.panel-v').forEach(p => p.classList.toggle('show', p.dataset.panel === PANELS[panel]));
       document.querySelectorAll('#pdots i').forEach((d, k) => d.classList.toggle('on', k === panel));
     }
@@ -346,20 +357,23 @@
     }
 
     const pc = (x) => x == null ? '-' : Math.round(x * 100) + '%';
+    // A rate from a handful of rounds says nothing, so small samples show "collecting" instead.
+    const MIN_N = 20;
+    const wait = () => `<span class="na">collecting</span>`;
     function drawLearning(st) {
       const l = st.learning || {}, q = st.quiz || {};
       const up = (a, b) => a != null && b != null && b > a ? 'up' : '';
       // The optional quick check only shows once enough people have done both halves.
-      const quizCard = (q.n || 0) >= 3
+      const quizCard = (q.n || 0) >= 5
         ? `<div class="lrow"><div class="lab">Quick safety check: before → after one game</div>
           <div class="vals"><span>${pc(q.preAvg)}</span><span class="arrow">→</span><span class="${up(q.preAvg, q.postAvg)}">${pc(q.postAvg)}</span></div>
           <small>${num(q.n)} players took both checks</small></div>` : '';
       document.getElementById('learn-big').innerHTML = `
         <div class="lrow"><div class="lab">Failed a hazard, then survived it the next time</div>
-          <div class="vals"><span class="up">${pc(l.afterFail)}</span></div>
+          <div class="vals">${(l.nAfterFail || 0) >= MIN_N ? `<span class="up">${pc(l.afterFail)}</span>` : wait()}</div>
           <small>${num(l.nAfterFail)} second chances after seeing the real rule</small></div>
-        <div class="lrow"><div class="lab">Survival on a hazard: first time seen → later tries (same speed)</div>
-          <div class="vals"><span>${pc(l.firstTry)}</span><span class="arrow">→</span><span class="${up(l.firstTry, l.laterTries)}">${pc(l.laterTries)}</span></div>
+        <div class="lrow"><div class="lab">Survival on a hazard: first time seen → later tries (early rounds)</div>
+          <div class="vals">${(l.nFirst || 0) >= MIN_N && (l.nLater || 0) >= MIN_N ? `<span>${pc(l.firstTry)}</span><span class="arrow">→</span><span class="${up(l.firstTry, l.laterTries)}">${pc(l.laterTries)}</span>` : wait()}</div>
           <small>${num(l.nFirst)} first tries, ${num(l.nLater)} later tries, first ${num(l.sameSpeedRounds) || 5} rounds of each game</small></div>
         ${quizCard}
         <div class="lrow"><div class="lab">Came back for another go</div>
@@ -370,24 +384,27 @@
     function drawGroups(g) {
       if (!g) return;
       const MIN = 4; // attempts needed before a rate is shown
+      const HEAD_MIN = 10, HEAD_PLAYERS = 3; // the headline needs more: 10 attempts per group, 3 players each
       const r = (x) => (x && x.plays >= MIN ? x.failRate : null);
       const COUNT = { local: 'locals', new: 'new to the NT', visitor: 'visitors' };
       $('#gcount').innerHTML = WHO.map(w => `<span>${w.icon} ${g.players[w.id] || 0} ${COUNT[w.id]}</span>`).join('');
       // headline: the biggest visitor vs local gap with enough data
       let best = null;
       for (const t of g.topics) {
-        const v = r(t.visitor), l = r(t.local);
-        if (v != null && l != null && v > l && (!best || v - l > best.v - best.l)) best = { t, v, l };
+        if (!(t.visitor?.plays >= HEAD_MIN && t.local?.plays >= HEAD_MIN)) continue;
+        if ((g.players.visitor || 0) < HEAD_PLAYERS || (g.players.local || 0) < HEAD_PLAYERS) continue;
+        const v = t.visitor.failRate, l = t.local.failRate;
+        if (v > l && (!best || v - l > best.v - best.l)) best = { t, v, l };
       }
       $('#groups-head').innerHTML = best
-        ? (best.l > 0 ? `Visitors fail <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds <b>${(best.v / best.l).toFixed(1)}×</b> as often as locals.`
-          : `Visitors fail <b>${Math.round(best.v * 100)}%</b> of <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds. Locals: none!`)
+        ? `So far, visitors fail <b>${Math.round(best.v * 100)}%</b> of <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds, locals <b>${Math.round(best.l * 100)}%</b> <small>(${num(best.t.visitor.plays)} vs ${num(best.t.local.plays)} attempts)</small>`
         : 'Tap <b>Local</b>, <b>New</b> or <b>Visiting</b> after your game to fill this in!';
       const rows = g.topics.filter(t => WHO.some(w => r(t[w.id]) != null)).slice(0, 6);
       $('#gtable').innerHTML = rows.map(t => `<div class="grow"><div class="lab">${esc(TOPIC_LABELS[t.topic] || t.topic)}</div><div class="gbars">${WHO.map(w => {
         const x = r(t[w.id]);
         return `<div class="gbar ${w.id}"><span>${w.icon}</span><div class="track"><div class="fill" style="width:${x == null ? 0 : Math.round(x * 100)}%"></div></div><span class="${x == null ? 'na' : ''}">${x == null ? '-' : Math.round(x * 100) + '%'}</span></div>`;
       }).join('')}</div></div>`).join('') || '<p class="empty">Waiting for answers...</p>';
+      if (rows.length) emptyPanels.delete('groups'); else emptyPanels.add('groups');
     }
 
     const $ = (s) => document.querySelector(s);
@@ -461,27 +478,43 @@
       if (soundOn && sfx) sfx.fanfare();
     }
 
-    // People's Choice: set VOTE_URL in js/config.js (or add ?vote=<link> to this page's address).
-    // On the day, open /booth?vote=<link>&token=<ADMIN_TOKEN> once: the link is saved on the server,
-    // so every phone and booth device shows it too. No code change needed.
-    let voteShown = '';
+    // People's Choice: the vote link lives on the server, so every phone and booth screen shows it.
+    // On the day, open this page ONCE on the booth laptop as  /booth#token=<ADMIN_TOKEN>&vote=<link>
+    // (or &vote=off to remove it). Everything after # stays in the browser: it is never sent to the
+    // server or written in its logs, and it is cleared from the address bar straight away.
+    let voteShown = null;
     function showVote(url) {
-      if (!url || url === voteShown) return;
+      url = url || '';
+      if (url === voteShown) return;
       voteShown = url;
-      $('#voteqr-img').src = `${api}/api/qr.svg?url=${encodeURIComponent(url)}`;
-      $('#voteqr').classList.add('show');
+      const src = url ? `${api}/api/qr.svg?url=${encodeURIComponent(url)}` : '';
+      for (const id of ['#voteqr-img', '#bvote-img', '#attract-vote-img']) { if (src) $(id).src = src; else $(id).removeAttribute('src'); }
+      $('#voteqr').classList.toggle('show', !!url);
+      document.body.classList.toggle('has-vote', !!url);
     }
-    const voteParam = /^https?:\/\//.test(params.get('vote') || '') ? params.get('vote') : '';
-    if (voteParam && params.get('token')) {
-      fetch(`${api}/api/admin/config`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': params.get('token') }, body: JSON.stringify({ voteUrl: voteParam }) })
-        .then(r => { $('#status').textContent = r.ok ? 'Vote link saved for every device' : 'Vote link NOT saved: check the admin token'; })
-        .catch(() => {});
-      // Don't leave the admin token showing in the address bar on a public screen.
-      const clean = new URL(location.href); clean.searchParams.delete('token');
-      history.replaceState(null, '', clean.pathname + clean.search);
+    let statusHold = 0; // keep an admin message on screen for a while instead of "Live · updated"
+    const adminMsg = (t) => { $('#status').textContent = t; statusHold = Date.now() + 20000; };
+    function applyAdminHash() {
+    const hash = location.hash.slice(1);
+    const adminToken = (hash.match(/(?:^|&)token=([^&]*)/) || [])[1];
+    if (adminToken) {
+      // The vote link goes last and is taken whole, so a link with its own & or ? still works.
+      let voteSet = (hash.split(/(?:^|&)vote=/)[1] || '').trim();
+      if (/^https?%3A/i.test(voteSet)) voteSet = decodeURIComponent(voteSet);
+      if (voteSet === 'off') voteSet = '';
+      history.replaceState(null, '', location.pathname + location.search); // token out of the address bar
+      // Only ever sent to this site, never to an ?api= address.
+      if (!api && (voteSet === '' || /^https?:\/\/\S+$/.test(voteSet))) {
+        fetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': decodeURIComponent(adminToken) }, body: JSON.stringify({ voteUrl: voteSet }) })
+          .then(r => { adminMsg(!r.ok ? 'Vote link NOT saved: check the admin token' : voteSet ? 'Vote link saved for every device' : 'Vote link removed'); if (r.ok) showVote(voteSet); })
+          .catch(() => adminMsg('Vote link NOT saved: no connection'));
+      }
     }
-    showVote(voteParam || (window.TES_CONFIG && window.TES_CONFIG.VOTE_URL) || '');
-    const checkVote = () => fetch(`${api}/api/config`).then(r => r.json()).then(c => showVote(voteParam || c.voteUrl)).catch(() => {});
+    }
+    applyAdminHash();
+    addEventListener('hashchange', applyAdminHash); // pasted into the address bar of an open booth
+    showVote((window.TES_CONFIG && window.TES_CONFIG.VOTE_URL) || '');
+    const checkVote = () => fetch(`${api}/api/config`).then(r => r.json()).then(c => showVote(c.voteUrl)).catch(() => {});
     checkVote();
     setInterval(checkVote, 30000);
 
@@ -540,14 +573,17 @@
         $('#k-rounds').textContent = st.rounds;
         $('#k-top').textContent = st.topScore;
         $('#k-replay').textContent = Math.round((st.replayRate || 0) * 100) + '%';
-        $('#attract-challenge').textContent = lb.entries[0] ? `All-time #1: ${lb.entries[0].name} with ${lb.entries[0].score}. Beat it!` : 'Nobody on the board yet. Be the first!';
+        // An achievable invitation: today's best (not the all-time record), and the next Booth Battle.
+        $('#attract-challenge').textContent = num(st.topScore) > 0
+          ? `Today's best: ${num(st.topScore)}. Can you beat it? Or ask us for a 5-hazard ⚔️ Booth Battle!`
+          : 'Be first on today\'s board, or ask us for a 5-hazard ⚔️ Booth Battle!';
         const games = st.games.filter(g => g.plays > 0).slice(0, 7);
         $('#bars').innerHTML = games.length ? games.map(g => {
           const pct = Math.round(g.failRate * 100);
           return `<div class="bar"><div><div class="lab">${esc(GAME_LABELS[g.id] || g.id)}</div>
             <div class="track"><div class="fill" style="width:${pct}%"></div></div></div><div class="pct">${pct}%</div></div>`;
         }).join('') : '<p class="empty">Waiting for the first game...</p>';
-        $('#status').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (Date.now() > statusHold) $('#status').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       } catch {
         $('#status').textContent = 'Reconnecting...';
       }

@@ -206,6 +206,9 @@ export function makeRepo(db) {
                                  COALESCE(ROUND(AVG(score)), 0) AS avgScore, COALESCE(MAX(score), 0) AS topScore,
                                  COALESCE(SUM(rounds), 0) AS rounds
                                  FROM runs ${runWhere}`).get(...args);
+      // The top score shown on the booth: only scores that could be on a leaderboard.
+      totals.topScore = db.prepare(`SELECT COALESCE(MAX(score), 0) AS s FROM runs WHERE verified = 1 AND relaxed = 0
+                                    AND mode IN ('classic', 'journey') ${day ? 'AND day = ?' : ''}`).get(...args).s;
       const games = gameRates({ day });
       // Engagement: how many players came back for another go.
       const per = db.prepare(`SELECT client_id, COUNT(*) AS n FROM runs ${runWhere} GROUP BY client_id`).all(...args);

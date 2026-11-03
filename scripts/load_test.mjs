@@ -118,8 +118,10 @@ async function battle(b) {
   await Promise.all(phones.filter(Boolean).map(async (p) => {
     const results = [];
     for (const g of games) {
-      await sleep(300 + Math.random() * 700);
-      results.push({ g, ok: Math.random() < .7, ms: 900 + Math.round(Math.random() * 3000) });
+      // Real play time: the server rejects rounds that arrive faster than they could be played.
+      const ms = 900 + Math.round(Math.random() * 3000);
+      await sleep(ms + (results.length ? 600 + Math.random() * 400 : 0));
+      results.push({ g, ok: Math.random() < .7, ms });
       await call('battle: round', `/api/battles/${code}/progress`, { method: 'POST', body: JSON.stringify({ playerId: p.playerId, clientId: p.clientId, results }) }, p.ip);
       await call('battle: poll', `/api/battles/${code}`, {}, p.ip);
     }

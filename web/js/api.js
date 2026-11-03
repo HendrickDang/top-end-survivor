@@ -6,11 +6,26 @@ const KEY_OUTBOX = 'tes_outbox_v1';
 const KEY_CLIENT = 'tes_client_id';
 const base = () => (window.TES_CONFIG && window.TES_CONFIG.API_BASE) || '';
 
+// If the browser blocks storage (private mode, full disk), keep a copy in memory instead, so a
+// result still uploads while the page stays open rather than silently vanishing.
+const memory = new Map();
+let storageOk = true;
+export const storageWorks = () => storageOk;
 function load(key, fallback) {
+  if (memory.has(key)) return JSON.parse(memory.get(key));
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 function save(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full or blocked */ }
+  const json = JSON.stringify(value);
+  try { localStorage.setItem(key, json); memory.delete(key); } catch { storageOk = false; memory.set(key, json); }
+}
+
+// Shared booth phone handed to the next visitor: start a fresh anonymous id, so two people
+// aren't counted as one player who "came back for another go".
+export function newClientId() {
+  try { localStorage.removeItem(KEY_CLIENT); } catch { /* ignore */ }
+  memory.delete(KEY_CLIENT);
+  return clientId();
 }
 
 export function clientId() {
@@ -69,14 +84,20 @@ export function queueRun(run) {
   const outbox = load(KEY_OUTBOX, []);
   const localId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   outbox.push({ localId, ...run, clientId: clientId(), name: null, serverId: null, nameSent: false, townSent: true, whoSent: true });
-  save(KEY_OUTBOX, outbox.slice(-50));
+  // Only runs already on the server are trimmed; a run still waiting to upload is never dropped.
+  save(KEY_OUTBOX, trimmed(outbox));
   return localId;
 }
 
 export function setRunName(localId, name) {
   const outbox = load(KEY_OUTBOX, []);
   const r = outbox.find(x => x.localId === localId);
-  if (r) { r.name = name; r.nameSent = false; save(KEY_OUTBOX, outbox); }
+  if (r) {
+    r.name = name; r.nameSent = false; r.nameError = null;
+    // The run itself is saved; only a detail failed before. A new name gets a fresh try.
+    if (r.serverId) { r.dead = false; r.error = null; }
+    save(KEY_OUTBOX, outbox);
+  }
 }
 
 export function setRunTown(localId, town) {
@@ -103,8 +124,10 @@ export function flush() {
   if (flushing) return (flushAgain ||= flushing.catch(() => {}).then(() => { flushAgain = null; return flush(); }));
   flushing = (async () => {
     const outbox = load(KEY_OUTBOX, []);
+    const wasDead = new Set(outbox.filter(r => r.dead).map(r => r.localId));
     let changed = false;
     for (const r of outbox) {
+      if (!needsWork(r)) continue;
       try {
         if (!r.serverId) {
           const res = await request('/api/runs', {
@@ -119,15 +142,22 @@ export function flush() {
             })
           });
           r.serverId = res.id; r.score = res.score; r.verified = res.verified !== false; changed = true;
+          // A rude name doesn't sink the run: the score is saved without it, and they can pick another.
+          if (res.nameError) { r.nameError = res.nameError; r.nameSent = true; }
           // A duplicate means our first copy got there but its reply was lost: that copy may not have
           // carried the name, town or group added since, so send those separately.
           if (res.duplicate) { r.nameSent = false; r.townSent = !r.town; r.whoSent = !r.who; }
           else { r.nameSent = !!r.name; r.townSent = true; r.whoSent = true; }
         }
         if (r.serverId && r.name && !r.nameSent) {
-          await request(`/api/runs/${r.serverId}/name`, {
-            method: 'POST', body: JSON.stringify({ name: r.name, clientId: r.clientId })
-          });
+          try {
+            await request(`/api/runs/${r.serverId}/name`, {
+              method: 'POST', body: JSON.stringify({ name: r.name, clientId: r.clientId })
+            });
+          } catch (e) {
+            if (temporary(e)) throw e;
+            r.nameError = e.message; // the run stays saved; only this name was refused
+          }
           r.nameSent = true; changed = true;
         }
         if (r.serverId && r.town && r.townSent === false) {
@@ -160,26 +190,38 @@ export function flush() {
         score: p.score ?? f.score,
         verified: p.verified ?? f.verified,
         nameSent: f.nameSent || (p.nameSent && p.name === f.name),
-        townSent: f.townSent === false && p.townSent && p.town === f.town ? true : f.townSent,
-        whoSent: f.whoSent === false && p.whoSent && p.who === f.who ? true : f.whoSent,
-        dead: f.dead || p.dead,
-        error: f.error || p.error
+        nameError: p.name === f.name ? p.nameError : f.nameError,
+        // A town or group picked while this pass was sending may not have gone with it: send it again.
+        townSent: f.town && f.town !== p.town ? false : (f.townSent === false && p.townSent && p.town === f.town ? true : f.townSent),
+        whoSent: f.who && f.who !== p.who ? false : (f.whoSent === false && p.whoSent && p.who === f.who ? true : f.whoSent),
+        // Only a refusal from THIS pass counts: a name fixed meanwhile may have cleared an old one.
+        dead: f.dead || (p.dead && !wasDead.has(f.localId)),
+        error: f.error || (p.dead && !wasDead.has(f.localId) ? p.error : null)
       };
     });
-    const pending = fresh.filter(needsWork);
-    const sent = fresh.filter(r => !r.dead && !needsWork(r)).slice(-5);
-    const dead = fresh.filter(r => r.dead).slice(-3);
-    save(KEY_OUTBOX, [...dead, ...sent, ...pending]);
+    save(KEY_OUTBOX, trimmed(fresh));
+    // Something changed while we were sending (a name, a town): go round once more.
+    if (fresh.some((r) => { const p = done.get(r.localId); return p && needsWork(r) && !p.dead && (r.town !== p.town || r.who !== p.who || r.name !== p.name); })) {
+      Promise.resolve().then(() => flush());
+    }
     return fresh;
   })().finally(() => { flushing = null; });
   return flushing;
+}
+
+// Keep every run still waiting to upload; of the finished ones keep only the latest few.
+function trimmed(list) {
+  const pending = list.filter(needsWork);
+  const sent = list.filter(r => !r.dead && !needsWork(r)).slice(-5);
+  const dead = list.filter(r => r.dead).slice(-3);
+  return [...dead, ...sent, ...pending];
 }
 
 export function runStatus(localId) {
   const r = load(KEY_OUTBOX, []).find(x => x.localId === localId);
   if (!r) return { state: 'unknown' };
   if (r.dead) return { state: 'rejected', error: r.error };
-  if (r.serverId && !needsWork(r)) return { state: 'sent', serverId: r.serverId, verified: r.verified !== false };
+  if (r.serverId && !needsWork(r)) return { state: 'sent', serverId: r.serverId, verified: r.verified !== false, nameError: r.nameError || null };
   return { state: 'queued', serverId: r.serverId || null };
 }
 

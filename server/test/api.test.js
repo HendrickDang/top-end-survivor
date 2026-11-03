@@ -301,7 +301,7 @@ test('classroom mode: teacher code, students join, private report', async () => 
   await post('/api/quiz', { clientId: 'student-0000001', qids, post: 3, classCode: c.code });
   // the report needs the teacher key
   assert.equal((await fetch(`${base}/api/classes/${c.code}/report`)).status, 403);
-  assert.equal((await fetch(`${base}/api/classes/${c.code}/report?key=nope`)).status, 403);
+  assert.equal((await fetch(`${base}/api/classes/${c.code}/report`, { headers: { 'X-Class-Key': 'nope' } })).status, 403);
   const r = await (await fetch(`${base}/api/classes/${c.code}/report`, { headers: { 'X-Class-Key': c.key } })).json();
   assert.equal(r.players, 2);
   assert.equal(r.runs, 2);
@@ -346,13 +346,18 @@ test('booth battle: join, start, race, podium, saved for stats', async () => {
     const wrong = res([true]); wrong[0].g = games[1];
     assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: wrong })).status, 400);
     assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-02', results: res([true]) })).status, 403);
-    // Ava wins every round, Ben misses one
+    // Ava wins every round, Ben misses one (the clock moves on as they really play)
+    clock = started.battle.startsAt + 4000;
     await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true, true]) });
     let live = (await (await fetch(`${b2}/api/battles/${code}`)).json()).battle;
     assert.equal(live.players[0].name, 'Ava');
     assert.equal(live.players[0].round, 2);
     // results can't be rewritten
     assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([false, true, true]) })).status, 400);
+    // nor can five rounds arrive faster than they could be played (5 x 1.5 s plus gaps, 1 s after GO)
+    clock = started.battle.startsAt + 1000;
+    assert.equal((await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true, true, true, true, true]) })).status, 400);
+    clock = started.battle.startsAt + 10_000;
     await p2(`/api/battles/${code}/progress`, { playerId: a.playerId, clientId: 'battle-phone-01', results: res([true, true, true, true, true]) });
     const last = await (await p2(`/api/battles/${code}/progress`, { playerId: b.playerId, clientId: 'battle-phone-02', results: res([true, false, true, true, true]) })).json();
     assert.equal(last.battle.status, 'done');
@@ -375,6 +380,19 @@ test('booth battle: someone opening lots of empty battles can\'t lock the booth 
   const booth = battles.create();
   assert.ok(booth.battle, 'the booth can still open a battle');
   assert.equal(battles.size(), 300);
+  battles.stop();
+});
+
+test('booth battle: a full pool never drops a lobby people have joined', () => {
+  let clock = 0;
+  const battles = createBattles({ now: () => clock });
+  clock++;
+  const busy = battles.create().battle;
+  battles.join(busy.code, { clientId: 'busy-phone-01', name: 'Kim', character: 'craig' });
+  for (let i = 0; i < 299; i++) { clock++; assert.ok(battles.create().battle); }
+  clock++;
+  assert.ok(battles.create().battle);
+  assert.ok(battles.get(busy.code), 'the joined lobby is still there');
   battles.stop();
 });
 
@@ -407,6 +425,10 @@ test('qr code and static game are served', async () => {
   const qr = await fetch(base + '/api/qr.svg?url=https://example.com');
   assert.equal(qr.status, 200);
   assert.match(await qr.text(), /<svg/);
+  // a link too long for a QR code is refused, and the server keeps running
+  assert.equal((await fetch(base + '/api/qr.svg?url=https://example.com/' + 'a'.repeat(5000))).status, 400);
+  assert.equal((await fetch(base + '/api/qr.svg?url=javascript:alert(1)')).status, 400);
+  assert.equal((await fetch(base + '/api/health')).status, 200);
   const page = await fetch(base + '/');
   assert.match(await page.text(), /Top End Survivor/);
   assert.equal((await fetch(base + '/booth')).status, 200);
@@ -512,4 +534,34 @@ test('verified sessions: real play time on the server clock puts a score on the 
     r = await (await p('/api/runs', { ...makeRun(4), clientId, sessionId: sid, runKey: 'sess-mode-1' })).json();
     assert.equal(r.verified, false);
   });
+});
+
+test('a Relaxed boss round (15 s x 1.6 plus a hint) is a valid round time', async () => {
+  const run = makeRun(9);
+  run.results = [...run.results.slice(0, 9), { g: 'boss-croc', ok: true, ms: 26000 }, ...run.results.slice(9)];
+  run.relaxed = true;
+  run.durationMs += 26000;
+  assert.equal((await post('/api/runs', run)).status, 201);
+});
+
+test('a rude name does not sink the run: saved without it, with the reason', async () => {
+  const res = await post('/api/runs', makeRun(2, { name: 'sh1t', runKey: 'rudename01' }));
+  assert.equal(res.status, 201);
+  const body = await res.json();
+  assert.ok(body.nameError);
+  const fixed = await post(`/api/runs/${body.id}/name`, { name: 'Nice Name', clientId: CLIENT });
+  assert.equal(fixed.status, 200);
+});
+
+test('a Daily played offline days ago still uploads, unranked', async () => {
+  const today = darwinDay();
+  const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3);
+  const day = d.toISOString().slice(0, 10);
+  const seq = dailySequence(day);
+  const results = seq.map((g, i) => ({ g, ok: i > 2, ms: 1500 }));
+  const res = await post('/api/runs', { clientId: CLIENT, mode: 'daily', day, results: results.slice(0, 3), durationMs: 30000 });
+  assert.equal(res.status, 201);
+  assert.equal((await res.json()).verified, false);
+  const future = new Date(today + 'T12:00:00Z'); future.setUTCDate(future.getUTCDate() + 2);
+  assert.equal((await post('/api/runs', { clientId: CLIENT, mode: 'daily', day: future.toISOString().slice(0, 10), results: results.slice(0, 3), durationMs: 30000 })).status, 400);
 });

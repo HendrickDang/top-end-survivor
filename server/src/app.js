@@ -48,10 +48,30 @@ export function createApp(repo, opts = {}) {
   const clock = opts.clock || (() => Date.now()); // milliseconds, for game sessions
   // requireSession: false (tests only) treats every run as verified.
   const requireSession = opts.requireSession ?? true;
+  // Public stats are whole-history queries that every booth screen and judge tour asks for every
+  // few seconds: answer repeats from a short cache (off in tests, a few seconds in production).
+  const cacheMs = opts.cacheMs ?? 0;
+  const qrCache = new Map();
+  const cache = new Map();
+  const cached = (key, make) => {
+    if (!cacheMs) return make();
+    const hit = cache.get(key), t = Date.now();
+    if (hit && t - hit.at < cacheMs) return hit.value;
+    const value = make();
+    cache.set(key, { at: t, value });
+    if (cache.size > 200) cache.delete(cache.keys().next().value);
+    return value;
+  };
 
   const app = express();
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
+  // Basic browser safety headers. Frames are allowed from this site only (the booth and the
+  // judges' tour show the game's demo in a frame).
+  app.use((req, res, next) => {
+    res.set({ 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'SAMEORIGIN', 'Referrer-Policy': 'strict-origin-when-cross-origin' });
+    next();
+  });
   app.use(express.json({ limit: '32kb' }));
 
   // CORS: the Android app runs on its own origin (https://localhost), so allow cross-origin API calls.
@@ -107,12 +127,13 @@ export function createApp(repo, opts = {}) {
         v.run.durationMs <= elapsed + SESSION_SLACK_MS && v.run.minPlayMs <= elapsed + SESSION_SLACK_MS &&
         repo.useSession(s.id);
     }
-    v.run.verified = verified;
-    let name = null;
+    v.run.verified = verified && !v.run.late;
+    // A name the booth screen can't show doesn't sink the run: save it without the name and say why,
+    // so the player can pick another one (the session above has been used either way).
+    let name = null, nameError;
     if (req.body.name != null) {
       const c = cleanName(req.body.name);
-      if (c.error) return res.status(400).json({ error: c.error });
-      name = c.name;
+      if (c.error) nameError = c.error; else name = c.name;
     }
     if (v.run.challengeOf && !repo.getChallenge(v.run.challengeOf)) v.run.challengeOf = null;
     if (v.run.classCode && !repo.getClass(v.run.classCode)) v.run.classCode = null;
@@ -123,7 +144,7 @@ export function createApp(repo, opts = {}) {
       if (!again) throw e;
       return res.json({ id: again.id, score: again.score, rounds: again.rounds, verified: !!again.verified, duplicate: true });
     }
-    res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds, verified });
+    res.status(201).json({ id, score: v.run.score, rounds: v.run.rounds, verified: v.run.verified, ...(nameError ? { nameError } : {}) });
   });
 
   // Attach a name to a run you submitted (same device only).
@@ -173,7 +194,8 @@ export function createApp(repo, opts = {}) {
 
   app.get('/api/stats', (req, res) => {
     const period = req.query.period === 'all' ? 'all' : 'today';
-    res.json({ period, day: today(), ...repo.stats({ day: period === 'today' ? today() : null }) });
+    const day = period === 'today' ? today() : null;
+    res.json({ period, day: today(), ...cached(`stats:${day}`, () => repo.stats({ day })) });
   });
 
   // ---- Challenge a mate ----
@@ -192,7 +214,8 @@ export function createApp(repo, opts = {}) {
   // ---- Town Battle ----
   app.get('/api/towns', (req, res) => {
     const period = req.query.period === 'all' ? 'all' : 'today';
-    res.json({ period, day: today(), entries: repo.towns({ day: period === 'all' ? null : today() }) });
+    const day = period === 'all' ? null : today();
+    res.json({ period, day: today(), entries: cached(`towns:${day}`, () => repo.towns({ day })) });
   });
 
   // ---- Optional quick safety check ----
@@ -231,7 +254,7 @@ export function createApp(repo, opts = {}) {
     const code = String(req.params.code).toUpperCase();
     const c = CLASS_CODE_RE.test(code) ? repo.getClass(code) : null;
     if (!c) return res.status(404).json({ error: 'No class with that code.' });
-    const key = req.get('X-Class-Key') || req.query.key || '';
+    const key = req.get('X-Class-Key') || ''; // header only: never in a URL, where logs and history keep it
     if (!sameHash(sha256(key), c.key_hash)) return res.status(403).json({ error: 'Wrong teacher key.' });
     res.json({ code: c.code, name: c.name, createdAt: c.created_at, ...repo.classReport(c.code) });
   });
@@ -284,22 +307,37 @@ export function createApp(repo, opts = {}) {
   });
 
   // QR code pointing players to the game (shown on the booth screen).
+  // Async errors are caught here: Express 4 does not catch a rejected promise, and an
+  // uncaught one would stop the whole server.
   app.get('/api/qr.svg', async (req, res) => {
-    const target = (typeof req.query.url === 'string' && /^https?:\/\//.test(req.query.url))
-      ? req.query.url
-      : (publicUrl || `${req.protocol}://${req.get('host')}/`);
-    const svg = await QRCode.toString(target, { type: 'svg', margin: 1, color: { dark: '#1d1a16', light: '#fffaf0' } });
-    res.type('image/svg+xml').send(svg);
+    const q = req.query.url;
+    if (q !== undefined && (typeof q !== 'string' || q.length > 500 || !/^https?:\/\/\S+$/.test(q))) {
+      return res.status(400).json({ error: 'Bad link.' });
+    }
+    const target = q || publicUrl || `${req.protocol}://${req.get('host')}/`;
+    try {
+      // The same few codes (play, vote, battle join) are asked for over and over: draw each once.
+      let svg = qrCache.get(target);
+      if (!svg) {
+        svg = await QRCode.toString(target, { type: 'svg', margin: 1, color: { dark: '#1d1a16', light: '#fffaf0' } });
+        qrCache.set(target, svg);
+        if (qrCache.size > 300) qrCache.delete(qrCache.keys().next().value);
+      }
+      res.type('image/svg+xml').set('Cache-Control', 'public, max-age=3600').send(svg);
+    } catch {
+      res.status(400).json({ error: 'Bad link.' });
+    }
   });
 
   // ---- admin (demo-day helpers) ----
   const requireAdmin = (req, res, next) => {
     if (!adminToken) return res.status(503).json({ error: 'Admin disabled. Set ADMIN_TOKEN.' });
-    if (req.get('X-Admin-Token') !== adminToken && req.query.token !== adminToken) return res.status(401).json({ error: 'Bad token.' });
+    // Header only: a token in the address would end up in browser history and server logs.
+    if (req.get('X-Admin-Token') !== adminToken) return res.status(401).json({ error: 'Bad token.' });
     next();
   };
   // People's Choice voting link. Set it on the day without changing code: either the VOTE_URL
-  // environment variable on the host, or POST here (the booth does it for you: /booth?vote=<link>&token=<ADMIN_TOKEN>).
+  // environment variable on the host, or POST here (the booth does it for you: /booth#token=<ADMIN_TOKEN>&vote=<link>).
   app.post('/api/admin/config', requireAdmin, (req, res) => {
     const v = typeof req.body?.voteUrl === 'string' ? req.body.voteUrl.trim() : '';
     if (v && !(/^https?:\/\/\S+$/.test(v) && v.length <= 500)) return res.status(400).json({ error: 'The vote link must start with http:// or https://' });

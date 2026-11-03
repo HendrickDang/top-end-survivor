@@ -18,7 +18,7 @@ function roundRect(c, x, y, w, h, r) {
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 
-export async function makeCard({ score, survived, rounds, name, badgeIds = [] }) {
+export async function makeCard({ score, survived, rounds, name, badgeIds = [], mode }) {
   const W = 1080, H = 1350;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
@@ -52,7 +52,7 @@ export async function makeCard({ score, survived, rounds, name, badgeIds = [] })
   c.font = F(700, 52); c.fillText(name ? `${name} scored` : 'I scored', W / 2, 500);
   c.font = F(800, 230); c.fillStyle = '#b5641a'; c.fillText(String(score), W / 2, 700);
   c.font = F(700, 50); c.fillStyle = '#1d1a16';
-  c.fillText(`Survived ${survived} of ${rounds} Top End dangers`, W / 2, 780);
+  c.fillText(mode === 'endless' ? `Dodged ${score} roos on the Roo Run` : `Survived ${survived} of ${rounds} Top End dangers`, W / 2, 780);
   const icons = BADGES.filter(b => badgeIds.includes(b.id)).map(b => b.icon).join(' ');
   c.font = F(500, 64); c.fillText(icons || '🐊 🪼 🌀 🔥', W / 2, 880);
 
@@ -75,7 +75,9 @@ export async function makeCard({ score, survived, rounds, name, badgeIds = [] })
 export async function shareCard(info) {
   const blob = await makeCard(info);
   const file = new File([blob], 'top-end-survivor-score.png', { type: 'image/png' });
-  const text = `I scored ${info.score} on Top End Survivor! Can you beat me? ${playUrl()}`;
+  const text = info.mode === 'endless'
+    ? `I dodged ${info.score} roos on the Top End Survivor Roo Run! Can you beat me? ${playUrl()}`
+    : `I scored ${info.score} on Top End Survivor! Can you beat me? ${playUrl()}`;
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], text, title: 'Top End Survivor' }); return 'shared'; }
     catch (e) { if (e.name === 'AbortError') return 'cancelled'; }

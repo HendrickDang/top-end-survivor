@@ -21,7 +21,7 @@ export const BADGES = [
   { id: 'daily3', icon: '📅', name: 'Daily Regular', hint: 'Play the Daily Challenge 3 days in a row' },
   { id: 'install', icon: '📲', name: 'Local', hint: 'Install the game on your phone' },
   { id: 'streak5', icon: '🎯', name: 'On a Roll', hint: 'Win 5 rounds in a row' },
-  { id: 'all10', icon: '🗺️', name: 'Top End Tourist', hint: 'Survive all 10 different games in one run' },
+  { id: 'all10', icon: '🗺️', name: 'Top End Tourist', hint: 'Survive 10 different games in one run' },
   { id: 'uluru', icon: '🪨', name: 'Red Centre', hint: 'Reach Uluru on the Journey' },
   { id: 'score1500', icon: '🏆', name: 'Top End Legend', hint: 'Score 1,500 in one run' },
   { id: 'comeback', icon: '❤️', name: 'Never Say Die', hint: 'Survive 5 rounds on your last life' },
