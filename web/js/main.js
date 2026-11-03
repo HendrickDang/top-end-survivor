@@ -1145,15 +1145,15 @@ function renderOverTown() {
 const BOARD_NOTES = {
   today: 'Classic and Journey games played today (Darwin time). Resets at midnight.',
   daily: "Today's Daily Challenge only: the 📅 Daily button on the menu. Resets at midnight.",
-  hard: 'Classic and Journey games played today in 🔥 Hard mode.',
-  endless: 'Animals dodged in 🦘 Roo Run today.',
+  hard: 'Best 🔥 Hard mode scores ever (Classic and Journey).',
+  endless: 'Most animals dodged in 🦘 Roo Run, all time.',
   all: 'Best Classic and Journey scores ever.'
 };
 const BOARD_EMPTY = {
   today: 'No Classic or Journey scores today yet. Be the first!',
   daily: "Nobody has finished today's Daily Challenge yet. Tap 📅 Daily on the menu: the same 10 hazards for everyone today.",
-  hard: 'No Hard mode scores today yet. Turn on 🔥 Hard mode on the menu.',
-  endless: 'No Roo Run scores today yet. Tap 🦘 Roo Run on the menu.',
+  hard: 'No Hard mode scores yet. Turn on 🔥 Hard mode on the menu.',
+  endless: 'No Roo Run scores yet. Tap 🦘 Roo Run on the menu.',
   all: 'No scores yet. Be the first!'
 };
 async function showBoard(period = 'today') {
@@ -1165,7 +1165,8 @@ async function showBoard(period = 'today') {
   try {
     await api.flush();
     if (period === 'towns') { await social.renderTownsBoard(list, msg); return; }
-    const data = await api.getLeaderboard(period);
+    // Hard and Roo Run are all-time boards (fewer players, and a record shouldn't vanish at midnight).
+    const data = await api.getLeaderboard(period, 20, period === 'hard' || period === 'endless' ? 'all' : '');
     list.innerHTML = data.entries.map(e =>
       `<li class="${e.mine ? 'me' : ''}"><span class="n">${escapeHtml(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
     msg.textContent = data.entries.length ? BOARD_NOTES[period] : BOARD_EMPTY[period];

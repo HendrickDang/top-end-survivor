@@ -251,7 +251,7 @@ export function flushQuiz() {
   return quizBusy;
 }
 
-export const getLeaderboard = (period = 'today', limit = 20) => request(`/api/leaderboard?period=${period}&limit=${limit}&client=${encodeURIComponent(clientId())}`);
+export const getLeaderboard = (period = 'today', limit = 20, scope = '') => request(`/api/leaderboard?period=${period}&limit=${limit}${scope ? '&scope=' + scope : ''}&client=${encodeURIComponent(clientId())}`);
 export const getStats = (period = 'today') => request(`/api/stats?period=${period}`);
 export const getTowns = (period = 'today') => request(`/api/towns?period=${period}`);
 export const getChallenge = (id) => request(`/api/challenge/${encodeURIComponent(id)}`);
