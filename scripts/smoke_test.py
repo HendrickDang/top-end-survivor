@@ -413,7 +413,7 @@ def main():
         booth.on('pageerror', lambda e: errors.append('booth: ' + str(e)))
         booth.goto(BASE + '/booth?attract=0'); booth.wait_for_timeout(2500)
         if 'SmokeTester' not in booth.inner_text('#ticker'): failures.append('booth ticker')
-        if 'SmokeTester' not in booth.inner_text('#board'): failures.append('booth')
+        if 'SmokeTester' not in booth.inner_text('#board-today'): failures.append('booth')
         if SHOTS: booth.screenshot(path=str(SHOTS / '20-booth.png'))
         booth.keyboard.press('n'); booth.wait_for_timeout(700)
         if 'Palmerston' not in booth.inner_text('#tlist'): failures.append('booth town map')

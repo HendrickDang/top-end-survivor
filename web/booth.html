@@ -69,7 +69,12 @@
     .roorec { margin: calc(.6 * var(--u)) 0 0; padding: calc(.4 * var(--u)) calc(.8 * var(--u)); background: #ece3f8; border: 2px solid #5b3f8f; border-radius: 10px; font-size: calc(1.2 * var(--u)); font-weight: 700; }
     .roorec:empty { display: none; }
     /* Two boards in one card: today's first (so today's players see where they stand), then the all-time records. */
-    .next-h { margin-top: calc(1.2 * var(--u)) !important; padding-top: calc(.8 * var(--u)); border-top: 4px solid var(--ink); }
+    /* Today's board with the prizes for the top 3; the all-time record is one line under it. */
+    .prizes { display: flex; flex-wrap: wrap; gap: calc(.5 * var(--u)); margin: 0 0 calc(.8 * var(--u)); }
+    .prizes span { background: var(--white); border: 2px solid var(--ink); border-radius: 99px; padding: calc(.1 * var(--u)) calc(.7 * var(--u)); font-size: calc(1.15 * var(--u)); font-weight: 700; }
+    .board .prize { font-size: .8em; margin-left: calc(.4 * var(--u)); }
+    .recline { margin: calc(.6 * var(--u)) 0 0; padding: calc(.25 * var(--u)) calc(.8 * var(--u)); background: #fff4cc; border: 2px solid #b5641a; border-radius: 10px; font-size: calc(1.2 * var(--u)); font-weight: 700; }
+    .recline:empty { display: none; }
     .board.today li:nth-child(1) { background: #d9efc9; }
     .wrap .board { flex: none; }
     .wrap .board li { font-size: calc(1.6 * var(--u)); line-height: 1.2; padding: calc(.3 * var(--u)) calc(.6 * var(--u)); }
@@ -77,7 +82,9 @@
     .attract-board .empty { font-size: calc(1.1 * var(--u)); line-height: 1.2; margin: calc(.2 * var(--u)) 0; }
     .wrap .board li:nth-child(1) { font-size: calc(1.9 * var(--u)); }
     .attract-board .board { flex: none; }
-    .attract-board .next-h { margin-top: calc(.4 * var(--u)) !important; padding-top: calc(.35 * var(--u)); border-top-width: 3px; }
+    .attract-board .prizes { margin-bottom: calc(.25 * var(--u)); gap: calc(.35 * var(--u)); }
+    .attract-board .prizes span { font-size: calc(1 * var(--u)); }
+    .attract-board .recline { margin-top: calc(.3 * var(--u)); }
     .attract-board .roorec, .wrap .roorec { margin-top: calc(.4 * var(--u)); padding: calc(.25 * var(--u)) calc(.8 * var(--u)); }
     .attract-mid { flex: none; width: calc(33 * var(--u)); max-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: calc(1.1 * var(--u)); }
     .attract-copy { color: var(--white); }
@@ -220,11 +227,10 @@
 
     <section class="card">
       <h2>📅 Today's top survivors</h2>
+      <div class="prizes"><span>🥇 Wireless keyboard</span><span>🥈 Wireless mouse</span><span>🥉 Multi-head charging cable</span></div>
       <ol class="board today" id="board-today"></ol>
       <p class="empty" id="today-empty">No scores today yet. Be the first!</p>
-      <h2 class="next-h">🏆 All-time top survivors</h2>
-      <ol class="board" id="board"></ol>
-      <p class="empty" id="board-empty">No scores yet. Who's first?</p>
+      <p class="recline" id="alltime"></p>
       <p class="roorec" id="roorec"></p>
     </section>
 
@@ -309,11 +315,10 @@
       </div>
       <section class="card attract-board">
         <h2>📅 Today's top survivors</h2>
+        <div class="prizes"><span>🥇 Keyboard</span><span>🥈 Mouse</span><span>🥉 Charging cable</span></div>
         <ol class="board today" id="attract-today"></ol>
         <p class="empty" id="attract-today-empty">No scores today yet. Be the first!</p>
-        <h2 class="next-h">🏆 All-time top survivors</h2>
-        <ol class="board" id="attract-list"></ol>
-        <p class="empty" id="attract-empty">No scores yet. Who's first?</p>
+        <p class="recline" id="attract-alltime"></p>
         <p class="roorec" id="attract-roorec"></p>
       </section>
     </div>
@@ -562,7 +567,7 @@
       try {
         const [lb, td, st, fd, tw, rr, stAll] = await Promise.all([
           fetch(`${api}/api/leaderboard?period=all&limit=10`).then(r => r.json()),
-          fetch(`${api}/api/leaderboard?period=today&limit=5`).then(r => r.json()).catch(() => ({ entries: [] })),
+          fetch(`${api}/api/leaderboard?period=today&limit=8`).then(r => r.json()).catch(() => ({ entries: [] })),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
           fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
           fetch(`${api}/api/towns?period=all`).then(r => r.json()),
@@ -583,9 +588,9 @@
         if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
         else if (lastTodayTop !== undefined && todayTop && todayTop !== lastTodayTop) celebrate(td.entries[0], 'NEW #1 TODAY!');
         lastTodayTop = todayTop;
-        $('#challenge').innerHTML = lb.entries[0]
-          ? `Crowd challenge: beat <b>${lb.entries[0].score}</b> to take #1 from ${esc(lb.entries[0].name)}!`
-          : 'Be the first on the board!';
+        $('#challenge').innerHTML = td.entries[0]
+          ? `Beat <b>${num(td.entries[0].score)}</b> to take today's #1 (and the keyboard 🥇) from ${esc(td.entries[0].name)}!`
+          : 'Be today\'s #1 and win a wireless keyboard 🥇';
         const feedKey = fd.entries.map(e => e.id).join(',');
         if (feedKey && feedKey !== lastFeed) {
           if (lastFeed) { lastActivity = Date.now(); setAttract(false); }
@@ -600,26 +605,26 @@
           tr.innerHTML = items.join('');
           tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');
         }
-        $('#board').innerHTML = lb.entries.slice(0, 5).map((e, i) =>
-          `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
         lastTop = top;
-        $('#board-empty').style.display = lb.entries.length ? 'none' : '';
-        const row = (e) => `<li><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`;
-        $('#attract-list').innerHTML = lb.entries.slice(0, 3).map(row).join('');
-        $('#attract-empty').style.display = lb.entries.length ? 'none' : '';
-        // Today's board (Darwin time, resets at midnight): so today's players see if they are on top.
-        $('#board-today').innerHTML = td.entries.slice(0, 5).map(row).join('');
+        // Today's board (Darwin time, resets at midnight) decides the prizes: the top 3 get a prize icon.
+        const PRIZE = ['⌨️', '🖱️', '🔌'];
+        const row = (e, i) => `<li><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span>${i < 3 ? `<span class="prize">${PRIZE[i]}</span>` : ''}</li>`;
+        $('#board-today').innerHTML = td.entries.slice(0, 8).map(row).join('');
         $('#today-empty').style.display = td.entries.length ? 'none' : '';
-        $('#attract-today').innerHTML = td.entries.slice(0, 3).map(row).join('');
+        $('#attract-today').innerHTML = td.entries.slice(0, 5).map(row).join('');
         $('#attract-today-empty').style.display = td.entries.length ? 'none' : '';
+        // The all-time record stays on screen as one line.
+        const allRec = lb.entries[0] ? `🏆 All-time record: ${esc(lb.entries[0].name)} with ${num(lb.entries[0].score)}` : '';
+        $('#alltime').innerHTML = allRec;
+        $('#attract-alltime').innerHTML = allRec;
         $('#k-players').textContent = st.players;
         $('#k-rounds').textContent = st.rounds;
         $('#k-top').textContent = st.topScore;
         $('#k-replay').textContent = Math.round((st.replayRate || 0) * 100) + '%';
         // An achievable invitation: today's best (not the all-time record), and the next Booth Battle.
         $('#attract-challenge').textContent = num(st.topScore) > 0
-          ? `Today's best: ${num(st.topScore)}. Can you beat it? Or ask us for a 5-hazard ⚔️ Booth Battle!`
-          : 'Be first on today\'s board, or ask us for a 5-hazard ⚔️ Booth Battle!';
+          ? `Today's best: ${num(st.topScore)}. Beat it to win a wireless keyboard 🥇, or ask us for a ⚔️ Booth Battle!`
+          : 'Be today\'s #1 to win a wireless keyboard 🥇, or ask us for a ⚔️ Booth Battle!';
         const games = st.games.filter(g => g.plays > 0).slice(0, 5); // 5 always fit above the note
         $('#bars').innerHTML = games.length ? games.map(g => {
           const pct = Math.round(g.failRate * 100);
