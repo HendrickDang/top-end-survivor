@@ -20,7 +20,7 @@
     h1 span { color: #ffe9a8; }
     h2 { margin: 0 0 calc(1 * var(--u)); font-size: calc(2.2 * var(--u)); line-height: 1; }
     .left { background: linear-gradient(#f7b267, #f4845f 55%, #c8412f); align-items: center; text-align: center; justify-content: space-between; }
-    .qr { width: 80%; aspect-ratio: 1; background: var(--white); border: 5px solid var(--ink); border-radius: 18px; padding: 3%; }
+    .qr { width: min(80%, calc(19.5 * var(--u))); aspect-ratio: 1; background: var(--white); border: 5px solid var(--ink); border-radius: 18px; padding: 3%; }
     .qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     .scan { font-size: calc(2.4 * var(--u)); font-weight: 800; color: var(--white); text-shadow: 0 3px 0 var(--ink); margin: 0; }
     .url { font-size: calc(1.1 * var(--u)); color: var(--white); word-break: break-all; margin: 0; }
@@ -68,12 +68,23 @@
        so the crowd never loses sight of the scores or the live numbers. */
     .roorec { margin: calc(.6 * var(--u)) 0 0; padding: calc(.4 * var(--u)) calc(.8 * var(--u)); background: #ece3f8; border: 2px solid #5b3f8f; border-radius: 10px; font-size: calc(1.2 * var(--u)); font-weight: 700; }
     .roorec:empty { display: none; }
+    /* Two boards in one card: all-time records, then today's (so today's players see where they stand). */
+    .today-h { margin-top: calc(1.2 * var(--u)) !important; padding-top: calc(.8 * var(--u)); border-top: 4px solid var(--ink); }
+    .board.today li:nth-child(1) { background: #d9efc9; }
+    .wrap .board { flex: none; }
+    .wrap .board li { font-size: calc(1.6 * var(--u)); line-height: 1.2; padding: calc(.3 * var(--u)) calc(.6 * var(--u)); }
+    .wrap .card .empty { font-size: calc(1.3 * var(--u)); margin: calc(.3 * var(--u)) 0; }
+    .attract-board .empty { font-size: calc(1.1 * var(--u)); line-height: 1.2; margin: calc(.2 * var(--u)) 0; }
+    .wrap .board li:nth-child(1) { font-size: calc(1.9 * var(--u)); }
+    .attract-board .board { flex: none; }
+    .attract-board .today-h { margin-top: calc(.4 * var(--u)) !important; padding-top: calc(.35 * var(--u)); border-top-width: 3px; }
+    .attract-board .roorec, .wrap .roorec { margin-top: calc(.4 * var(--u)); padding: calc(.25 * var(--u)) calc(.8 * var(--u)); }
     .attract-mid { flex: none; width: calc(33 * var(--u)); max-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: calc(1.1 * var(--u)); }
     .attract-copy { color: var(--white); }
     .attract-board { color: var(--ink); padding: calc(1 * var(--u)) calc(1.6 * var(--u)); }
-    .attract-board h2 { font-size: calc(1.8 * var(--u)); margin-bottom: calc(.5 * var(--u)); }
-    .attract-board .board li { font-size: calc(1.35 * var(--u)); line-height: 1.15; padding: calc(.18 * var(--u)) calc(.6 * var(--u)); }
-    .attract-board .board li:nth-child(1) { font-size: calc(1.7 * var(--u)); }
+    .attract-board h2 { font-size: calc(1.8 * var(--u)); margin-bottom: calc(.3 * var(--u)); }
+    .attract-board .board li { font-size: calc(1.25 * var(--u)); line-height: 1.15; padding: calc(.12 * var(--u)) calc(.6 * var(--u)); }
+    .attract-board .board li:nth-child(1) { font-size: calc(1.45 * var(--u)); }
     .attract-board .kline { margin: calc(.6 * var(--u)) 0 0; font-size: calc(1.1 * var(--u)); font-weight: 700; opacity: .8; }
     .attract-copy h2 { font-size: calc(3.2 * var(--u)); line-height: .9; margin: 0 0 calc(.6 * var(--u)); text-shadow: 0 calc(.4 * var(--u)) 0 var(--ink); }
     .attract-copy h2 span { color: #ffe9a8; }
@@ -99,8 +110,9 @@
     .panel-v { display: none; flex-direction: column; min-height: 0; flex: 1; }
     .panel-v.show { display: flex; animation: fadein .5s ease; }
     .pdots { position: absolute; top: calc(1.2 * var(--u)); right: calc(1.4 * var(--u)); display: flex; gap: calc(.4 * var(--u)); }
-    .pdots i { width: calc(.8 * var(--u)); height: calc(.8 * var(--u)); border-radius: 50%; background: #ecd6a8; border: 2px solid var(--ink); }
-    .pdots i.on { background: var(--ochre); }
+    .pdots button { width: calc(1.1 * var(--u)); height: calc(1.1 * var(--u)); padding: 0; border-radius: 50%; background: #ecd6a8; border: 2px solid var(--ink); cursor: pointer; }
+    .pdots button.on { background: var(--ochre); }
+    .pdots button:hover { transform: scale(1.25); }
     .townwrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: calc(1 * var(--u)); flex: 1; min-height: 0; align-items: start; }
     #ntmap { width: 100%; max-height: 66vh; }
     .tlist { list-style: none; margin: 0; padding: 0; counter-reset: t; font-size: calc(1.25 * var(--u)); }
@@ -122,11 +134,11 @@
     .groups-head { margin: 0 0 calc(1 * var(--u)); font-size: calc(1.7 * var(--u)); font-weight: 800; line-height: 1.15; }
     .groups-head b { color: var(--red); }
     .gcount { display: flex; gap: calc(1.2 * var(--u)); font-size: calc(1.15 * var(--u)); font-weight: 700; margin-bottom: calc(.8 * var(--u)); }
-    .gtable { display: flex; flex-direction: column; gap: calc(.7 * var(--u)); overflow: hidden; }
+    .gtable { display: flex; flex-direction: column; gap: calc(.5 * var(--u)); overflow: hidden; }
     .grow { display: grid; grid-template-columns: calc(8 * var(--u)) 1fr; gap: calc(.8 * var(--u)); align-items: center; }
-    .grow .lab { font-size: calc(1.25 * var(--u)); font-weight: 800; }
+    .grow .lab { font-size: calc(1.25 * var(--u)); line-height: 1.1; font-weight: 800; }
     .gbars { display: flex; flex-direction: column; gap: calc(.2 * var(--u)); }
-    .gbar { display: grid; grid-template-columns: calc(1.6 * var(--u)) 1fr calc(3.4 * var(--u)); gap: calc(.4 * var(--u)); align-items: center; font-size: calc(1 * var(--u)); font-weight: 700; }
+    .gbar { display: grid; grid-template-columns: calc(1.6 * var(--u)) 1fr calc(3.4 * var(--u)); gap: calc(.4 * var(--u)); align-items: center; font-size: calc(1 * var(--u)); line-height: 1.15; font-weight: 700; }
     .gbar .track { height: calc(.9 * var(--u)); background: var(--white); border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; }
     .gbar .fill { height: 100%; transition: width .8s ease; }
     .gbar.local .fill { background: var(--leaf); } .gbar.new .fill { background: var(--ochre); } .gbar.visitor .fill { background: var(--red); }
@@ -210,11 +222,14 @@
       <h2>🏆 All-time top survivors</h2>
       <ol class="board" id="board"></ol>
       <p class="empty" id="board-empty">No scores yet. Who's first?</p>
+      <h2 class="today-h">📅 Today's top survivors</h2>
+      <ol class="board today" id="board-today"></ol>
+      <p class="empty" id="today-empty">No scores today yet. Be the first!</p>
       <p class="roorec" id="roorec"></p>
     </section>
 
     <section class="card rot">
-      <div class="pdots" id="pdots"><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="pdots" id="pdots" aria-label="Stats panels"><button class="on" aria-label="What's catching people out"></button><button aria-label="Town Battle"></button><button aria-label="Is it teaching people?"></button><button aria-label="Locals vs visitors"></button></div>
       <div class="panel-v show" data-panel="hazards">
       <h2>What's catching people out today</h2>
       <div class="kpis">
@@ -244,7 +259,7 @@
         <p class="groups-head" id="groups-head"></p>
         <div class="gcount" id="gcount"></div>
         <div class="gtable" id="gtable"></div>
-        <p class="note">% of attempts failed today, by what players told us after their game: NT local, new to the NT, or visiting.</p>
+        <p class="note">% of attempts failed since launch, by what players told us after their game: NT local, new to the NT, or visiting. "-" means not enough answers yet.</p>
       </div>
     </section>
   </div>
@@ -296,7 +311,9 @@
         <h2>🏆 All-time top survivors</h2>
         <ol class="board" id="attract-list"></ol>
         <p class="empty" id="attract-empty">No scores yet. Who's first?</p>
-        <p class="kline" id="attract-kline"></p>
+        <h2 class="today-h">📅 Today's top survivors</h2>
+        <ol class="board today" id="attract-today"></ol>
+        <p class="empty" id="attract-today-empty">No scores today yet. Be the first!</p>
         <p class="roorec" id="attract-roorec"></p>
       </section>
     </div>
@@ -315,14 +332,19 @@
     const PANELS = ['hazards', 'towns', 'learning', 'groups'];
     let panel = 0;
     const emptyPanels = new Set(); // panels with nothing to show yet are skipped
-    function showPanel(i) {
+    // manual: picked with a dot or the N key, so show it even if it has no data yet.
+    function showPanel(i, manual = false) {
       panel = (i + PANELS.length) % PANELS.length;
-      for (let k = 0; k < PANELS.length && emptyPanels.has(PANELS[panel]); k++) panel = (panel + 1) % PANELS.length;
+      if (!manual) for (let k = 0; k < PANELS.length && emptyPanels.has(PANELS[panel]); k++) panel = (panel + 1) % PANELS.length;
       document.querySelectorAll('.panel-v').forEach(p => p.classList.toggle('show', p.dataset.panel === PANELS[panel]));
-      document.querySelectorAll('#pdots i').forEach((d, k) => d.classList.toggle('on', k === panel));
+      document.querySelectorAll('#pdots button').forEach((d, k) => d.classList.toggle('on', k === panel));
     }
-    setInterval(() => showPanel(panel + 1), Number(new URLSearchParams(location.search).get('rotate') || 12) * 1000);
-    addEventListener('keydown', (e) => { if (e.key === 'n') showPanel(panel + 1); });
+    const ROTATE_MS = Number(new URLSearchParams(location.search).get('rotate') || 12) * 1000;
+    let rotateTimer = setInterval(() => showPanel(panel + 1), ROTATE_MS);
+    // Click a dot to jump to that panel; it then stays a full turn before moving on.
+    const pickPanel = (k) => { showPanel(k, true); clearInterval(rotateTimer); rotateTimer = setInterval(() => showPanel(panel + 1), ROTATE_MS); };
+    document.querySelectorAll('#pdots button').forEach((d, k) => d.addEventListener('click', () => pickPanel(k)));
+    addEventListener('keydown', (e) => { if (e.key === 'n') pickPanel(panel + 1); });
 
     // NT outline (lon, lat), simplified.
     const COAST = [[129, -26], [129, -15], [129.7, -14.8], [130.1, -13.4], [130.3, -12.9], [130.7, -12.4], [131.1, -12.2], [131.5, -12.0],
@@ -399,7 +421,17 @@
       $('#groups-head').innerHTML = best
         ? `So far, visitors fail <b>${Math.round(best.v * 100)}%</b> of <b>${esc((TOPIC_LABELS[best.t.topic] || best.t.topic).toLowerCase())}</b> rounds, locals <b>${Math.round(best.l * 100)}%</b> <small>(${num(best.t.visitor.plays)} vs ${num(best.t.local.plays)} attempts)</small>`
         : 'Tap <b>Local</b>, <b>New</b> or <b>Visiting</b> after your game to fill this in!';
-      const rows = g.topics.filter(t => WHO.some(w => r(t[w.id]) != null)).slice(0, 6);
+      if (!best) {
+        // Say which groups we are still waiting for, instead of "fill this in" when some answers are in.
+        const missing = WHO.filter(w => (g.players[w.id] || 0) < HEAD_PLAYERS).map(w => ({ local: 'locals', new: 'newcomers', visitor: 'visitors' }[w.id]));
+        $('#groups-head').innerHTML = missing.length === WHO.length
+          ? 'Tap <b>Local</b>, <b>New</b> or <b>Visiting</b> after your game to fill this in!'
+          : `Need more <b>${missing.join('</b> and <b>')}</b>: tap your group after your game to compare!`;
+      }
+      // Topics with answers, the most-played first; 4 rows always fit on the screen.
+      const plays = (t) => WHO.reduce((n, w) => n + (t[w.id]?.plays || 0), 0);
+      const rows = g.topics.filter(t => WHO.some(w => r(t[w.id]) != null))
+        .sort((a, b) => (best ? 0 : plays(b) - plays(a))).slice(0, 4);
       $('#gtable').innerHTML = rows.map(t => `<div class="grow"><div class="lab">${esc(TOPIC_LABELS[t.topic] || t.topic)}</div><div class="gbars">${WHO.map(w => {
         const x = r(t[w.id]);
         return `<div class="gbar ${w.id}"><span>${w.icon}</span><div class="track"><div class="fill" style="width:${x == null ? 0 : Math.round(x * 100)}%"></div></div><span class="${x == null ? 'na' : ''}">${x == null ? '-' : Math.round(x * 100) + '%'}</span></div>`;
@@ -416,7 +448,7 @@
 
     const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0); // numbers from the server, never HTML
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    let lastTop = null, lastFeed = '', soundOn = false, sfx = null;
+    let lastTop = null, lastTodayTop, lastFeed = '', soundOn = false, sfx = null;
     const DEATH = {
       'croc-edge': "got croc'd while fishing", 'swim-sign': "got croc'd going for a swim", 'croc-camp': "got croc'd at camp",
       'stinger-vinegar': 'got zapped by a stinger', 'stinger-suit': 'got zapped by a stinger',
@@ -471,7 +503,8 @@
       step();
     }
 
-    function celebrate(e) {
+    function celebrate(e, title = 'NEW #1!') {
+      $('.record h3').textContent = title;
       $('#record-who').textContent = `${e.name} · ${e.score} points`;
       const r = $('#record'); r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
       confetti();
@@ -527,8 +560,9 @@
 
     async function refresh() {
       try {
-        const [lb, st, fd, tw, rr, stAll] = await Promise.all([
+        const [lb, td, st, fd, tw, rr, stAll] = await Promise.all([
           fetch(`${api}/api/leaderboard?period=all&limit=10`).then(r => r.json()),
+          fetch(`${api}/api/leaderboard?period=today&limit=5`).then(r => r.json()).catch(() => ({ entries: [] })),
           fetch(`${api}/api/stats?period=today`).then(r => r.json()),
           fetch(`${api}/api/feed?limit=12`).then(r => r.json()),
           fetch(`${api}/api/towns?period=all`).then(r => r.json()),
@@ -542,9 +576,13 @@
         $('#attract-roorec').innerHTML = recText;
         drawMap(tw.entries);
         drawLearning(stAll); // "Is it teaching people?" uses every game since launch
-        drawGroups(st.groups);
+        drawGroups(stAll.groups); // all time, like the other learning numbers
         const top = lb.entries[0] ? lb.entries[0].name + lb.entries[0].score : null;
+        // A new #1 (all time, or today's) gets the big celebration on the screen.
+        const todayTop = td.entries[0] ? td.entries[0].name + td.entries[0].score : null;
         if (lastTop !== null && top && top !== lastTop) celebrate(lb.entries[0]);
+        else if (lastTodayTop !== undefined && todayTop && todayTop !== lastTodayTop) celebrate(td.entries[0], 'NEW #1 TODAY!');
+        lastTodayTop = todayTop;
         $('#challenge').innerHTML = lb.entries[0]
           ? `Crowd challenge: beat <b>${lb.entries[0].score}</b> to take #1 from ${esc(lb.entries[0].name)}!`
           : 'Be the first on the board!';
@@ -562,13 +600,18 @@
           tr.innerHTML = items.join('');
           tr.style.setProperty('--dur', Math.max(25, items.length * 7) + 's');
         }
-        $('#board').innerHTML = lb.entries.map((e, i) =>
+        $('#board').innerHTML = lb.entries.slice(0, 5).map((e, i) =>
           `<li class="${i === 0 && lastTop !== null && top !== lastTop ? 'new' : ''}"><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
         lastTop = top;
         $('#board-empty').style.display = lb.entries.length ? 'none' : '';
-        $('#attract-list').innerHTML = lb.entries.slice(0, 5).map(e => `<li><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`).join('');
+        const row = (e) => `<li><span class="n">${esc(e.name)}</span><span class="s">${num(e.score)}</span></li>`;
+        $('#attract-list').innerHTML = lb.entries.slice(0, 3).map(row).join('');
         $('#attract-empty').style.display = lb.entries.length ? 'none' : '';
-        $('#attract-kline').textContent = `${num(st.players)} players · ${num(st.rounds)} rounds played today`;
+        // Today's board (Darwin time, resets at midnight): so today's players see if they are on top.
+        $('#board-today').innerHTML = td.entries.slice(0, 5).map(row).join('');
+        $('#today-empty').style.display = td.entries.length ? 'none' : '';
+        $('#attract-today').innerHTML = td.entries.slice(0, 3).map(row).join('');
+        $('#attract-today-empty').style.display = td.entries.length ? 'none' : '';
         $('#k-players').textContent = st.players;
         $('#k-rounds').textContent = st.rounds;
         $('#k-top').textContent = st.topScore;
