@@ -264,14 +264,16 @@ scripts/             smoke test (plays every game), icon generator
 - NT Health, *Box jellyfish fact sheet* - https://health.nt.gov.au/media/pdf/phu/cdc-factsheets/box-jellyfish-nt-health-factsheet.pdf
 - SecureNT, *Cyclones* - https://securent.nt.gov.au/prepare-for-an-emergency/cyclones
 - NTPFES, *Flooded road rescue: "If it's flooded, forget it"* - https://pfes.nt.gov.au/newsroom/2018/flooded-road-rescue-old-bynoe-road
-- NT Government, *Heat stress* - https://nt.gov.au/wellbeing/health-conditions-treatments/heat-stress
-- Australian Venom Research Unit, *Pressure immobilisation first aid* - https://biomedicalsciences.unimelb.edu.au/departments/pharmacology/engage/avru/discover/first-aid/pressure-immobilisation-first-aid
+- NT Government, *Living in the heat* - https://nt.gov.au/wellbeing/healthy-living/living-in-the-heat
+- Australian Venom Research Unit, *Pressure immobilisation first aid* - https://biomedicalsciences.unimelb.edu.au/departments/pharmacology/engage/avru/advice-and-resources/first-aid/pressure-immobilisation-first-aid
 - NTPFES, *Bushfire survival plan* - https://pfes.nt.gov.au/file/download/36012
 - Swimming NT, *Lightning policy* - https://nt.swimming.org.au/sites/default/files/assets/documents/SNT%20Lightning%20Policy%20-%20SNT-POL-007.pdf
 - NT Health, *Murray Valley encephalitis public health alert* (mosquito protection) - https://health.nt.gov.au/news/2023/murray-valley-encephalitis-public-health-alert2
 - Cancer Council, *Slip, slop, slap, seek, slide* - https://www.cancercouncil.com.au/cancer-prevention/sun-protection/preventing-skin-cancer/slip-slop-slap-seek-slide/
 - SecureNT, *Emergency plan: evacuate or stay* (cyclone shelter) - https://securent.nt.gov.au/prepare-for-an-emergency/weather-events/cyclones/emergency-plan-evacuate-or-stay
-- RACV, *Safe driving tips during dust storms* - https://www.racv.com.au/about-racv/newsroom/dust-storm-driving-tips.html
+- RACV, *Dust storm driving tips* - https://racv.com.au/content/dam/racv/documents/about-racv/our-business/newsroom/dust-storm-driving-tips.pdf
+- SecureNT, *Staying safe around flood waters* (crocodiles in floodwater) - https://securent.nt.gov.au/_resources/documents/staying-safe/staying-safe-around-flood-waters.pdf
+- Transport for NSW (Centre for Road Safety), *Watch for animals* (roos at dusk) - https://www.transport.nsw.gov.au/roadsafety/road-users/drivers/animals
 
 This game is a learning tool, not medical advice. In an emergency call 000.
 
