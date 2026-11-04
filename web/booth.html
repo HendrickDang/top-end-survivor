@@ -68,8 +68,8 @@
        so the crowd never loses sight of the scores or the live numbers. */
     .roorec { margin: calc(.6 * var(--u)) 0 0; padding: calc(.4 * var(--u)) calc(.8 * var(--u)); background: #ece3f8; border: 2px solid #5b3f8f; border-radius: 10px; font-size: calc(1.2 * var(--u)); font-weight: 700; }
     .roorec:empty { display: none; }
-    /* Two boards in one card: all-time records, then today's (so today's players see where they stand). */
-    .today-h { margin-top: calc(1.2 * var(--u)) !important; padding-top: calc(.8 * var(--u)); border-top: 4px solid var(--ink); }
+    /* Two boards in one card: today's first (so today's players see where they stand), then the all-time records. */
+    .next-h { margin-top: calc(1.2 * var(--u)) !important; padding-top: calc(.8 * var(--u)); border-top: 4px solid var(--ink); }
     .board.today li:nth-child(1) { background: #d9efc9; }
     .wrap .board { flex: none; }
     .wrap .board li { font-size: calc(1.6 * var(--u)); line-height: 1.2; padding: calc(.3 * var(--u)) calc(.6 * var(--u)); }
@@ -77,7 +77,7 @@
     .attract-board .empty { font-size: calc(1.1 * var(--u)); line-height: 1.2; margin: calc(.2 * var(--u)) 0; }
     .wrap .board li:nth-child(1) { font-size: calc(1.9 * var(--u)); }
     .attract-board .board { flex: none; }
-    .attract-board .today-h { margin-top: calc(.4 * var(--u)) !important; padding-top: calc(.35 * var(--u)); border-top-width: 3px; }
+    .attract-board .next-h { margin-top: calc(.4 * var(--u)) !important; padding-top: calc(.35 * var(--u)); border-top-width: 3px; }
     .attract-board .roorec, .wrap .roorec { margin-top: calc(.4 * var(--u)); padding: calc(.25 * var(--u)) calc(.8 * var(--u)); }
     .attract-mid { flex: none; width: calc(33 * var(--u)); max-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: calc(1.1 * var(--u)); }
     .attract-copy { color: var(--white); }
@@ -219,12 +219,12 @@
     </section>
 
     <section class="card">
-      <h2>🏆 All-time top survivors</h2>
-      <ol class="board" id="board"></ol>
-      <p class="empty" id="board-empty">No scores yet. Who's first?</p>
-      <h2 class="today-h">📅 Today's top survivors</h2>
+      <h2>📅 Today's top survivors</h2>
       <ol class="board today" id="board-today"></ol>
       <p class="empty" id="today-empty">No scores today yet. Be the first!</p>
+      <h2 class="next-h">🏆 All-time top survivors</h2>
+      <ol class="board" id="board"></ol>
+      <p class="empty" id="board-empty">No scores yet. Who's first?</p>
       <p class="roorec" id="roorec"></p>
     </section>
 
@@ -239,7 +239,7 @@
         <div class="kpi"><b id="k-replay">0%</b><span>played again</span></div>
       </div>
       <div class="bars" id="bars"></div>
-      <p class="note">% of attempts failed, live from every game played today. Every mistake shows the real safety rule and its official source.</p>
+      <p class="note">Each bar shows how often people failed that hazard today (the % on the right), live. Every mistake shows the real safety rule and its official source.</p>
       </div>
       <div class="panel-v" data-panel="towns">
         <h2>📍 Town Battle</h2>
@@ -259,7 +259,7 @@
         <p class="groups-head" id="groups-head"></p>
         <div class="gcount" id="gcount"></div>
         <div class="gtable" id="gtable"></div>
-        <p class="note">% of attempts failed since launch, by what players told us after their game: NT local, new to the NT, or visiting. "-" means not enough answers yet.</p>
+        <p class="note">Each bar shows how often that group failed the topic, since launch (the % on the right). Groups come from what players tap after their game. "-" means not enough answers yet.</p>
       </div>
     </section>
   </div>
@@ -308,12 +308,12 @@
         <p class="attract-vote"><img id="attract-vote-img" alt="QR code to vote for Team CAP003"><span>🗳️ Enjoyed it? Vote for <b>Team CAP003</b></span></p>
       </div>
       <section class="card attract-board">
-        <h2>🏆 All-time top survivors</h2>
-        <ol class="board" id="attract-list"></ol>
-        <p class="empty" id="attract-empty">No scores yet. Who's first?</p>
-        <h2 class="today-h">📅 Today's top survivors</h2>
+        <h2>📅 Today's top survivors</h2>
         <ol class="board today" id="attract-today"></ol>
         <p class="empty" id="attract-today-empty">No scores today yet. Be the first!</p>
+        <h2 class="next-h">🏆 All-time top survivors</h2>
+        <ol class="board" id="attract-list"></ol>
+        <p class="empty" id="attract-empty">No scores yet. Who's first?</p>
         <p class="roorec" id="attract-roorec"></p>
       </section>
     </div>
@@ -620,7 +620,7 @@
         $('#attract-challenge').textContent = num(st.topScore) > 0
           ? `Today's best: ${num(st.topScore)}. Can you beat it? Or ask us for a 5-hazard ⚔️ Booth Battle!`
           : 'Be first on today\'s board, or ask us for a 5-hazard ⚔️ Booth Battle!';
-        const games = st.games.filter(g => g.plays > 0).slice(0, 7);
+        const games = st.games.filter(g => g.plays > 0).slice(0, 5); // 5 always fit above the note
         $('#bars').innerHTML = games.length ? games.map(g => {
           const pct = Math.round(g.failRate * 100);
           return `<div class="bar"><div><div class="lab">${esc(GAME_LABELS[g.id] || g.id)}</div>
